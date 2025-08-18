@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { ImageUpload } from "@/components/image-upload"
+import { EnhancedImageUpload } from "@/components/enhanced-image-upload"
 import { PromptInput } from "@/components/prompt-input"
 import { GenerationControls } from "@/components/generation-controls"
 import { GenerationResults } from "@/components/generation-results"
@@ -32,42 +32,17 @@ export default function GeneratePage() {
   const [liveMessage, setLiveMessage] = useState("")
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
   const [expandedPrompt, setExpandedPrompt] = useState<string>("")
+  const [maskData, setMaskData] = useState<string | null>(null)
 
   const { uploadedImage, handleUpload, handleRemove } = useImageUpload()
   const { toast } = useToast()
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + Enter to generate
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !isGenerating && prompt.trim()) {
-        e.preventDefault()
-        handleGenerate()
-      }
-
-      // Alt + G to focus on gallery link
-      if (e.altKey && e.key === "g") {
-        e.preventDefault()
-        const galleryLink = document.querySelector('a[href="/gallery"]') as HTMLElement
-        galleryLink?.focus()
-      }
-
-      // Alt + P to focus on prompt input
-      if (e.altKey && e.key === "p") {
-        e.preventDefault()
-        const promptInput = document.getElementById("prompt-input")
-        promptInput?.focus()
-      }
-
-      // Show keyboard shortcuts with ?
-      if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault()
-        setShowKeyboardShortcuts(true)
-      }
+    if (maskData && variations > 1) {
+      setVariations(1)
+      setLiveMessage("Variations set to 1 for mask editing")
     }
-
-    document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [isGenerating, prompt])
+  }, [maskData, variations])
 
   useEffect(() => {
     const reuseData = sessionStorage.getItem("reusePrompt")
@@ -75,7 +50,7 @@ export default function GeneratePage() {
       try {
         const data = JSON.parse(reuseData)
         setPrompt(data.prompt || "")
-  setSize(data.size || "1024x1024")
+        setSize(data.size || "1024x1024")
         setSeed(data.seed || "")
         setVariations(data.variations || 1)
         setQuality(data.quality || "standard")
@@ -83,7 +58,8 @@ export default function GeneratePage() {
         setNegativePrompt(data.negativePrompt || "")
         setGuidanceScale(data.guidanceScale || 7)
         setSteps(data.steps || 20)
-  setExpandedPrompt(data.expandedPrompt || "")
+        setExpandedPrompt(data.expandedPrompt || "")
+        setMaskData(data.maskData || null)
         sessionStorage.removeItem("reusePrompt")
 
         setLiveMessage("Prompt and settings restored from gallery image")
@@ -108,9 +84,20 @@ export default function GeneratePage() {
       return
     }
 
+    if (maskData && !uploadedImage) {
+      setLiveMessage("Error: Base image is required when using mask")
+      toast({
+        title: "Base image required",
+        description: "Please upload a base image before using mask painting.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsGenerating(true)
     setGeneratedImages([])
-    setLiveMessage(`Starting image generation. Creating ${variations} variation${variations > 1 ? "s" : ""}...`)
+    const generationType = maskData ? "mask-based editing" : "image generation"
+    setLiveMessage(`Starting ${generationType}. Creating ${variations} variation${variations > 1 ? "s" : ""}...`)
 
     try {
       const response = await fetch("/api/images/generate", {
@@ -125,6 +112,7 @@ export default function GeneratePage() {
           n: variations,
           seed: seed || null,
           baseImageId: uploadedImage?.id || null,
+          maskData: maskData || null,
           quality,
           style,
           negativePrompt: negativePrompt.trim() || null,
@@ -137,27 +125,16 @@ export default function GeneratePage() {
         let errorMessage = "Generation failed"
 
         try {
-          // Check if response is JSON before parsing
           const contentType = response.headers.get("content-type")
           if (contentType && contentType.includes("application/json")) {
             const error = await response.json()
             errorMessage = error.error || errorMessage
           } else {
-            // Handle HTML error pages or other non-JSON responses
-            const errorText = await response.text()
-            if (errorText.includes("Internal Server Error")) {
-              errorMessage = "Internal server error. Please check your OpenAI API key and try again."
-            } else if (response.status === 500) {
-              errorMessage = "Server error. Please try again later."
-            } else if (response.status === 400) {
-              errorMessage = "Invalid request. Please check your inputs."
-            } else {
-              errorMessage = `Server error (${response.status}). Please try again.`
-            }
+            errorMessage = `Server error (${response.status}). Please try again later.`
           }
         } catch (parseError) {
           console.error("Error parsing error response:", parseError)
-          errorMessage = `Server error (${response.status}). Please try again.`
+          errorMessage = `Server error (${response.status}). Please try again later.`
         }
 
         throw new Error(errorMessage)
@@ -169,14 +146,15 @@ export default function GeneratePage() {
       }
 
       const result = await response.json()
-      setGeneratedImages(result.images)
+      setGeneratedImages(result.images || [])
       setHasGenerated(true)
+      const successType = maskData ? "edited" : "generated"
       setLiveMessage(
-        `Successfully generated ${variations} image${variations > 1 ? "s" : ""}. You can now save your favorites to the gallery.`,
+        `Successfully ${successType} ${variations} image${variations > 1 ? "s" : ""}. You can now save your favorites to the gallery.`,
       )
 
       toast({
-        title: "Images generated successfully",
+        title: `Images ${successType} successfully`,
         description: `${variations} variation${variations > 1 ? "s have" : " has"} been created. Save the ones you like to your gallery.`,
       })
     } catch (error) {
@@ -191,7 +169,20 @@ export default function GeneratePage() {
     } finally {
       setIsGenerating(false)
     }
-  }, [prompt, size, seed, variations, uploadedImage?.id, quality, style, negativePrompt, guidanceScale, steps, toast])
+  }, [
+    prompt,
+    size,
+    seed,
+    variations,
+    uploadedImage,
+    maskData,
+    quality,
+    style,
+    negativePrompt,
+    guidanceScale,
+    steps,
+    toast,
+  ])
 
   const handleSaveToGallery = useCallback(
     async (image: GeneratedImage) => {
@@ -262,11 +253,25 @@ export default function GeneratePage() {
     setLiveMessage(`Sample prompt loaded: ${samplePrompt}`)
   }, [])
 
+  const handleMaskChange = useCallback((newMaskData: string | null) => {
+    setMaskData(newMaskData)
+    if (newMaskData) {
+      setLiveMessage("Mask applied. Areas painted in white will be modified during generation.")
+    } else {
+      setLiveMessage("Mask cleared. Regular image generation will be used.")
+    }
+  }, [])
+
+  const handleImageRemove = useCallback(() => {
+    handleRemove()
+    setMaskData(null)
+    setLiveMessage("Base image and mask removed")
+  }, [handleRemove])
+
   return (
     <div className="min-h-screen bg-background">
       <LiveRegion message={liveMessage} />
 
-      {/* Header */}
       <header className="border-b bg-card" role="banner">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -343,17 +348,21 @@ export default function GeneratePage() {
 
             <Separator />
 
-            {/* Base Image Upload */}
+            {/* Base Image Upload with Mask Painting */}
             <section aria-labelledby="upload-heading">
               <h3 id="upload-heading" className="text-md font-medium mb-4">
-                Base Image (Optional)
+                Base Image & Mask Painting (Optional)
               </h3>
-              <ImageUpload
+              <EnhancedImageUpload
                 onUpload={handleUpload}
-                onRemove={handleRemove}
+                onRemove={handleImageRemove}
+                onMaskChange={handleMaskChange}
                 uploadedImage={uploadedImage}
                 disabled={isGenerating}
               />
+              {maskData && (
+                <div className="mt-2 text-sm text-muted-foreground">✓ Mask active - painted areas will be modified</div>
+              )}
             </section>
 
             <Separator />
@@ -362,10 +371,7 @@ export default function GeneratePage() {
             <section aria-labelledby="generation-heading">
               {/* Prompt Blocks (Expanded Prompt) */}
               <div className="mb-6">
-                <PromptBlocks
-                  disabled={isGenerating}
-                  onChange={(exp) => setExpandedPrompt(exp)}
-                />
+                <PromptBlocks disabled={isGenerating} onChange={(exp) => setExpandedPrompt(exp)} />
               </div>
 
               <GenerationControls
@@ -388,6 +394,7 @@ export default function GeneratePage() {
                 onGuidanceScaleChange={setGuidanceScale}
                 steps={steps}
                 onStepsChange={setSteps}
+                hasMask={!!maskData}
               />
             </section>
           </section>

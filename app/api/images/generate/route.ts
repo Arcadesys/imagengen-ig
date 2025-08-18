@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
-import { writeFile, mkdir } from "fs/promises"
+import { writeFile, mkdir, readFile } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
@@ -16,6 +16,7 @@ interface GenerateRequest {
   n: number
   seed?: string | number | null
   baseImageId?: string | null
+  maskData?: string | null
 }
 
 interface GeneratedImage {
@@ -23,12 +24,22 @@ interface GeneratedImage {
   url: string
   metadata: {
     prompt: string
-  expandedPrompt?: string
+    expandedPrompt?: string
     size: string
     seed?: string | number
     baseImageId?: string | null
+    hasMask?: boolean
     provider: string
   }
+}
+
+function dataURLToBuffer(dataURL: string): Buffer {
+  const base64Data = dataURL.split(",")[1]
+  return Buffer.from(base64Data, "base64")
+}
+
+function getBaseImagePath(baseImageId: string): string {
+  return path.join(process.cwd(), "public", "uploads", "base", `${baseImageId}.png`)
 }
 
 export async function POST(request: NextRequest) {
@@ -42,10 +53,18 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] OpenAI API key is present")
 
-  const body: GenerateRequest = await request.json()
-  const { prompt, expandedPrompt, size, n, seed, baseImageId } = body
+    const body: GenerateRequest = await request.json()
+    const { prompt, expandedPrompt, size, n, seed, baseImageId, maskData } = body
 
-  console.log("[v0] Request body parsed:", { prompt: prompt?.substring(0, 50) + "...", expanded: !!expandedPrompt, size, n, seed, baseImageId })
+    console.log("[v0] Request body parsed:", {
+      prompt: prompt?.substring(0, 50) + "...",
+      expanded: !!expandedPrompt,
+      size,
+      n,
+      seed,
+      baseImageId,
+      hasMask: !!maskData,
+    })
 
     // Validate input
     if (!prompt || typeof prompt !== "string") {
@@ -60,9 +79,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Number of images must be between 1 and 4" }, { status: 400 })
     }
 
+    if (maskData && !baseImageId) {
+      return NextResponse.json({ error: "Base image is required when using mask" }, { status: 400 })
+    }
+
+    if (maskData && n > 1) {
+      return NextResponse.json({ error: "Mask editing only supports generating 1 image at a time" }, { status: 400 })
+    }
+
     // Ensure directories exist
     const generatedDir = path.join(process.cwd(), "public", "generated")
     const dataDir = path.join(process.cwd(), "data")
+    const tempDir = path.join(process.cwd(), "temp")
 
     if (!existsSync(generatedDir)) {
       await mkdir(generatedDir, { recursive: true })
@@ -70,93 +98,173 @@ export async function POST(request: NextRequest) {
     if (!existsSync(dataDir)) {
       await mkdir(dataDir, { recursive: true })
     }
+    if (!existsSync(tempDir)) {
+      await mkdir(tempDir, { recursive: true })
+    }
 
     console.log("[v0] Directories ensured, making OpenAI request")
-
-    const openaiRequest: any = {
-      model: "dall-e-2", // Using DALL-E 2 which supports n=1-4
-      prompt,
-      size,
-      n: n,
-      response_format: "url",
-    }
-
-    // Handle base image for image-to-image (if supported)
-    if (baseImageId) {
-      // For now, we'll include the base image context in the prompt
-      // In a full implementation, you'd handle the actual image-to-image API
-      openaiRequest.prompt = `Based on the uploaded image with ID ${baseImageId}: ${prompt}`
-    }
-
-    console.log("[v0] OpenAI request prepared:", {
-      model: openaiRequest.model,
-      size: openaiRequest.size,
-      n: openaiRequest.n,
-    })
 
     const images: GeneratedImage[] = []
 
     try {
-      console.log("[v0] Calling OpenAI API...")
-      const response = await openai.images.generate(openaiRequest)
-      console.log("[v0] OpenAI API response received, data length:", response.data?.length)
+      if (maskData && baseImageId) {
+        console.log("[v0] Processing mask-based image editing")
 
-      if (!response.data || response.data.length === 0) {
-        console.log("[v0] No images in OpenAI response")
-        return NextResponse.json({ error: "No images were generated" }, { status: 500 })
-      }
-
-      // Process each generated image
-      for (let i = 0; i < response.data.length; i++) {
-        const imageData = response.data[i]
-        console.log("[v0] Processing image", i, "URL present:", !!imageData?.url)
-
-        if (!imageData?.url) {
-          console.error(`[v0] Image ${i} has no URL`)
-          continue
+        // Verify base image exists
+        const baseImagePath = getBaseImagePath(baseImageId)
+        if (!existsSync(baseImagePath)) {
+          return NextResponse.json({ error: "Base image not found" }, { status: 400 })
         }
 
+        // Save mask data to temporary file
+        const maskId = uuidv4()
+        const maskPath = path.join(tempDir, `${maskId}.png`)
+        const maskBuffer = dataURLToBuffer(maskData)
+        await writeFile(maskPath, maskBuffer)
+
+        console.log("[v0] Calling OpenAI image edit API...")
+        const response = await openai.images.edit({
+          image: await readFile(baseImagePath),
+          mask: await readFile(maskPath),
+          prompt,
+          size: size as "256x256" | "512x512" | "1024x1024",
+          n: 1, // Image editing only supports n=1
+          response_format: "url",
+        })
+
+        console.log("[v0] OpenAI image edit response received")
+
+        if (!response.data || response.data.length === 0) {
+          console.log("[v0] No images in OpenAI response")
+          return NextResponse.json({ error: "No images were generated" }, { status: 500 })
+        }
+
+        const imageData = response.data[0]
+        if (!imageData?.url) {
+          console.error("[v0] Image has no URL")
+          return NextResponse.json({ error: "Generated image has no URL" }, { status: 500 })
+        }
+
+        // Download and save the edited image
+        console.log("[v0] Downloading edited image")
+        const imageResponse = await fetch(imageData.url)
+
+        if (!imageResponse.ok) {
+          console.error(`[v0] Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`)
+          return NextResponse.json({ error: "Failed to download generated image" }, { status: 500 })
+        }
+
+        const imageBuffer = await imageResponse.arrayBuffer()
+        const imageId = uuidv4()
+        const filename = `${imageId}.png`
+        const filepath = path.join(generatedDir, filename)
+
+        await writeFile(filepath, Buffer.from(imageBuffer))
+
+        images.push({
+          id: imageId,
+          url: `/generated/${filename}`,
+          metadata: {
+            prompt,
+            expandedPrompt: expandedPrompt || undefined,
+            size,
+            seed: seed ?? undefined,
+            baseImageId,
+            hasMask: true,
+            provider: "openai",
+          },
+        })
+
+        // Clean up temporary mask file
         try {
-          console.log("[v0] Downloading image", i)
-          const imageResponse = await fetch(imageData.url)
+          await import("fs").then((fs) => fs.unlinkSync(maskPath))
+        } catch (cleanupError) {
+          console.warn("[v0] Failed to clean up temporary mask file:", cleanupError)
+        }
+      } else {
+        const openaiRequest: any = {
+          model: "dall-e-2", // Using DALL-E 2 which supports n=1-4
+          prompt,
+          size,
+          n: n,
+          response_format: "url",
+        }
 
-          if (!imageResponse.ok) {
-            console.error(`[v0] Failed to download image ${i}: ${imageResponse.status} ${imageResponse.statusText}`)
+        // Handle base image for image-to-image (if supported)
+        if (baseImageId) {
+          // For now, we'll include the base image context in the prompt
+          // In a full implementation, you'd handle the actual image-to-image API
+          openaiRequest.prompt = `Based on the uploaded image with ID ${baseImageId}: ${prompt}`
+        }
+
+        console.log("[v0] OpenAI request prepared:", {
+          model: openaiRequest.model,
+          size: openaiRequest.size,
+          n: openaiRequest.n,
+        })
+
+        console.log("[v0] Calling OpenAI API...")
+        const response = await openai.images.generate(openaiRequest)
+        console.log("[v0] OpenAI API response received, data length:", response.data?.length)
+
+        if (!response.data || response.data.length === 0) {
+          console.log("[v0] No images in OpenAI response")
+          return NextResponse.json({ error: "No images were generated" }, { status: 500 })
+        }
+
+        // Process each generated image
+        for (let i = 0; i < response.data.length; i++) {
+          const imageData = response.data[i]
+          console.log("[v0] Processing image", i, "URL present:", !!imageData?.url)
+
+          if (!imageData?.url) {
+            console.error(`[v0] Image ${i} has no URL`)
             continue
           }
 
-          const contentType = imageResponse.headers.get("content-type")
-          if (!contentType?.startsWith("image/")) {
-            console.error(`[v0] Invalid content type for image ${i}: ${contentType}`)
-            continue
+          try {
+            console.log("[v0] Downloading image", i)
+            const imageResponse = await fetch(imageData.url)
+
+            if (!imageResponse.ok) {
+              console.error(`[v0] Failed to download image ${i}: ${imageResponse.status} ${imageResponse.statusText}`)
+              continue
+            }
+
+            const contentType = imageResponse.headers.get("content-type")
+            if (!contentType?.startsWith("image/")) {
+              console.error(`[v0] Invalid content type for image ${i}: ${contentType}`)
+              continue
+            }
+
+            console.log("[v0] Converting image", i, "to buffer")
+            const imageBuffer = await imageResponse.arrayBuffer()
+
+            const imageId = uuidv4()
+            const filename = `${imageId}.png`
+            const filepath = path.join(generatedDir, filename)
+
+            console.log("[v0] Saving image", i, "to", filepath)
+            await writeFile(filepath, Buffer.from(imageBuffer))
+
+            images.push({
+              id: imageId,
+              url: `/generated/${filename}`,
+              metadata: {
+                prompt,
+                expandedPrompt: expandedPrompt || undefined,
+                size,
+                seed: seed ?? undefined,
+                baseImageId,
+                hasMask: false,
+                provider: "openai",
+              },
+            })
+            console.log("[v0] Successfully processed image", i)
+          } catch (downloadError) {
+            console.error(`[v0] Error downloading image ${i}:`, downloadError)
+            // Continue with other images
           }
-
-          console.log("[v0] Converting image", i, "to buffer")
-          const imageBuffer = await imageResponse.arrayBuffer()
-
-          const imageId = uuidv4()
-          const filename = `${imageId}.png`
-          const filepath = path.join(generatedDir, filename)
-
-          console.log("[v0] Saving image", i, "to", filepath)
-          await writeFile(filepath, Buffer.from(imageBuffer))
-
-          images.push({
-            id: imageId,
-            url: `/generated/${filename}`,
-            metadata: {
-              prompt,
-              expandedPrompt: expandedPrompt || undefined,
-              size,
-              seed: seed ?? undefined,
-              baseImageId,
-              provider: "openai",
-            },
-          })
-          console.log("[v0] Successfully processed image", i)
-        } catch (downloadError) {
-          console.error(`[v0] Error downloading image ${i}:`, downloadError)
-          // Continue with other images
         }
       }
 
