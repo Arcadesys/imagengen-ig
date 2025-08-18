@@ -60,8 +60,29 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
         })
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || "Upload failed")
+          const contentType = response.headers.get("content-type")
+          let errorMessage = "Upload failed"
+
+          if (contentType && contentType.includes("application/json")) {
+            try {
+              const error = await response.json()
+              errorMessage = error.error || errorMessage
+            } catch {
+              errorMessage = "Server error occurred"
+            }
+          } else {
+            // Handle HTML error responses
+            const text = await response.text()
+            if (response.status === 500) {
+              errorMessage = "Server error. Please try again later."
+            } else if (response.status === 413) {
+              errorMessage = "File too large for server"
+            } else {
+              errorMessage = `Server error (${response.status})`
+            }
+          }
+
+          throw new Error(errorMessage)
         }
 
         const result = await response.json()
@@ -165,7 +186,8 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
           <img
             src={
               uploadedImage.url ||
-              "https://example.com/v0-placeholder.svg?height=400&width=400&query=uploaded%20base%20image"
+              "https://example.com/v0-placeholder.svg?height=400&width=400&query=uploaded%20base%20image" ||
+              "/placeholder.svg"
             }
             alt="Uploaded base image for generation"
             className="w-full h-full object-cover"
