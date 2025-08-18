@@ -163,7 +163,7 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
       <Card className="relative overflow-hidden">
         <div className="aspect-square relative">
           <img
-            src={uploadedImage.url || "/placeholder.svg"}
+            src={uploadedImage.url || "/placeholder.svg?height=400&width=400&query=uploaded%20base%20image"}
             alt="Uploaded base image for generation"
             className="w-full h-full object-cover"
           />

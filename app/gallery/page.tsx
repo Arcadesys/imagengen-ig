@@ -369,7 +369,11 @@ export default function GalleryPage() {
 
                     {/* Image */}
                     <div className="aspect-square relative cursor-pointer" onClick={() => setSelectedImage(image)}>
-                      <img src={image.url || "/placeholder.svg"} alt={altText} className="w-full h-full object-cover" />
+                      <img
+                        src={image.url || "/placeholder.svg?height=400&width=400&query=generated%20image%20placeholder"}
+                        alt={altText}
+                        className="w-full h-full object-cover"
+                      />
 
                       {/* Hover overlay */}
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -455,7 +459,9 @@ export default function GalleryPage() {
             <div className="space-y-6">
               <div className="relative">
                 <img
-                  src={selectedImage.url || "/placeholder.svg"}
+                  src={
+                    selectedImage.url || "/placeholder.svg?height=600&width=600&query=full%20size%20generated%20image"
+                  }
                   alt={imageAltTexts[selectedImage.id] || selectedImage.prompt}
                   className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
                 />
