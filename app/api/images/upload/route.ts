@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { writeFile, mkdir, readFile } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
-import { v4 as uuidv4 } from "uuid"
 
 interface UploadedImage {
   id: string
@@ -53,9 +52,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] Generating filename...")
-    // Generate unique filename
     const fileExtension = path.extname(file.name)
-    const baseImageId = uuidv4()
+    const baseImageId = crypto.randomUUID()
     const filename = `${baseImageId}${fileExtension}`
     const filepath = path.join(uploadDir, filename)
 
