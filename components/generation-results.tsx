@@ -83,7 +83,7 @@ export function GenerationResults({ images, onSave, onDiscard }: GenerationResul
             <Card key={image.id} className="overflow-hidden group">
               <div className="aspect-square relative">
                 <img
-                  src={image.url || "/placeholder.svg?height=400&width=400&query=generated%20AI%20image"}
+                  src={image.url || "/placeholder.svg?v0"}
                   alt={`Generated image ${index + 1}: ${image.metadata.prompt.slice(0, 50)}...`}
                   className="w-full h-full object-cover"
                 />
@@ -164,9 +164,7 @@ export function GenerationResults({ images, onSave, onDiscard }: GenerationResul
             <div className="space-y-4">
               <div className="relative">
                 <img
-                  src={
-                    selectedImage.url || "/placeholder.svg?height=600&width=800&query=full%20size%20generated%20image"
-                  }
+                  src={selectedImage.url || "/placeholder.svg?v0"}
                   alt={`Full size view: ${selectedImage.metadata.prompt}`}
                   className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
                 />

@@ -370,7 +370,10 @@ export default function GalleryPage() {
                     {/* Image */}
                     <div className="aspect-square relative cursor-pointer" onClick={() => setSelectedImage(image)}>
                       <img
-                        src={image.url || "/placeholder.svg?height=400&width=400&query=generated%20image%20placeholder"}
+                        src={
+                          image.url ||
+                          "https://example.com/v0-placeholder.svg?height=400&width=400&query=generated%20image%20placeholder"
+                        }
                         alt={altText}
                         className="w-full h-full object-cover"
                       />
@@ -392,7 +395,10 @@ export default function GalleryPage() {
                     {/* Content */}
                     <div className="p-4 space-y-3">
                       <div>
-                        <p className="text-sm font-medium line-clamp-2 mb-1" title={image.expandedPrompt || image.prompt}>
+                        <p
+                          className="text-sm font-medium line-clamp-2 mb-1"
+                          title={image.expandedPrompt || image.prompt}
+                        >
                           {image.expandedPrompt || image.prompt}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -460,7 +466,8 @@ export default function GalleryPage() {
               <div className="relative">
                 <img
                   src={
-                    selectedImage.url || "/placeholder.svg?height=600&width=600&query=full%20size%20generated%20image"
+                    selectedImage.url ||
+                    "https://example.com/v0-placeholder.svg?height=600&width=600&query=full%20size%20generated%20image"
                   }
                   alt={imageAltTexts[selectedImage.id] || selectedImage.prompt}
                   className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
@@ -470,7 +477,9 @@ export default function GalleryPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-medium mb-2">Prompt</h3>
-                  <p className="text-sm bg-muted p-3 rounded-lg">{selectedImage.expandedPrompt || selectedImage.prompt}</p>
+                  <p className="text-sm bg-muted p-3 rounded-lg">
+                    {selectedImage.expandedPrompt || selectedImage.prompt}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
