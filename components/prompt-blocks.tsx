@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useMemo, useState, useId } from "react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,8 @@ export interface PromptBlock {
 }
 
 function uid() {
+  // Used only for client-initiated additions; safe to be non-deterministic
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID()
   return Math.random().toString(36).slice(2, 9)
 }
 
@@ -71,9 +73,9 @@ export function PromptBlocks({
 }) {
   const [blocks, setBlocks] = useState<PromptBlock[]>(
     initialBlocks ?? [
-      { id: uid(), type: "Subject", value: "", traits: [] },
-      { id: uid(), type: "Style", value: "", traits: [] },
-      { id: uid(), type: "Lighting", value: "", traits: [] },
+      { id: "subject", type: "Subject", value: "", traits: [] },
+      { id: "style", type: "Style", value: "", traits: [] },
+      { id: "lighting", type: "Lighting", value: "", traits: [] },
     ],
   )
 
@@ -126,7 +128,7 @@ export function PromptBlocks({
   ]
 
   return (
-    <Card className="p-4">
+  <Card className="p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="space-y-1">
           <div className="font-medium">Prompt Blocks</div>
@@ -150,79 +152,18 @@ export function PromptBlocks({
 
       <div className="grid gap-3">
         {blocks.map((b, idx) => (
-          <div key={b.id} className="grid gap-2 border rounded-md p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                <Label htmlFor={`pb-type-${b.id}`} className="text-xs">
-                  Type
-                </Label>
-                <Select
-                  value={b.type}
-                  onValueChange={(v) => updateBlock(b.id, { type: v as PromptBlockType })}
-                  disabled={disabled}
-                >
-                  <SelectTrigger id={`pb-type-${b.id}`} className="w-44 h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTypes.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => move(b.id, -1)} disabled={disabled || idx === 0}>
-                  ↑
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => move(b.id, +1)}
-                  disabled={disabled || idx === blocks.length - 1}
-                >
-                  ↓
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => removeBlock(b.id)} disabled={disabled}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {b.type === "Details" || b.type === "Composition" ? (
-              <Textarea
-                value={b.value}
-                onChange={(e) => updateBlock(b.id, { value: e.target.value })}
-                placeholder={blockPlaceholder(b.type)}
-                disabled={disabled}
-                rows={3}
-              />
-            ) : (
-              <Input
-                value={b.value}
-                onChange={(e) => updateBlock(b.id, { value: e.target.value })}
-                placeholder={blockPlaceholder(b.type)}
-                disabled={disabled}
-              />
-            )}
-
-            {traitEnabledTypes.includes(b.type as TraitCategory) ? (
-              <div className="mt-2">
-                <Label className="text-xs">{b.type} traits</Label>
-                <TraitChipInput
-                  value={b.traits ?? []}
-                  onChange={(traits) => updateBlock(b.id, { traits })}
-                  categories={[b.type as TraitCategory]}
-                  placeholder={`Search ${b.type.toLowerCase()} traits...`}
-                  disabled={disabled}
-                />
-              </div>
-            ) : null}
-          </div>
+          <BlockRow
+            key={b.id}
+            b={b}
+            idx={idx}
+            blocksLength={blocks.length}
+            disabled={!!disabled}
+            availableTypes={availableTypes}
+            traitEnabledTypes={traitEnabledTypes}
+            move={move}
+            removeBlock={removeBlock}
+            updateBlock={updateBlock}
+          />
         ))}
       </div>
 
@@ -233,5 +174,105 @@ export function PromptBlocks({
         </div>
       </div>
     </Card>
+  )
+}
+
+function BlockRow({
+  b,
+  idx,
+  blocksLength,
+  disabled,
+  availableTypes,
+  traitEnabledTypes,
+  move,
+  removeBlock,
+  updateBlock,
+}: {
+  b: PromptBlock
+  idx: number
+  blocksLength: number
+  disabled: boolean
+  availableTypes: PromptBlockType[]
+  traitEnabledTypes: TraitCategory[]
+  move: (id: string, dir: -1 | 1) => void
+  removeBlock: (id: string) => void
+  updateBlock: (id: string, patch: Partial<PromptBlock>) => void
+}) {
+  const rowInputId = useId()
+
+  return (
+    <div className="grid gap-2 border rounded-md p-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <Label htmlFor={`pb-type-${rowInputId}`} className="text-xs">
+            Type
+          </Label>
+          <Select
+            value={b.type}
+            onValueChange={(v) => updateBlock(b.id, { type: v as PromptBlockType })}
+            disabled={disabled}
+          >
+            <SelectTrigger id={`pb-type-${rowInputId}`} className="w-44 h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableTypes.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => move(b.id, -1)} disabled={disabled || idx === 0}>
+            ↑
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => move(b.id, +1)}
+            disabled={disabled || idx === blocksLength - 1}
+          >
+            ↓
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => removeBlock(b.id)} disabled={disabled}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {b.type === "Details" || b.type === "Composition" ? (
+        <Textarea
+          value={b.value}
+          onChange={(e) => updateBlock(b.id, { value: e.target.value })}
+          placeholder={blockPlaceholder(b.type)}
+          disabled={disabled}
+          rows={3}
+        />
+      ) : (
+        <Input
+          value={b.value}
+          onChange={(e) => updateBlock(b.id, { value: e.target.value })}
+          placeholder={blockPlaceholder(b.type)}
+          disabled={disabled}
+        />
+      )}
+
+      {traitEnabledTypes.includes(b.type as TraitCategory) ? (
+        <div className="mt-2">
+          <Label className="text-xs">{b.type} traits</Label>
+          <TraitChipInput
+            value={b.traits ?? []}
+            onChange={(traits) => updateBlock(b.id, { traits })}
+            categories={[b.type as TraitCategory]}
+            placeholder={`Search ${b.type.toLowerCase()} traits...`}
+            disabled={disabled}
+          />
+        </div>
+      ) : null}
+    </div>
   )
 }
