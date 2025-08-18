@@ -11,6 +11,7 @@ const openai = new OpenAI({
 
 interface GenerateRequest {
   prompt: string
+  expandedPrompt?: string | null
   size: "512x512" | "768x768" | "1024x1024"
   n: number
   seed?: string | number | null
@@ -22,6 +23,7 @@ interface GeneratedImage {
   url: string
   metadata: {
     prompt: string
+  expandedPrompt?: string
     size: string
     seed?: string | number
     baseImageId?: string | null
@@ -40,10 +42,10 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] OpenAI API key is present")
 
-    const body: GenerateRequest = await request.json()
-    const { prompt, size, n, seed, baseImageId } = body
+  const body: GenerateRequest = await request.json()
+  const { prompt, expandedPrompt, size, n, seed, baseImageId } = body
 
-    console.log("[v0] Request body parsed:", { prompt: prompt?.substring(0, 50) + "...", size, n, seed, baseImageId })
+  console.log("[v0] Request body parsed:", { prompt: prompt?.substring(0, 50) + "...", expanded: !!expandedPrompt, size, n, seed, baseImageId })
 
     // Validate input
     if (!prompt || typeof prompt !== "string") {
@@ -144,8 +146,9 @@ export async function POST(request: NextRequest) {
             url: `/generated/${filename}`,
             metadata: {
               prompt,
+              expandedPrompt: expandedPrompt || undefined,
               size,
-              seed,
+              seed: seed ?? undefined,
               baseImageId,
               provider: "openai",
             },

@@ -140,8 +140,8 @@ export function GenerationResults({ images, onSave, onDiscard }: GenerationResul
                 </div>
 
                 <div className="text-xs text-muted-foreground">
-                  <p className="truncate" title={image.metadata.prompt}>
-                    {image.metadata.prompt}
+                  <p className="truncate" title={image.metadata.expandedPrompt || image.metadata.prompt}>
+                    {image.metadata.expandedPrompt || image.metadata.prompt}
                   </p>
                   <p className="mt-1">
                     {image.metadata.size} • {image.metadata.provider}
@@ -174,7 +174,7 @@ export function GenerationResults({ images, onSave, onDiscard }: GenerationResul
 
               <div className="space-y-2">
                 <p className="text-sm">
-                  <strong>Prompt:</strong> {selectedImage.metadata.prompt}
+                  <strong>Prompt:</strong> {selectedImage.metadata.expandedPrompt || selectedImage.metadata.prompt}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Size: {selectedImage.metadata.size} • Provider: {selectedImage.metadata.provider}

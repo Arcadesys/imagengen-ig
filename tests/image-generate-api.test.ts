@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { POST } from "../../app/api/images/generate/route"
+// Hoist the mock function so it's available when vi.mock is hoisted
+const { mockGenerate } = vi.hoisted(() => {
+  return {
+    mockGenerate: vi.fn().mockResolvedValue({ data: [{ url: "http://test.com/image.png" }] }),
+  }
+})
+vi.mock("openai", () => ({ default: vi.fn(() => ({ images: { generate: mockGenerate } })) }))
+import { POST } from "../app/api/images/generate/route"
 
 const mockEnv = (key: string, value: string) => {
   process.env[key] = value
@@ -44,14 +51,21 @@ describe("Image Generation API", () => {
   })
 
   it("calls OpenAI API with correct params", async () => {
-    // Mock OpenAI
-    const mockGenerate = vi.fn().mockResolvedValue({ data: [{ url: "http://test.com/image.png" }] })
-    vi.mock("openai", () => ({ default: vi.fn(() => ({ images: { generate: mockGenerate } })) }))
+    // Mock the image download fetch to succeed
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: (k: string) => (k.toLowerCase() === "content-type" ? "image/png" : null) },
+      arrayBuffer: async () => new ArrayBuffer(8),
+    })
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch)
+
     const req = { json: async () => ({ prompt: "cat", size: "512x512", n: 1 }) } as any
     const res = await POST(req)
     expect(mockGenerate).toHaveBeenCalledWith(expect.objectContaining({ prompt: "cat", size: "512x512", n: 1 }))
-    expect(res.status).toBe(200)
-    const data = await res.json()
-    expect(data.images[0].url).toMatch(/test.com/)
+  expect(res.status).toBe(200)
+  const data = await res.json()
+  expect(data.images[0].url).toMatch(/^\/generated\//)
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/^http:\/\/test\.com\/image\.png/))
+    vi.unstubAllGlobals()
   })
 })

@@ -7,6 +7,7 @@ interface GalleryImage {
   id: string
   url: string
   prompt: string
+  expandedPrompt?: string
   size: "512x512" | "768x768" | "1024x1024"
   seed?: string | number
   baseImageId?: string | null
@@ -37,10 +38,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: GalleryImage = await request.json()
+  const body: GalleryImage = await request.json()
 
     // Validate required fields
-    if (!body.id || !body.url || !body.prompt || !body.size) {
+  if (!body.id || !body.url || !body.prompt || !body.size) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Add new image with timestamp
-    const newImage: GalleryImage = {
+  const newImage: GalleryImage = {
       ...body,
       createdAt: new Date().toISOString(),
     }

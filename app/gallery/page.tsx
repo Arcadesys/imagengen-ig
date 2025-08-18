@@ -353,7 +353,7 @@ export default function GalleryPage() {
               aria-label="Gallery images"
             >
               {images.map((image, index) => {
-                const altText = imageAltTexts[image.id] || image.prompt.slice(0, 100)
+                const altText = imageAltTexts[image.id] || (image.expandedPrompt || image.prompt).slice(0, 100)
 
                 return (
                   <Card key={image.id} className="overflow-hidden group" role="gridcell">
@@ -392,8 +392,8 @@ export default function GalleryPage() {
                     {/* Content */}
                     <div className="p-4 space-y-3">
                       <div>
-                        <p className="text-sm font-medium line-clamp-2 mb-1" title={image.prompt}>
-                          {image.prompt}
+                        <p className="text-sm font-medium line-clamp-2 mb-1" title={image.expandedPrompt || image.prompt}>
+                          {image.expandedPrompt || image.prompt}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" aria-hidden="true" />
@@ -470,7 +470,7 @@ export default function GalleryPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-medium mb-2">Prompt</h3>
-                  <p className="text-sm bg-muted p-3 rounded-lg">{selectedImage.prompt}</p>
+                  <p className="text-sm bg-muted p-3 rounded-lg">{selectedImage.expandedPrompt || selectedImage.prompt}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">

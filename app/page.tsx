@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { ImageIcon, GalleryThumbnailsIcon as Gallery, Keyboard } from "lucide-react"
 import Link from "next/link"
 import type { GeneratedImage } from "@/lib/types"
+import { PromptBlocks } from "@/components/prompt-blocks"
 
 export default function GeneratePage() {
   const [prompt, setPrompt] = useState("")
@@ -30,6 +31,7 @@ export default function GeneratePage() {
   const [hasGenerated, setHasGenerated] = useState(false)
   const [liveMessage, setLiveMessage] = useState("")
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
+  const [expandedPrompt, setExpandedPrompt] = useState<string>("")
 
   const { uploadedImage, handleUpload, handleRemove } = useImageUpload()
   const { toast } = useToast()
@@ -73,7 +75,7 @@ export default function GeneratePage() {
       try {
         const data = JSON.parse(reuseData)
         setPrompt(data.prompt || "")
-        setSize(data.size || "1024x1024")
+  setSize(data.size || "1024x1024")
         setSeed(data.seed || "")
         setVariations(data.variations || 1)
         setQuality(data.quality || "standard")
@@ -81,6 +83,7 @@ export default function GeneratePage() {
         setNegativePrompt(data.negativePrompt || "")
         setGuidanceScale(data.guidanceScale || 7)
         setSteps(data.steps || 20)
+  setExpandedPrompt(data.expandedPrompt || "")
         sessionStorage.removeItem("reusePrompt")
 
         setLiveMessage("Prompt and settings restored from gallery image")
@@ -117,6 +120,7 @@ export default function GeneratePage() {
         },
         body: JSON.stringify({
           prompt: prompt.trim(),
+          expandedPrompt: expandedPrompt?.trim() || null,
           size,
           n: variations,
           seed: seed || null,
@@ -201,6 +205,7 @@ export default function GeneratePage() {
             id: image.id,
             url: image.url,
             prompt: image.metadata.prompt,
+            expandedPrompt: image.metadata.expandedPrompt,
             size: image.metadata.size,
             seed: image.metadata.seed,
             baseImageId: image.metadata.baseImageId,
@@ -279,6 +284,11 @@ export default function GeneratePage() {
                 <Keyboard className="h-4 w-4 mr-2" />
                 Shortcuts
               </Button>
+              <Link href="/turn-toon">
+                <Button variant="outline" size="sm">
+                  Turn Toon
+                </Button>
+              </Link>
               <Link href="/gallery">
                 <Button variant="outline" size="sm">
                   <Gallery className="h-4 w-4 mr-2" />
@@ -350,6 +360,14 @@ export default function GeneratePage() {
 
             {/* Generation Controls */}
             <section aria-labelledby="generation-heading">
+              {/* Prompt Blocks (Expanded Prompt) */}
+              <div className="mb-6">
+                <PromptBlocks
+                  disabled={isGenerating}
+                  onChange={(exp) => setExpandedPrompt(exp)}
+                />
+              </div>
+
               <GenerationControls
                 size={size}
                 onSizeChange={setSize}
