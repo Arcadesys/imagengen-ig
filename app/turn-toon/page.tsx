@@ -4,6 +4,12 @@ import type React from "react"
 import { useMemo, useRef, useState } from "react"
 import { renderTemplate } from "@/lib/template"
 import { EnhancedImageUpload } from "@/components/enhanced-image-upload"
+import { GenerationProgressModal } from "@/components/generation-progress-modal"
+import { useGenerationProgress } from "@/hooks/use-generation-progress"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { GalleryThumbnailsIcon as Gallery, Sparkles } from "lucide-react"
+import Link from "next/link"
 
 // Turn Toon — Ink & Paint Prompt Builder (Prototype)
 // High-contrast, accessible controls with a simple template engine and copy/export helpers
@@ -146,14 +152,55 @@ export default function TurnToonPage() {
     setCopyStatus({ ok: true, method: "download", message: "Downloaded .txt" })
   }
 
+  const progressModal = useGenerationProgress()
+
   return (
     <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white p-6">
       <div className="mx-auto max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-6">
         <header className="lg:col-span-2">
-          <h1 className="text-2xl font-extrabold tracking-tight">Turn Toon — Ink & Paint Prompt Builder</h1>
-          <p className="text-sm mt-1">
-            Upload an image, paint a mask, build your prompt, then copy or send to generator.
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight">Turn Toon — Ink & Paint Prompt Builder</h1>
+              <p className="text-sm mt-1">
+                Upload an image, paint a mask, build your prompt, then copy or send to generator.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link href="/gallery">
+                <Button variant="outline" className="btn-ghost flex items-center gap-2 bg-transparent">
+                  <Gallery className="h-4 w-4" />
+                  View Gallery
+                </Button>
+              </Link>
+              <GenerateWithProgressButton
+                prompt={output}
+                baseImage={baseImage}
+                maskData={maskData}
+                progressModal={progressModal}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            {baseImage && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                ✓ Base Image Ready
+              </Badge>
+            )}
+            {maskData && (
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                ✓ Mask Painted
+              </Badge>
+            )}
+            {output.trim() && (
+              <Badge
+                variant="secondary"
+                className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+              >
+                ✓ Prompt Ready ({output.length} chars)
+              </Badge>
+            )}
+          </div>
         </header>
 
         {/* LEFT: Controls */}
@@ -441,6 +488,18 @@ export default function TurnToonPage() {
         </div>
       </div>
 
+      <GenerationProgressModal
+        isOpen={progressModal.isOpen}
+        onClose={progressModal.close}
+        onCancel={progressModal.cancel}
+        status={progressModal.status}
+        progress={progressModal.progress}
+        message={progressModal.message}
+        error={progressModal.error}
+        generatedCount={progressModal.generatedCount}
+        totalCount={progressModal.totalCount}
+      />
+
       {/* Local utility styles */}
       <style>{`
         .input {
@@ -644,63 +703,6 @@ function CopyExportBar({
   )
 }
 
-// -------- Clipboard helpers --------
-async function copyToClipboardSafe(text: string, targetRef: React.RefObject<HTMLElement | null>) {
-  // Attempt 1: modern Clipboard API (often blocked in sandbox)
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text)
-      return { ok: true, method: "clipboard", message: "Copied to clipboard" }
-    }
-    throw new Error("Clipboard API unavailable")
-  } catch {
-    // Attempt 2: legacy execCommand('copy')
-    try {
-      const ta = document.createElement("textarea")
-      ta.value = text
-      ta.setAttribute("readonly", "")
-      ta.style.position = "fixed"
-      ta.style.opacity = "0"
-      document.body.appendChild(ta)
-      ta.select()
-      const success = document.execCommand("copy")
-      document.body.removeChild(ta)
-      if (success) {
-        return { ok: true, method: "execCommand", message: "Copied to clipboard" }
-      }
-      throw new Error("execCommand failed")
-    } catch {
-      // Attempt 3: select the text and instruct the user
-      if (targetRef?.current) {
-        selectNodeContents(targetRef.current)
-      }
-      return { ok: false, method: "select", message: "Clipboard blocked. Text selected. Press ⌘/Ctrl+C." }
-    }
-  }
-}
-
-function selectNodeContents(node: HTMLElement | null) {
-  if (!node) return
-  const sel = window.getSelection()
-  if (!sel) return
-  const range = document.createRange()
-  range.selectNodeContents(node)
-  sel.removeAllRanges()
-  sel.addRange(range)
-}
-
-function downloadText(filename: string, text: string) {
-  const blob = new Blob([text], { type: "text/plain" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
-}
-
 // Send prompt to the main generator page
 function SendToGeneratorButton({
   prompt,
@@ -828,4 +830,181 @@ function runCase(c: any) {
   }
   const pass = output === c.expect
   return pass ? { ...c, pass: true } : { ...c, pass: false, message: `got "${output}" expected "${c.expect}"` }
+}
+
+function GenerateWithProgressButton({
+  prompt,
+  baseImage,
+  maskData,
+  progressModal,
+}: {
+  prompt: string
+  baseImage?: string | null
+  maskData?: string | null
+  progressModal: ReturnType<typeof useGenerationProgress>
+}) {
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      alert("Please create a prompt first!")
+      return
+    }
+
+    setIsGenerating(true)
+    progressModal.startGeneration(1)
+
+    try {
+      // Step 1: Upload base image if provided
+      let baseImageId = null
+      if (baseImage) {
+        progressModal.updateProgress("uploading", 10, "Uploading base image...")
+
+        const formData = new FormData()
+        const response = await fetch(baseImage)
+        const blob = await response.blob()
+        formData.append("image", blob, "base-image.png")
+
+        const uploadResponse = await fetch("/api/images/upload", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload base image")
+        }
+
+        const uploadResult = await uploadResponse.json()
+        baseImageId = uploadResult.id
+      }
+
+      // Step 2: Generate image
+      progressModal.updateProgress("generating", 30, "Generating your toon image...")
+
+      const generateResponse = await fetch("/api/images/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          n: 1,
+          size: "1024x1024",
+          baseImageId,
+          maskData,
+        }),
+      })
+
+      if (!generateResponse.ok) {
+        const contentType = generateResponse.headers.get("content-type")
+        if (contentType && contentType.includes("application/json")) {
+          const error = await generateResponse.json()
+          throw new Error(error.error || "Generation failed")
+        } else {
+          throw new Error("Server error. Please try again later.")
+        }
+      }
+
+      progressModal.updateProgress("downloading", 80, "Saving generated image...")
+
+      const result = await generateResponse.json()
+
+      // Step 3: Save to gallery
+      progressModal.updateProgress("downloading", 90, "Adding to gallery...")
+
+      const galleryResponse = await fetch("/api/gallery", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          images: result.images || [],
+        }),
+      })
+
+      if (!galleryResponse.ok) {
+        console.warn("Failed to save to gallery, but generation succeeded")
+      }
+
+      progressModal.complete()
+
+      // Redirect to gallery after a short delay
+      setTimeout(() => {
+        window.location.href = "/gallery"
+      }, 2000)
+    } catch (error) {
+      console.error("Generation error:", error)
+      progressModal.setError(error instanceof Error ? error.message : "Generation failed")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  return (
+    <Button
+      onClick={handleGenerate}
+      disabled={isGenerating || !prompt.trim()}
+      className="btn-ghost flex items-center gap-2"
+    >
+      <Sparkles className="h-4 w-4" />
+      {isGenerating ? "Generating..." : "Generate Now"}
+    </Button>
+  )
+}
+
+// -------- Clipboard helpers --------
+async function copyToClipboardSafe(text: string, targetRef: React.RefObject<HTMLElement | null>) {
+  // Attempt 1: modern Clipboard API (often blocked in sandbox)
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      return { ok: true, method: "clipboard", message: "Copied to clipboard" }
+    }
+    throw new Error("Clipboard API unavailable")
+  } catch {
+    // Attempt 2: legacy execCommand('copy')
+    try {
+      const ta = document.createElement("textarea")
+      ta.value = text
+      ta.setAttribute("readonly", "")
+      ta.style.position = "fixed"
+      ta.style.opacity = "0"
+      document.body.appendChild(ta)
+      ta.select()
+      const success = document.execCommand("copy")
+      document.body.removeChild(ta)
+      if (success) {
+        return { ok: true, method: "execCommand", message: "Copied to clipboard" }
+      }
+      throw new Error("execCommand failed")
+    } catch {
+      // Attempt 3: select the text and instruct the user
+      if (targetRef?.current) {
+        selectNodeContents(targetRef.current)
+      }
+      return { ok: false, method: "select", message: "Clipboard blocked. Text selected. Press ⌘/Ctrl+C." }
+    }
+  }
+}
+
+function selectNodeContents(node: HTMLElement | null) {
+  if (!node) return
+  const sel = window.getSelection()
+  if (!sel) return
+  const range = document.createRange()
+  range.selectNodeContents(node)
+  sel.removeAllRanges()
+  sel.addRange(range)
+}
+
+function downloadText(filename: string, text: string) {
+  const blob = new Blob([text], { type: "text/plain" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }
