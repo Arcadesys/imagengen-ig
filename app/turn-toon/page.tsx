@@ -1,7 +1,9 @@
 "use client"
 
-import React, { useMemo, useRef, useState } from "react"
+import type React from "react"
+import { useMemo, useRef, useState } from "react"
 import { renderTemplate } from "@/lib/template"
+import { EnhancedImageUpload } from "@/components/enhanced-image-upload"
 
 // Turn Toon — Ink & Paint Prompt Builder (Prototype)
 // High-contrast, accessible controls with a simple template engine and copy/export helpers
@@ -17,6 +19,8 @@ const ALL_VARS = [
   "custom_note",
   "companion_summary",
   "lighting",
+  "base_image",
+  "mask_data",
 ]
 
 const DEFAULT_TEMPLATE =
@@ -83,6 +87,8 @@ export default function TurnToonPage() {
   const [lighting, setLighting] = useState("cel-shaded glow")
   const [templateText, setTemplateText] = useState(DEFAULT_TEMPLATE)
   const [copyStatus, setCopyStatus] = useState<{ ok: boolean; method: string; message: string } | null>(null)
+  const [baseImage, setBaseImage] = useState<string | null>(null)
+  const [maskData, setMaskData] = useState<string | null>(null)
 
   const previewRef = useRef<HTMLPreElement | null>(null) // For select-text fallback
 
@@ -105,8 +111,23 @@ export default function TurnToonPage() {
       custom_note: customNote,
       companion_summary: companionSummary,
       lighting,
+      base_image: baseImage,
+      mask_data: maskData,
     }),
-    [species, worldType, bodyStyle, blendRatio, effects, propsList, motionLines, customNote, companionSummary, lighting],
+    [
+      species,
+      worldType,
+      bodyStyle,
+      blendRatio,
+      effects,
+      propsList,
+      motionLines,
+      customNote,
+      companionSummary,
+      lighting,
+      baseImage,
+      maskData,
+    ],
   )
 
   // Render template
@@ -130,11 +151,28 @@ export default function TurnToonPage() {
       <div className="mx-auto max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-6">
         <header className="lg:col-span-2">
           <h1 className="text-2xl font-extrabold tracking-tight">Turn Toon — Ink & Paint Prompt Builder</h1>
-          <p className="text-sm mt-1">Bright, high-contrast lists. Build your prompt, then copy, select, or download.</p>
+          <p className="text-sm mt-1">
+            Upload an image, paint a mask, build your prompt, then copy or send to generator.
+          </p>
         </header>
 
         {/* LEFT: Controls */}
         <div>
+          {/* Image Upload & Mask Painting Section */}
+          <Section title="Image Upload & Mask">
+            <EnhancedImageUpload onImageChange={setBaseImage} onMaskChange={setMaskData} className="w-full" />
+            {baseImage && (
+              <div className="mt-3 text-sm">
+                <div className="font-bold">✓ Base image uploaded</div>
+                {maskData && (
+                  <div className="font-bold text-green-600 dark:text-green-400">
+                    ✓ Mask painted - ready for selective editing
+                  </div>
+                )}
+              </div>
+            )}
+          </Section>
+
           <Section title="Basics">
             <div className="grid grid-cols-2 gap-3">
               <Labeled label="Species" id="species">
@@ -165,7 +203,12 @@ export default function TurnToonPage() {
                 </select>
               </Labeled>
               <Labeled label="World Type" id="worldType">
-                <select id="worldType" className="input" value={worldType} onChange={(e) => setWorldType(e.target.value)}>
+                <select
+                  id="worldType"
+                  className="input"
+                  value={worldType}
+                  onChange={(e) => setWorldType(e.target.value)}
+                >
                   {["real world", "toon world", "hybrid world"].map((o) => (
                     <option key={o} value={o}>
                       {o}
@@ -173,10 +216,15 @@ export default function TurnToonPage() {
                   ))}
                 </select>
               </Labeled>
-      <Labeled label="Body Style" id="bodyStyle">
-                <select id="bodyStyle" className="input" value={bodyStyle} onChange={(e) => setBodyStyle(e.target.value)}>
+              <Labeled label="Body Style" id="bodyStyle">
+                <select
+                  id="bodyStyle"
+                  className="input"
+                  value={bodyStyle}
+                  onChange={(e) => setBodyStyle(e.target.value)}
+                >
                   {[
-        "noodle-limb (1920s cartoon)",
+                    "noodle-limb (1920s cartoon)",
                     "mid-century cartoon",
                     "modern cartoon",
                     "semi-realistic",
@@ -213,7 +261,15 @@ export default function TurnToonPage() {
             <A11yChecklist
               id="effects"
               label="Toggle effects (order = output order)"
-              options={["ink splatter", "paint drip", "toon pop impact stars", "speed lines", "halftone dots", "glitter/sparkles", "paper texture"]}
+              options={[
+                "ink splatter",
+                "paint drip",
+                "toon pop impact stars",
+                "speed lines",
+                "halftone dots",
+                "glitter/sparkles",
+                "paper texture",
+              ]}
               value={effects}
               onChange={setEffects}
               allowReorder
@@ -224,7 +280,15 @@ export default function TurnToonPage() {
             <A11yChecklist
               id="props"
               label="Toggle props (order = output order)"
-              options={["magic paintbrush", "giant pencil", "microphone", "oversized toy mallet", "film clapboard", "umbrella", "balloon bunch"]}
+              options={[
+                "magic paintbrush",
+                "giant pencil",
+                "microphone",
+                "oversized toy mallet",
+                "film clapboard",
+                "umbrella",
+                "balloon bunch",
+              ]}
               value={propsList}
               onChange={setPropsList}
               allowReorder
@@ -232,14 +296,26 @@ export default function TurnToonPage() {
             <div className="mt-4 grid grid-cols-2 gap-3">
               <Labeled label="Motion Lines">
                 <div className="flex items-center gap-3">
-                  <input id="motion" type="checkbox" checked={motionLines} onChange={(e) => setMotionLines(e.target.checked)} className="h-6 w-6 accent-black dark:accent-white" />
+                  <input
+                    id="motion"
+                    type="checkbox"
+                    checked={motionLines}
+                    onChange={(e) => setMotionLines(e.target.checked)}
+                    className="h-6 w-6 accent-black dark:accent-white"
+                  />
                   <label htmlFor="motion" className="text-base font-bold">
                     {motionLines ? "Enabled" : "Disabled"}
                   </label>
                 </div>
               </Labeled>
               <Labeled label="Custom Note" id="custom">
-                <input id="custom" className="input" value={customNote} onChange={(e) => setCustomNote(e.target.value)} placeholder="e.g., blue cape with gold trim" />
+                <input
+                  id="custom"
+                  className="input"
+                  value={customNote}
+                  onChange={(e) => setCustomNote(e.target.value)}
+                  placeholder="e.g., blue cape with gold trim"
+                />
               </Labeled>
             </div>
           </Section>
@@ -247,7 +323,12 @@ export default function TurnToonPage() {
           <Section title="Companion & Lighting">
             <div className="grid grid-cols-2 gap-3">
               <Labeled label="Companion Species" id="companionSpecies">
-                <select id="companionSpecies" className="input" value={companionSpecies} onChange={(e) => setCompanionSpecies(e.target.value)}>
+                <select
+                  id="companionSpecies"
+                  className="input"
+                  value={companionSpecies}
+                  onChange={(e) => setCompanionSpecies(e.target.value)}
+                >
                   {["mouse", "bird", "floating paintbrush", "mini-robot", "cat", "dog", "none"].map((o) => (
                     <option key={o} value={o}>
                       {o}
@@ -272,7 +353,16 @@ export default function TurnToonPage() {
               </Labeled>
               <Labeled label="Lighting" id="lighting">
                 <select id="lighting" className="input" value={lighting} onChange={(e) => setLighting(e.target.value)}>
-                  {["bright technicolor", "noir high-contrast", "cel-shaded glow", "neon rimlight", "watercolor wash", "pastel morning", "golden-hour warm", "moonlit cool"].map((o) => (
+                  {[
+                    "bright technicolor",
+                    "noir high-contrast",
+                    "cel-shaded glow",
+                    "neon rimlight",
+                    "watercolor wash",
+                    "pastel morning",
+                    "golden-hour warm",
+                    "moonlit cool",
+                  ].map((o) => (
                     <option key={o} value={o}>
                       {o}
                     </option>
@@ -303,9 +393,16 @@ export default function TurnToonPage() {
               hint="Use [[var]] and filters: |join:,  |if:text |omit:none |prefix:Text ,true |upper |lower |title"
               id="tpl"
             >
-              <textarea id="tpl" className="input h-40" value={templateText} onChange={(e) => setTemplateText(e.target.value)} />
+              <textarea
+                id="tpl"
+                className="input h-40"
+                value={templateText}
+                onChange={(e) => setTemplateText(e.target.value)}
+              />
             </Labeled>
-            <div className="mt-2 text-xs">Available vars: <strong>{ALL_VARS.join(", ")}</strong></div>
+            <div className="mt-2 text-xs">
+              Available vars: <strong>{ALL_VARS.join(", ")}</strong>
+            </div>
             {errors.length > 0 && (
               <div className="mt-3 rounded-xl border-2 border-[#9c1c1c] bg-[#ffeaea] text-[#2a0000] p-3 text-sm">
                 <div className="font-extrabold mb-1">Validator</div>
@@ -322,8 +419,13 @@ export default function TurnToonPage() {
             title="Preview & Export"
             right={
               <div className="flex items-center gap-2">
-                <CopyExportBar onCopy={handleCopy} onSelect={handleSelect} onDownload={handleDownload} status={copyStatus} />
-                <SendToGeneratorButton prompt={output} />
+                <CopyExportBar
+                  onCopy={handleCopy}
+                  onSelect={handleSelect}
+                  onDownload={handleDownload}
+                  status={copyStatus}
+                />
+                <SendToGeneratorButton prompt={output} baseImage={baseImage} maskData={maskData} />
               </div>
             }
           >
@@ -441,7 +543,9 @@ function A11yChecklist({
         <button type="button" className="btn-ghost" onClick={clearAll}>
           Clear all
         </button>
-        <span className="text-sm font-bold ml-2">Selected: {value.length}/{options.length}</span>
+        <span className="text-sm font-bold ml-2">
+          Selected: {value.length}/{options.length}
+        </span>
       </div>
 
       <ul aria-describedby={`${id}-hint`} className="grid gap-2" role="listbox" aria-multiselectable="true">
@@ -452,16 +556,20 @@ function A11yChecklist({
               key={opt}
               role="option"
               aria-selected={selected}
-              className={
-                classNames(
-                  "rounded-xl border-2 px-3 py-2 flex items-center justify-between gap-3 min-h-[44px]",
-                  selected ? "bg-black text-white border-black" : "bg-white text-black border-black",
-                  "focus-within:outline-none focus-within:ring-4 focus-within:ring-[#FFD400] dark:focus-within:ring-[#00E6FF]",
-                )
-              }
+              className={classNames(
+                "rounded-xl border-2 px-3 py-2 flex items-center justify-between gap-3 min-h-[44px]",
+                selected ? "bg-black text-white border-black" : "bg-white text-black border-black",
+                "focus-within:outline-none focus-within:ring-4 focus-within:ring-[#FFD400] dark:focus-within:ring-[#00E6FF]",
+              )}
             >
               <div className="flex items-center gap-3">
-                <input id={`${id}-${opt}`} type="checkbox" checked={selected} onChange={() => toggle(opt)} className="h-6 w-6 accent-black dark:accent-white" />
+                <input
+                  id={`${id}-${opt}`}
+                  type="checkbox"
+                  checked={selected}
+                  onChange={() => toggle(opt)}
+                  className="h-6 w-6 accent-black dark:accent-white"
+                />
                 <label htmlFor={`${id}-${opt}`} className="font-extrabold text-base">
                   {opt}
                 </label>
@@ -469,10 +577,20 @@ function A11yChecklist({
 
               {allowReorder && selected && (
                 <div className="flex items-center gap-2">
-                  <button type="button" className="btn-ghost" onClick={() => move(opt, -1)} aria-label={`Move ${opt} up`}>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => move(opt, -1)}
+                    aria-label={`Move ${opt} up`}
+                  >
                     ↑
                   </button>
-                  <button type="button" className="btn-ghost" onClick={() => move(opt, +1)} aria-label={`Move ${opt} down`}>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => move(opt, +1)}
+                    aria-label={`Move ${opt} down`}
+                  >
                     ↓
                   </button>
                 </div>
@@ -502,9 +620,15 @@ function CopyExportBar({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <button onClick={onCopy} className="btn-ghost">⧉ Copy</button>
-      <button onClick={onSelect} className="btn-ghost">⌘/Ctrl+C</button>
-      <button onClick={onDownload} className="btn-ghost">↓ .txt</button>
+      <button onClick={onCopy} className="btn-ghost">
+        ⧉ Copy
+      </button>
+      <button onClick={onSelect} className="btn-ghost">
+        ⌘/Ctrl+C
+      </button>
+      <button onClick={onDownload} className="btn-ghost">
+        ↓ .txt
+      </button>
       {status && (
         <span
           className={classNames(
@@ -578,10 +702,21 @@ function downloadText(filename: string, text: string) {
 }
 
 // Send prompt to the main generator page
-function SendToGeneratorButton({ prompt }: { prompt: string }) {
+function SendToGeneratorButton({
+  prompt,
+  baseImage,
+  maskData,
+}: { prompt: string; baseImage?: string | null; maskData?: string | null }) {
   const handleSend = () => {
     try {
-      sessionStorage.setItem("reusePrompt", JSON.stringify({ prompt }))
+      sessionStorage.setItem(
+        "reusePrompt",
+        JSON.stringify({
+          prompt,
+          baseImage,
+          maskData,
+        }),
+      )
     } catch {
       // ignore storage errors
     }
@@ -661,11 +796,22 @@ function SelfTests() {
   return (
     <Section
       title="Self-Tests"
-      right={<span className={classNames("text-xs px-2 py-1 rounded-md", allPass ? "bg-[#D1FFD6] text-[#004D0A]" : "bg-[#FFE1E1] text-[#6B0000]")}>{allPass ? "All tests passed" : "Some tests failed"}</span>}
+      right={
+        <span
+          className={classNames(
+            "text-xs px-2 py-1 rounded-md",
+            allPass ? "bg-[#D1FFD6] text-[#004D0A]" : "bg-[#FFE1E1] text-[#6B0000]",
+          )}
+        >
+          {allPass ? "All tests passed" : "Some tests failed"}
+        </span>
+      }
     >
       <ul className="text-sm space-y-1">
         {tests.map((t, i) => (
-          <li key={i} className={classNames(t.pass ? "text-[#004D0A]" : "text-[#6B0000]")}>• {t.name}: {t.pass ? "ok" : t.message}</li>
+          <li key={i} className={classNames(t.pass ? "text-[#004D0A]" : "text-[#6B0000]")}>
+            • {t.name}: {t.pass ? "ok" : t.message}
+          </li>
         ))}
       </ul>
     </Section>
@@ -676,7 +822,9 @@ function runCase(c: any) {
   const { output, errors } = renderTemplate(c.tpl, c.vars)
   if (c.expectErrors) {
     const missing = c.expectErrors.filter((e: string) => !errors.includes(e))
-    return missing.length === 0 ? { ...c, pass: true } : { ...c, pass: false, message: `missing error(s): ${missing.join("; ")}` }
+    return missing.length === 0
+      ? { ...c, pass: true }
+      : { ...c, pass: false, message: `missing error(s): ${missing.join("; ")}` }
   }
   const pass = output === c.expect
   return pass ? { ...c, pass: true } : { ...c, pass: false, message: `got "${output}" expected "${c.expect}"` }
