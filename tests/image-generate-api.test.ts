@@ -59,9 +59,12 @@ describe("Image Generation API", () => {
     })
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch)
 
-    const req = { json: async () => ({ prompt: "cat", size: "512x512", n: 1 }) } as any
-    const res = await POST(req)
-    expect(mockGenerate).toHaveBeenCalledWith(expect.objectContaining({ prompt: "cat", size: "512x512", n: 1 }))
+  const req = { json: async () => ({ prompt: "cat", size: "512x512", n: 1 }) } as any
+  const res = await POST(req)
+  expect(mockGenerate).toHaveBeenCalled()
+  const call = mockGenerate.mock.calls[0][0]
+  expect(call).toEqual(expect.objectContaining({ size: "512x512", n: 1 }))
+  expect(call.prompt).toEqual(expect.stringContaining("cat"))
   expect(res.status).toBe(200)
   const data = await res.json()
   expect(data.images[0].url).toMatch(/^\/generated\//)

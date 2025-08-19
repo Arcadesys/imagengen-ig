@@ -78,5 +78,61 @@
     "size": "1024x1024",
     "baseImageId": "d061df98-f58a-4d78-a429-4c080f7a50f2",
     "createdAt": "2025-08-19T00:16:21.509Z"
+  },
+  {
+    "id": "97676f0e-28b6-47d0-9956-02f6c900fb13",
+    "url": "/generated/97676f0e-28b6-47d0-9956-02f6c900fb13.png",
+    "prompt": "Paint over the subject to transform them into a Cat-themed cartoon character while preserving the original pose, camera, and composition. Target blend 40% toon vs real. Preserve identity and wardrobe, converting materials to ink-and-paint equivalents. Add clean black line art with varied line weight, 2D cel shading with two-tone shadows and gentle rimlight, and subtle halftone in shadows. Style: modern cartoon. World: hybrid world. Lighting: cel-shaded glow. Effects:ink splatter, toon pop impact stars. Props:magic paintbrush. Include motion-line smears. Safe-for-work, family-friendly, non-violent.",
+    "size": "1024x1024",
+    "baseImageId": null,
+    "createdAt": "2025-08-19T00:25:18.317Z"
+  },
+  {
+    "id": "9d06e160-a77b-44a6-9aa4-b5eed792b000",
+    "url": "/uploads/base/9d06e160-a77b-44a6-9aa4-b5eed792b000.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "9d06e160-a77b-44a6-9aa4-b5eed792b000",
+    "createdAt": "2025-08-19T00:34:38.773Z"
+  },
+  {
+    "id": "07b21e5c-6699-4056-b5cd-94b85206e660",
+    "url": "/uploads/base/07b21e5c-6699-4056-b5cd-94b85206e660.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "07b21e5c-6699-4056-b5cd-94b85206e660",
+    "createdAt": "2025-08-19T00:34:38.807Z"
+  },
+  {
+    "id": "dc23ebf9-0548-486e-b1d5-8ea5b80c6e57",
+    "url": "/uploads/base/dc23ebf9-0548-486e-b1d5-8ea5b80c6e57.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "dc23ebf9-0548-486e-b1d5-8ea5b80c6e57",
+    "createdAt": "2025-08-19T00:36:56.079Z"
+  },
+  {
+    "id": "ecde954b-0228-4236-8863-b2c77f6fe49f",
+    "url": "/uploads/base/ecde954b-0228-4236-8863-b2c77f6fe49f.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "ecde954b-0228-4236-8863-b2c77f6fe49f",
+    "createdAt": "2025-08-19T00:36:56.097Z"
+  },
+  {
+    "id": "a0b8fb00-a249-4f8b-82d0-bc6a4b659d17",
+    "url": "/uploads/base/a0b8fb00-a249-4f8b-82d0-bc6a4b659d17.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "a0b8fb00-a249-4f8b-82d0-bc6a4b659d17",
+    "createdAt": "2025-08-19T00:38:05.714Z"
+  },
+  {
+    "id": "dfe3521b-5d97-4c7d-bca5-885e4fc1eaed",
+    "url": "/uploads/base/dfe3521b-5d97-4c7d-bca5-885e4fc1eaed.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "dfe3521b-5d97-4c7d-bca5-885e4fc1eaed",
+    "createdAt": "2025-08-19T00:38:05.733Z"
   }
 ]

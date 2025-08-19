@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server"
 import OpenAI from "openai"
-import { writeFile, mkdir, readFile } from "fs/promises"
-import { existsSync } from "fs"
+import { writeFile, mkdir } from "fs/promises"
+import { existsSync, createReadStream } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
+import { sanitizePromptForImage } from "../../../../../lib/prompt-sanitizer"
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
         console.log("[v0] OpenAI API key is present")
 
         const body: GenerateRequest = await request.json()
-        const { prompt, expandedPrompt, size, n, seed, baseImageId, maskData } = body
+  const { prompt, expandedPrompt, size, n, seed, baseImageId, maskData } = body
 
         console.log("[v0] Request body parsed:", {
           prompt: prompt?.substring(0, 50) + "...",
@@ -192,6 +193,8 @@ export async function POST(request: NextRequest) {
         const images: GeneratedImage[] = []
 
         try {
+          const finalPrompt = sanitizePromptForImage(expandedPrompt?.trim() ? expandedPrompt! : prompt)
+
           if (maskData && baseImageId) {
             console.log("[v0] Processing mask-based image editing")
 
@@ -233,9 +236,9 @@ export async function POST(request: NextRequest) {
 
             console.log("[v0] Calling OpenAI image edit API...")
             const response = await openai.images.edit({
-              image: await readFile(baseImagePath),
-              mask: await readFile(maskPath),
-              prompt,
+              image: createReadStream(baseImagePath),
+              mask: createReadStream(maskPath),
+              prompt: finalPrompt,
               size: size as "256x256" | "512x512" | "1024x1024",
               n: 1,
               response_format: "url",
@@ -306,7 +309,7 @@ export async function POST(request: NextRequest) {
               id: imageId,
               url: `/generated/${filename}`,
               metadata: {
-                prompt,
+                prompt: finalPrompt,
                 expandedPrompt: expandedPrompt || undefined,
                 size,
                 seed: seed ?? undefined,
@@ -342,15 +345,12 @@ export async function POST(request: NextRequest) {
 
             const openaiRequest: any = {
               model: "dall-e-2",
-              prompt,
+              prompt: finalPrompt,
               size,
               n: n,
               response_format: "url",
             }
-
-            if (baseImageId) {
-              openaiRequest.prompt = `Based on the uploaded image with ID ${baseImageId}: ${prompt}`
-            }
+            // Avoid embedding internal IDs in prompts; base-image cases go via edit path
 
             console.log("[v0] OpenAI request prepared:", {
               model: openaiRequest.model,
@@ -435,7 +435,7 @@ export async function POST(request: NextRequest) {
                   id: imageId,
                   url: `/generated/${filename}`,
                   metadata: {
-                    prompt,
+                    prompt: finalPrompt,
                     expandedPrompt: expandedPrompt || undefined,
                     size,
                     seed: seed ?? undefined,
