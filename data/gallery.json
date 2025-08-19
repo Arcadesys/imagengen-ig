@@ -150,5 +150,21 @@
     "size": "1024x1024",
     "baseImageId": "ad5733ca-3748-4666-9b14-4a48be9b5961",
     "createdAt": "2025-08-19T00:43:09.110Z"
+  },
+  {
+    "id": "d5aaa16b-35d6-49a0-85e4-646346ec9d8b",
+    "url": "/uploads/base/d5aaa16b-35d6-49a0-85e4-646346ec9d8b.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "d5aaa16b-35d6-49a0-85e4-646346ec9d8b",
+    "createdAt": "2025-08-19T01:10:42.890Z"
+  },
+  {
+    "id": "84986d4a-3c37-45ca-b6b7-250854086f72",
+    "url": "/uploads/base/84986d4a-3c37-45ca-b6b7-250854086f72.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "84986d4a-3c37-45ca-b6b7-250854086f72",
+    "createdAt": "2025-08-19T01:10:42.977Z"
   }
 ]

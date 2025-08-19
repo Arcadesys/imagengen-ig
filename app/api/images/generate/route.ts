@@ -1,18 +1,3 @@
-[Fast Refresh] done in 522ms
-intercept-console-error.js:50 React does not recognize the `hideCloseButton` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `hideclosebutton` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
-error @ intercept-console-error.js:50Understand this error
-intercept-console-error.js:50 `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
-
-If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
-
-For more information, see https://radix-ui.com/primitives/docs/components/dialog
-error @ intercept-console-error.js:50Understand this error
-index.mjs:477 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
-DescriptionWarning.useEffect @ index.mjs:477Understand this warning
-intercept-console-error.js:50 `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
-
-If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
-
 For more information, see https://radix-ui.com/primitives/docs/components/dialog
 error @ intercept-console-error.js:50Understand this error
 index.mjs:477 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
@@ -62,8 +47,14 @@ function dataURLToBuffer(dataURL: string): Buffer {
   return Buffer.from(base64Data, "base64")
 }
 
-function getBaseImagePath(baseImageId: string): string {
-  return path.join(process.cwd(), "public", "uploads", "base", `${baseImageId}.png`)
+function getBaseImagePath(baseImageId: string): string | null {
+  const baseDir = path.join(process.cwd(), "public", "uploads", "base")
+  const exts = [".png", ".jpg", ".jpeg", ".webp", ".avif"]
+  for (const ext of exts) {
+    const p = path.join(baseDir, `${baseImageId}${ext}`)
+    if (existsSync(p)) return p
+  }
+  return null
 }
 
 export async function POST(request: NextRequest) {
@@ -137,8 +128,8 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Processing mask-based image editing")
 
         // Verify base image exists
-        const baseImagePath = getBaseImagePath(baseImageId)
-        if (!existsSync(baseImagePath)) {
+  const baseImagePath = getBaseImagePath(baseImageId)
+  if (!baseImagePath) {
           return NextResponse.json({ error: "Base image not found" }, { status: 400 })
         }
 

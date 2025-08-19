@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -114,7 +114,12 @@ export function GenerationProgressModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={isComplete || isError ? onClose : undefined}>
-      <DialogContent className="max-w-md" aria-labelledby="progress-title" hideCloseButton={!isComplete && !isError}>
+      <DialogContent
+        className="max-w-md"
+        aria-labelledby="progress-title"
+        aria-describedby="progress-description"
+        showCloseButton={isComplete || isError}
+      >
         <DialogHeader>
           <DialogTitle id="progress-title" className="flex items-center gap-2">
             <Icon
@@ -123,6 +128,15 @@ export function GenerationProgressModal({
             {config.label}
             {dots}
           </DialogTitle>
+          <DialogDescription id="progress-description">
+            {config.description}
+            {message ? (
+              <>
+                {" "}
+                – {message}
+              </>
+            ) : null}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">

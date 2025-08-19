@@ -26,8 +26,16 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
     async (file: File) => {
       if (disabled) return
 
-      // Validate file type
-      const allowedTypes = ["image/png", "image/jpeg", "image/webp"]
+      // Validate file type (broader set; server will convert HEIC/AVIF to webp)
+      const allowedTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "image/webp",
+        "image/heic",
+        "image/heif",
+        "image/avif",
+      ]
       if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
@@ -263,7 +271,7 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp"
+        accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,image/avif"
         onChange={handleFileSelect}
         className="sr-only"
         disabled={disabled}

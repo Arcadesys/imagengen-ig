@@ -55,8 +55,14 @@ function dataURLToBuffer(dataURL: string): Buffer {
   return Buffer.from(base64Data, "base64")
 }
 
-function getBaseImagePath(baseImageId: string): string {
-  return path.join(process.cwd(), "public", "uploads", "base", `${baseImageId}.png`)
+function getBaseImagePath(baseImageId: string): string | null {
+  const baseDir = path.join(process.cwd(), "public", "uploads", "base")
+  const exts = [".png", ".jpg", ".jpeg", ".webp", ".avif"]
+  for (const ext of exts) {
+    const p = path.join(baseDir, `${baseImageId}${ext}`)
+    if (existsSync(p)) return p
+  }
+  return null
 }
 
 export async function POST(request: NextRequest) {
@@ -208,7 +214,7 @@ export async function POST(request: NextRequest) {
 
             // Verify base image exists
             const baseImagePath = getBaseImagePath(baseImageId)
-            if (!existsSync(baseImagePath)) {
+            if (!baseImagePath) {
               sendProgressEvent(encoder, controller, {
                 type: "error",
                 status: "error",

@@ -26,11 +26,22 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] File received:", file.name, file.type, file.size)
 
-    // Validate file type
-    const allowedTypes = ["image/png", "image/jpeg", "image/webp"]
+    // Validate file type (accept a broader set and convert when needed)
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+      "image/avif",
+    ]
     if (!allowedTypes.includes(file.type)) {
       console.log("[v0] Invalid file type:", file.type)
-      return NextResponse.json({ error: "Invalid file type. Only PNG, JPEG, and WebP are allowed." }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid file type. Only PNG, JPEG, JPG, WebP, HEIC/HEIF, and AVIF are allowed." },
+        { status: 400 },
+      )
     }
 
   // Validate or prepare for resizing if file size exceeds max
@@ -50,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
   console.log("[v0] Generating filename...")
-  const originalExt = path.extname(file.name).toLowerCase()
+  const originalExt = path.extname(file.name || "").toLowerCase()
     const baseImageId = crypto.randomUUID()
   let outputExt = originalExt || ".png"
   let filename = `${baseImageId}${outputExt}`
@@ -59,6 +70,21 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Preparing image buffer, original size:", originalSize)
     const bytes = await file.arrayBuffer()
     let buffer = Buffer.from(bytes)
+
+    // Convert unsupported/less optimal formats to webp early (HEIC/HEIF/AVIF or unknown extension)
+    try {
+      const needsConversion = ["image/heic", "image/heif", "image/avif"].includes(file.type)
+      if (needsConversion) {
+        console.log("[v0] Converting", file.type, "to webp before size checks")
+        const out = await sharp(buffer).rotate().webp({ quality: 90, effort: 4 }).toBuffer()
+        buffer = Buffer.from(out)
+        outputExt = ".webp"
+        filename = `${baseImageId}${outputExt}`
+        filepath = path.join(uploadDir, filename)
+      }
+    } catch (e) {
+      console.warn("[v0] Pre-conversion failed; proceeding with original buffer:", e)
+    }
 
     // If file exceeds max size, attempt to compress/resize
     if (buffer.length > maxSize) {
@@ -71,10 +97,10 @@ export async function POST(request: NextRequest) {
         let attempts = 0
         let success = false
 
-        // Prefer webp for better compression
-        outputExt = ".webp"
-        filename = `${baseImageId}${outputExt}`
-        filepath = path.join(uploadDir, filename)
+  // Prefer webp for better compression when shrinking
+  outputExt = ".webp"
+  filename = `${baseImageId}${outputExt}`
+  filepath = path.join(uploadDir, filename)
 
         while (attempts < 10) {
           const resized = sharp(buffer).rotate()
