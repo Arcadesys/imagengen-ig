@@ -2,7 +2,14 @@ import { type NextRequest, NextResponse } from "next/server"
 import { writeFile, mkdir, readFile } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
-import sharp from "sharp"
+import crypto from "crypto"
+
+let sharp: any = null
+try {
+  sharp = require("sharp")
+} catch (e) {
+  console.log("[v0] Sharp not available, using fallback image processing")
+}
 
 interface UploadedImage {
   id: string
@@ -44,9 +51,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-  // Validate or prepare for resizing if file size exceeds max
-  const maxSize = Number(process.env.UPLOAD_MAX_SIZE_BYTES) || 10 * 1024 * 1024 // default 10MB
-  const originalSize = file.size
+    // Validate file size
+    const maxSize = Number(process.env.UPLOAD_MAX_SIZE_BYTES) || 10 * 1024 * 1024 // default 10MB
+    const originalSize = file.size
 
     console.log("[v0] Creating directories...")
     // Ensure upload directory exists
@@ -61,81 +68,93 @@ export async function POST(request: NextRequest) {
     }
 
   console.log("[v0] Generating filename...")
-  const originalExt = path.extname(file.name || "").toLowerCase()
+  const originalExt = path.extname((file?.name as string) || "").toLowerCase()
     const baseImageId = crypto.randomUUID()
-  let outputExt = originalExt || ".png"
-  let filename = `${baseImageId}${outputExt}`
-  let filepath = path.join(uploadDir, filename)
+    let outputExt = originalExt || ".png"
+    let filename = `${baseImageId}${outputExt}`
+    let filepath = path.join(uploadDir, filename)
 
     console.log("[v0] Preparing image buffer, original size:", originalSize)
     const bytes = await file.arrayBuffer()
     let buffer = Buffer.from(bytes)
 
-    // Convert unsupported/less optimal formats to webp early (HEIC/HEIF/AVIF or unknown extension)
-    try {
-      const needsConversion = ["image/heic", "image/heif", "image/avif"].includes(file.type)
-      if (needsConversion) {
-        console.log("[v0] Converting", file.type, "to webp before size checks")
-        const out = await sharp(buffer).rotate().webp({ quality: 90, effort: 4 }).toBuffer()
-        buffer = Buffer.from(out)
-        outputExt = ".webp"
-        filename = `${baseImageId}${outputExt}`
-        filepath = path.join(uploadDir, filename)
-      }
-    } catch (e) {
-      console.warn("[v0] Pre-conversion failed; proceeding with original buffer:", e)
-    }
-
-    // If file exceeds max size, attempt to compress/resize
-    if (buffer.length > maxSize) {
-      console.log("[v0] Image exceeds max size, attempting to compress/resize...", buffer.length, "max:", maxSize)
+    // Convert unsupported/less optimal formats to webp early (HEIC/HEIF/AVIF)
+    if (sharp) {
       try {
-        const image = sharp(buffer).rotate()
-        const meta = await image.metadata()
-        let width = meta.width || 2048
-        let quality = 80
-        let attempts = 0
-        let success = false
-
-  // Prefer webp for better compression when shrinking
-  outputExt = ".webp"
-  filename = `${baseImageId}${outputExt}`
-  filepath = path.join(uploadDir, filename)
-
-        while (attempts < 10) {
-          const resized = sharp(buffer).rotate()
-          // Reduce width gradually after a couple of quality attempts
-          const resizeNeeded = attempts >= 3 && width > 512
-          const pipeline = resizeNeeded ? resized.resize({ width, withoutEnlargement: true }) : resized
-
-          const out = await pipeline.webp({ quality, effort: 4 }).toBuffer()
-          console.log(
-            `[v0] Attempt ${attempts + 1}: width=${resizeNeeded ? width : meta.width} quality=${quality} -> ${out.length} bytes`,
-          )
-          if (out.length <= maxSize) {
-            buffer = Buffer.from(out)
-            success = true
-            break
-          }
-          // Decrease quality first, then dimensions
-          if (quality > 30) {
-            quality -= 10
-          } else {
-            width = Math.max(512, Math.floor((width * 85) / 100))
-          }
-          attempts++
-        }
-
-        if (!success) {
-          console.log("[v0] Unable to reduce image under limit after", attempts, "attempts")
-          return NextResponse.json(
-            { error: `File too large. Maximum size is ${Math.floor(maxSize / (1024 * 1024))}MB.` },
-            { status: 400 },
-          )
+        const needsConversion = ["image/heic", "image/heif", "image/avif"].includes(file.type)
+        if (needsConversion) {
+          console.log("[v0] Converting", file.type, "to webp before size checks")
+          const out = await sharp(buffer).rotate().webp({ quality: 90, effort: 4 }).toBuffer()
+          buffer = Buffer.from(out)
+          outputExt = ".webp"
+          filename = `${baseImageId}${outputExt}`
+          filepath = path.join(uploadDir, filename)
         }
       } catch (e) {
-        console.error("[v0] Error during image compression:", e)
-        return NextResponse.json({ error: "Failed to process image for upload" }, { status: 400 })
+        console.warn("[v0] Pre-conversion failed; proceeding with original buffer:", e)
+      }
+    }
+
+    if (buffer.length > maxSize) {
+      console.log("[v0] Image exceeds max size:", buffer.length, "max:", maxSize)
+
+      if (sharp) {
+        console.log("[v0] Attempting to compress with sharp...")
+        try {
+          const image = sharp(buffer).rotate()
+          const meta = await image.metadata()
+          let width = meta.width || 2048
+          let quality = 80
+          let attempts = 0
+          let success = false
+
+          // Prefer webp for better compression
+          outputExt = ".webp"
+          filename = `${baseImageId}${outputExt}`
+          filepath = path.join(uploadDir, filename)
+
+          while (attempts < 10) {
+            const resized = sharp(buffer).rotate()
+            const resizeNeeded = attempts >= 3 && width > 512
+            const pipeline = resizeNeeded ? resized.resize({ width, withoutEnlargement: true }) : resized
+
+            const out = await pipeline.webp({ quality, effort: 4 }).toBuffer()
+            console.log(
+              `[v0] Attempt ${attempts + 1}: width=${resizeNeeded ? width : meta.width} quality=${quality} -> ${out.length} bytes`,
+            )
+            if (out.length <= maxSize) {
+              buffer = Buffer.from(out)
+              success = true
+              break
+            }
+            if (quality > 30) {
+              quality -= 10
+            } else {
+              width = Math.max(512, Math.floor((width * 85) / 100))
+            }
+            attempts++
+          }
+
+          if (!success) {
+            console.log("[v0] Unable to reduce image under limit after", attempts, "attempts")
+            return NextResponse.json(
+              { error: `File too large. Maximum size is ${Math.floor(maxSize / (1024 * 1024))}MB.` },
+              { status: 400 },
+            )
+          }
+        } catch (e) {
+          console.error("[v0] Error during image compression:", e)
+          return NextResponse.json({ error: "Failed to process image for upload" }, { status: 400 })
+        }
+      } else {
+        // Fallback: reject large files when sharp is not available
+        console.log("[v0] Sharp not available, rejecting large file")
+        return NextResponse.json(
+          {
+            error: `File too large. Maximum size is ${Math.floor(maxSize / (1024 * 1024))}MB. Please resize your image before uploading.`,
+          },
+          { status: 400 },
+        )
       }
     }
 
@@ -154,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     const uploadRecord: UploadedImage = {
       id: baseImageId,
-  url: `/uploads/base/${filename}`,
+      url: `/uploads/base/${filename}`,
       filename: file.name,
       createdAt: new Date().toISOString(),
     }
@@ -165,7 +184,6 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Upload successful:", baseImageId)
 
     // Best-effort: add to gallery as a base image so uploads appear there too.
-    // Write directly to data/gallery.json; ignore errors to avoid blocking upload.
     try {
       const dataDir = path.join(process.cwd(), "data")
       const galleryFile = path.join(dataDir, "gallery.json")
