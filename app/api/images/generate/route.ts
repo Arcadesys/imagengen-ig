@@ -1,11 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
-import { writeFile, mkdir } from "fs/promises"
+import { mkdir, writeFile } from "fs/promises"
 import { existsSync, createReadStream } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
 import { sanitizePromptForImage } from "../../../../lib/prompt-sanitizer"
 import { checkPromptSafety } from "../../../../lib/prompt-moderator"
+import { saveImage } from "../../../../lib/images"
+import { prisma } from "../../../../lib/db"
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -40,14 +42,31 @@ function dataURLToBuffer(dataURL: string): Buffer {
   return Buffer.from(base64Data, "base64")
 }
 
-function getBaseImagePath(baseImageId: string): string | null {
+async function getBaseImagePath(baseImageId: string): Promise<string | null> {
+  // 1) Check legacy disk path
   const baseDir = path.join(process.cwd(), "public", "uploads", "base")
   const exts = [".png", ".jpg", ".jpeg", ".webp", ".avif"]
   for (const ext of exts) {
     const p = path.join(baseDir, `${baseImageId}${ext}`)
     if (existsSync(p)) return p
   }
-  return null
+  // 2) Try DB and materialize to temp file
+  const rec = await prisma.image.findUnique({ where: { id: baseImageId }, include: { blob: true } })
+  if (!rec || !rec.blob?.data) return null
+  const ext = rec.mimeType.includes("png")
+    ? ".png"
+    : rec.mimeType.includes("jpeg") || rec.mimeType.includes("jpg")
+      ? ".jpg"
+      : rec.mimeType.includes("webp")
+        ? ".webp"
+        : rec.mimeType.includes("avif")
+          ? ".avif"
+          : ".png"
+  const tempDir = path.join(process.cwd(), "temp")
+  if (!existsSync(tempDir)) await mkdir(tempDir, { recursive: true })
+  const p = path.join(tempDir, `base-${baseImageId}${ext}`)
+  await writeFile(p, Buffer.from(rec.blob.data as any))
+  return p
 }
 
 export async function POST(request: NextRequest) {
@@ -108,20 +127,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ensure directories exist
-    const generatedDir = path.join(process.cwd(), "public", "generated")
-    const dataDir = path.join(process.cwd(), "data")
-    const tempDir = path.join(process.cwd(), "temp")
-
-    if (!existsSync(generatedDir)) {
-      await mkdir(generatedDir, { recursive: true })
-    }
-    if (!existsSync(dataDir)) {
-      await mkdir(dataDir, { recursive: true })
-    }
-    if (!existsSync(tempDir)) {
-      await mkdir(tempDir, { recursive: true })
-    }
+  // Ensure temp directory exists for mask files
+  const tempDir = path.join(process.cwd(), "temp")
+  if (!existsSync(tempDir)) await mkdir(tempDir, { recursive: true })
 
     console.log("[v0] Directories ensured, making OpenAI request")
 
@@ -138,7 +146,7 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Processing mask-based image editing")
 
         // Verify base image exists
-  const baseImagePath = getBaseImagePath(baseImageId)
+  const baseImagePath = await getBaseImagePath(baseImageId)
   if (!baseImagePath) {
           return NextResponse.json({ error: "Base image not found" }, { status: 400 })
         }
@@ -186,18 +194,24 @@ export async function POST(request: NextRequest) {
           console.error("[v0] Image has neither URL nor base64 data")
           return NextResponse.json({ error: "Generated image missing URL and base64 data" }, { status: 500 })
         }
-        const imageId = uuidv4()
-        const filename = `${imageId}.png`
-        const filepath = path.join(generatedDir, filename)
-
-  await writeFile(filepath, Buffer.from(imageBufferArray))
-
+        const saved = await saveImage({
+          kind: "GENERATED",
+          mimeType: "image/png",
+          buffer: Buffer.from(imageBufferArray),
+          prompt: finalPrompt,
+          expandedPrompt: expandedPrompt || undefined,
+          size,
+          seed: seed ?? undefined,
+          baseImageId,
+          hasMask: true,
+          provider: "openai",
+        })
         images.push({
-          id: imageId,
-          url: `/generated/${filename}`,
+          id: saved.id,
+          url: saved.url,
           metadata: {
-            prompt: finalPrompt,
-            expandedPrompt: expandedPrompt || undefined,
+            prompt: saved.prompt || finalPrompt,
+            expandedPrompt: saved.expandedPrompt || undefined,
             size,
             seed: seed ?? undefined,
             baseImageId,
@@ -271,19 +285,24 @@ export async function POST(request: NextRequest) {
               continue
             }
 
-            const imageId = uuidv4()
-            const filename = `${imageId}.png`
-            const filepath = path.join(generatedDir, filename)
-
-            console.log("[v0] Saving image", i, "to", filepath)
-            await writeFile(filepath, Buffer.from(imageBufferArray))
-
+            const saved = await saveImage({
+              kind: "GENERATED",
+              mimeType: "image/png",
+              buffer: Buffer.from(imageBufferArray),
+              prompt: finalPrompt,
+              expandedPrompt: expandedPrompt || undefined,
+              size,
+              seed: seed ?? undefined,
+              baseImageId,
+              hasMask: false,
+              provider: "openai",
+            })
             images.push({
-              id: imageId,
-              url: `/generated/${filename}`,
+              id: saved.id,
+              url: saved.url,
               metadata: {
-                prompt: finalPrompt,
-                expandedPrompt: expandedPrompt || undefined,
+                prompt: saved.prompt || finalPrompt,
+                expandedPrompt: saved.expandedPrompt || undefined,
                 size,
                 seed: seed ?? undefined,
                 baseImageId,

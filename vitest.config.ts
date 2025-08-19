@@ -9,6 +9,10 @@ export default defineConfig({
       ["**/*.tsx", "happy-dom"],
     ],
   },
+  esbuild: {
+    jsx: "automatic",
+    jsxImportSource: "react",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "."),

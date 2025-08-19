@@ -6,6 +6,8 @@ import path from "path"
 import { v4 as uuidv4 } from "uuid"
 import { sanitizePromptForImage } from "../../../../../lib/prompt-sanitizer"
 import { checkPromptSafety } from "../../../../../lib/prompt-moderator"
+import { prisma } from "../../../../../lib/db"
+import { saveImage } from "../../../../../lib/images"
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -56,14 +58,29 @@ function dataURLToBuffer(dataURL: string): Buffer {
   return Buffer.from(base64Data, "base64")
 }
 
-function getBaseImagePath(baseImageId: string): string | null {
+async function getBaseImagePath(baseImageId: string): Promise<string | null> {
   const baseDir = path.join(process.cwd(), "public", "uploads", "base")
   const exts = [".png", ".jpg", ".jpeg", ".webp", ".avif"]
   for (const ext of exts) {
     const p = path.join(baseDir, `${baseImageId}${ext}`)
     if (existsSync(p)) return p
   }
-  return null
+  const rec = await prisma.image.findUnique({ where: { id: baseImageId }, include: { blob: true } })
+  if (!rec || !rec.blob?.data) return null
+  const ext = rec.mimeType.includes("png")
+    ? ".png"
+    : rec.mimeType.includes("jpeg") || rec.mimeType.includes("jpg")
+      ? ".jpg"
+      : rec.mimeType.includes("webp")
+        ? ".webp"
+        : rec.mimeType.includes("avif")
+          ? ".avif"
+          : ".png"
+  const tempDir = path.join(process.cwd(), "temp")
+  if (!existsSync(tempDir)) await mkdir(tempDir, { recursive: true })
+  const p = path.join(tempDir, `base-${baseImageId}${ext}`)
+  await writeFile(p, Buffer.from(rec.blob.data as any))
+  return p
 }
 
 export async function POST(request: NextRequest) {
@@ -234,7 +251,7 @@ export async function POST(request: NextRequest) {
             })
 
             // Verify base image exists
-            const baseImagePath = getBaseImagePath(baseImageId)
+            const baseImagePath = await getBaseImagePath(baseImageId)
             if (!baseImagePath) {
               sendProgressEvent(encoder, controller, {
                 type: "error",
@@ -330,18 +347,24 @@ export async function POST(request: NextRequest) {
               controller.close()
               return
             }
-            const imageId = uuidv4()
-            const filename = `${imageId}.png`
-            const filepath = path.join(generatedDir, filename)
-
-            await writeFile(filepath, Buffer.from(imageBufferArray))
-
+            const saved = await saveImage({
+              kind: "GENERATED",
+              mimeType: "image/png",
+              buffer: Buffer.from(imageBufferArray),
+              prompt: finalPrompt,
+              expandedPrompt: expandedPrompt || undefined,
+              size,
+              seed: seed ?? undefined,
+              baseImageId,
+              hasMask: true,
+              provider: "openai",
+            })
             images.push({
-              id: imageId,
-              url: `/generated/${filename}`,
+              id: saved.id,
+              url: saved.url,
               metadata: {
-                prompt: finalPrompt,
-                expandedPrompt: expandedPrompt || undefined,
+                prompt: saved.prompt || finalPrompt,
+                expandedPrompt: saved.expandedPrompt || undefined,
                 size,
                 seed: seed ?? undefined,
                 baseImageId,
@@ -458,16 +481,21 @@ export async function POST(request: NextRequest) {
                   continue
                 }
 
-                const imageId = uuidv4()
-                const filename = `${imageId}.png`
-                const filepath = path.join(generatedDir, filename)
-
-                console.log("[v0] Saving image", i, "to", filepath)
-                await writeFile(filepath, Buffer.from(imageBufferArray))
-
+                const savedRec = await saveImage({
+                  kind: "GENERATED",
+                  mimeType: "image/png",
+                  buffer: Buffer.from(imageBufferArray),
+                  prompt: finalPrompt,
+                  expandedPrompt: expandedPrompt || undefined,
+                  size,
+                  seed: seed ?? undefined,
+                  baseImageId,
+                  hasMask: false,
+                  provider: "openai",
+                })
                 const saved: GeneratedImage = {
-                  id: imageId,
-                  url: `/generated/${filename}`,
+                  id: savedRec.id,
+                  url: savedRec.url,
                   metadata: {
                     prompt: finalPrompt,
                     expandedPrompt: expandedPrompt || undefined,
