@@ -1,10 +1,12 @@
-import { describe, it, expect } from "vitest"
+import React from "react"
+import { describe, it, expect, beforeAll, vi } from "vitest"
+import "@testing-library/jest-dom"
 import { render, screen, fireEvent } from "@testing-library/react"
 import GalleryPage from "../app/gallery/page"
 
 // Mock fetch for gallery images
 beforeAll(() => {
-  global.fetch = vi.fn().mockImplementation((url) => {
+  global.fetch = vi.fn().mockImplementation((url: string) => {
     if (url === "/api/gallery") {
       return Promise.resolve({
         ok: true,

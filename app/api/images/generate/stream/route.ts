@@ -465,7 +465,7 @@ export async function POST(request: NextRequest) {
                 console.log("[v0] Saving image", i, "to", filepath)
                 await writeFile(filepath, Buffer.from(imageBufferArray))
 
-                images.push({
+                const saved: GeneratedImage = {
                   id: imageId,
                   url: `/generated/${filename}`,
                   metadata: {
@@ -477,8 +477,21 @@ export async function POST(request: NextRequest) {
                     hasMask: false,
                     provider: "openai",
                   },
-                })
+                }
+                images.push(saved)
                 console.log("[v0] Successfully processed image", i)
+
+                // Emit a progress update including the just-saved image so clients can preview ASAP
+                const perImageProgress = 60 + ((i + 1) / response.data.length) * 30
+                sendProgressEvent(encoder, controller, {
+                  type: "progress",
+                  status: "downloading",
+                  progress: perImageProgress,
+                  message: `Saved image ${i + 1} of ${response.data.length}`,
+                  generatedCount: i + 1,
+                  totalCount: n,
+                  images: [saved],
+                })
               } catch (downloadError) {
                 console.error(`[v0] Error downloading image ${i}:`, downloadError)
                 // Continue with other images

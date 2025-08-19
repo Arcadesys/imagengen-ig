@@ -46,15 +46,9 @@ export default function GeneratePage() {
           const data = await response.json()
           setGenerationSteps(
             data.generationSteps || [
-              {
-                id: "analyze",
-                name: "Analyzing Photo",
-                description: "Understanding your image composition",
-                duration: 2000,
-              },
-              { id: "style", name: "Applying Style", description: "Transforming with AI magic", duration: 3000 },
-              { id: "enhance", name: "Enhancing Details", description: "Adding finishing touches", duration: 2000 },
-              { id: "finalize", name: "Finalizing", description: "Preparing your masterpiece", duration: 1000 },
+              { id: "prep", name: "Preparing", description: "Setting up generation", duration: 500 },
+              { id: "generate", name: "Generating", description: "AI is creating your image", duration: 500 },
+              { id: "finalize", name: "Finalizing", description: "Saving your masterpiece", duration: 500 },
             ],
           )
           if (Array.isArray(data?.styles)) {
@@ -117,12 +111,6 @@ export default function GeneratePage() {
   const startGeneration = async (imageData: string) => {
     setIsGenerating(true)
     setCurrentStepIndex(0)
-
-    for (let i = 0; i < generationSteps.length; i++) {
-      setCurrentStepIndex(i)
-      await new Promise((resolve) => setTimeout(resolve, generationSteps[i].duration))
-    }
-
     try {
       // 1) Upload captured image to obtain a baseImageId
       const blob = await (await fetch(imageData)).blob()
@@ -150,30 +138,62 @@ export default function GeneratePage() {
       mctx.clearRect(0, 0, maskCanvas.width, maskCanvas.height) // transparent = editable
       const maskData = maskCanvas.toDataURL("image/png")
 
-      // 4) Request generation (image edit path)
-      const genResp = await fetch("/api/images/generate", {
+      // 4) Request generation via SSE stream so we can preview ASAP
+      const controller = new AbortController()
+      const genResp = await fetch("/api/images/generate/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Use 512x512 to reduce cost while keeping quality reasonable for previews
         body: JSON.stringify({ prompt, size: "512x512", n: 1, baseImageId, maskData }),
+        signal: controller.signal,
       })
-      if (!genResp.ok) {
+      if (!genResp.ok || !genResp.body) {
         const err = await genResp.json().catch(() => ({ error: "Generation failed" }))
         throw new Error(err.error || "Generation failed")
       }
-      const gen = await genResp.json()
-      const first = Array.isArray(gen?.images) && gen.images[0]
-      if (first?.url) {
-        setGeneratedImageUrl(first.url)
+      const reader = genResp.body.getReader()
+      const decoder = new TextDecoder()
+      let done = false
+      while (!done) {
+        const { value, done: d } = await reader.read()
+        done = d
+        if (value) {
+          const chunk = decoder.decode(value)
+          for (const line of chunk.split("\n")) {
+            if (!line.startsWith("data: ")) continue
+            try {
+              const ev = JSON.parse(line.slice(6))
+              if (ev.type === "progress") {
+                // Advance the simple step indicator
+                setCurrentStepIndex((i) => Math.min(i + 1, generationSteps.length - 1))
+                if (Array.isArray(ev.images) && ev.images[0]?.url && !generatedImageUrl) {
+                  setGeneratedImageUrl(ev.images[0].url)
+                }
+              } else if (ev.type === "complete") {
+                if (Array.isArray(ev.images) && ev.images[0]?.url) {
+                  setGeneratedImageUrl(ev.images[0].url)
+                }
+              }
+            } catch {}
+          }
+        }
       }
 
       // 5) Save to gallery (best-effort)
       try {
-        if (Array.isArray(gen?.images) && gen.images.length > 0) {
+        // Re-fetch the last image URL from state
+        if (generatedImageUrl) {
           await fetch("/api/gallery", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ images: gen.images }),
+            body: JSON.stringify({
+              images: [
+                {
+                  id: crypto.randomUUID(),
+                  url: generatedImageUrl,
+                  metadata: { prompt, size: "512x512", provider: "openai", baseImageId, hasMask: true },
+                },
+              ],
+            }),
           })
         }
       } catch (e) {
@@ -317,6 +337,20 @@ export default function GeneratePage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-cyan-100 dark:from-pink-950 dark:via-purple-950 dark:to-cyan-950 flex items-center justify-center">
         <div className="text-center max-w-2xl mx-auto px-4">
+          {/* Live preview if available */}
+          {generatedImageUrl ? (
+            <div className="mb-8">
+              <div className="relative inline-block rounded-xl overflow-hidden shadow-2xl ring-4 ring-purple-500/20">
+                <img
+                  src={generatedImageUrl}
+                  alt="Generating preview"
+                  className="w-80 h-80 object-cover"
+                />
+                <div className="absolute inset-0 bg-black/10" />
+              </div>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Preview updating as it finishes…</p>
+            </div>
+          ) : null}
           <div className="mb-8">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-gradient-to-r from-pink-400 to-purple-600 rounded-full blur-xl opacity-30 animate-pulse" />
