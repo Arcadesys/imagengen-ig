@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server"
+import { readFile } from "fs/promises"
+import path from "path"
 
 export async function GET() {
   try {
     console.log("[v0] Questions API called")
 
-    // Photo booth style options
+    // Primary: return styles and generation steps used by the new UI
     const styles = [
       {
         id: "cartoon",
@@ -50,42 +52,23 @@ export async function GET() {
       },
     ]
 
-    // Generation steps for progress animation
     const generationSteps = [
-      {
-        id: "analyze",
-        name: "Analyzing Photo",
-        description: "Understanding your image composition",
-        duration: 2000,
-      },
-      {
-        id: "style",
-        name: "Applying Style",
-        description: "Transforming with AI magic",
-        duration: 3000,
-      },
-      {
-        id: "enhance",
-        name: "Enhancing Details",
-        description: "Adding finishing touches",
-        duration: 2000,
-      },
-      {
-        id: "finalize",
-        name: "Finalizing",
-        description: "Preparing your masterpiece",
-        duration: 1000,
-      },
+      { id: "analyze", name: "Analyzing Photo", description: "Understanding your image composition", duration: 2000 },
+      { id: "style", name: "Applying Style", description: "Transforming with AI magic", duration: 3000 },
+      { id: "enhance", name: "Enhancing Details", description: "Adding finishing touches", duration: 2000 },
+      { id: "finalize", name: "Finalizing", description: "Preparing your masterpiece", duration: 1000 },
     ]
 
-    console.log("[v0] Returning", styles.length, "styles and", generationSteps.length, "generation steps")
+    // Back-compat: also expose photobooth question schema from data/questions.json if present
+    // Some pages may expect the full schema; consumers can ignore it if not needed.
+    let schema: any = null
+    try {
+      const p = path.join(process.cwd(), "data", "questions.json")
+      const s = await readFile(p, "utf8")
+      schema = JSON.parse(s)
+    } catch {}
 
-    return NextResponse.json({
-      success: true,
-      styles,
-      generationSteps,
-      totalStyles: styles.length,
-    })
+    return NextResponse.json({ success: true, styles, generationSteps, totalStyles: styles.length, schema })
   } catch (error) {
     console.error("[v0] Questions API error:", error)
     return NextResponse.json({ error: "Failed to load questions" }, { status: 500 })

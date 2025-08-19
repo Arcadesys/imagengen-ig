@@ -23,16 +23,18 @@ export function EnhancedImageUpload({
 }: EnhancedImageUploadProps) {
   const [activeTab, setActiveTab] = useState("upload")
   const [maskData, setMaskData] = useState<string | null>(null)
-  const [previousUploads, setPreviousUploads] = useState<Array<{ id: string; url: string; filename: string; createdAt: string }>>([])
+  const [previousUploads, setPreviousUploads] = useState<Array<{ id: string; url: string; filename?: string; createdAt: string }>>([])
+  const [galleryImages, setGalleryImages] = useState<Array<{ id: string; url: string; prompt: string; createdAt: string }>>([])
   const [loadingUploads, setLoadingUploads] = useState(false)
+  const [loadingGallery, setLoadingGallery] = useState(false)
 
   useEffect(() => {
-    const run = async () => {
+    const fetchUploads = async () => {
       try {
         setLoadingUploads(true)
         const res = await fetch("/api/images/upload", { method: "GET" })
         if (!res.ok) return
-        const data = (await res.json()) as Array<{ id: string; url: string; filename: string; createdAt: string }>
+        const data = (await res.json()) as Array<{ id: string; url: string; filename?: string; createdAt: string }>
         setPreviousUploads(data)
       } catch {
         // ignore
@@ -40,7 +42,29 @@ export function EnhancedImageUpload({
         setLoadingUploads(false)
       }
     }
-    run()
+    const fetchGallery = async () => {
+      try {
+        setLoadingGallery(true)
+        const res = await fetch("/api/gallery")
+        if (!res.ok) return
+        const data = (await res.json()) as Array<{
+          id: string
+          url: string
+          prompt: string
+          size?: string
+          baseImageId?: string | null
+          createdAt: string
+        }>
+        // Only generated images (url starts with /generated/)
+        setGalleryImages(data.filter(img => img.url.startsWith("/generated/")))
+      } catch {
+        // ignore
+      } finally {
+        setLoadingGallery(false)
+      }
+    }
+    fetchUploads()
+    fetchGallery()
   }, [])
 
   const handleUpload = (baseImageId: string, url: string) => {
@@ -71,17 +95,38 @@ export function EnhancedImageUpload({
           ) : previousUploads.length === 0 ? (
             <div className="text-sm text-muted-foreground">No previous uploads yet.</div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-4">
               {previousUploads.map((u) => (
                 <button
                   key={u.id}
                   className="relative rounded border overflow-hidden focus:outline-none focus:ring"
-                  title={`${u.filename}`}
+                  title={u.filename || u.id}
                   onClick={() => handleUpload(u.id, u.url)}
                   type="button"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={u.url} alt={u.filename} className="w-full h-20 object-cover" />
+                  <img src={u.url} alt={u.filename || u.id} className="w-full h-20 object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="text-sm font-medium mb-2">Generated images</div>
+          {loadingGallery ? (
+            <div className="text-sm text-muted-foreground">Loading…</div>
+          ) : galleryImages.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No generated images yet.</div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              {galleryImages.map((img) => (
+                <button
+                  key={img.id}
+                  className="relative rounded border overflow-hidden focus:outline-none focus:ring"
+                  title={img.prompt}
+                  onClick={() => handleUpload(img.id, img.url)}
+                  type="button"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.url} alt={img.prompt} className="w-full h-20 object-cover" />
                 </button>
               ))}
             </div>

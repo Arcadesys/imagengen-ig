@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { LiveRegion } from "@/components/accessibility/live-region"
@@ -504,10 +504,11 @@ export default function GalleryPage() {
       </div>
 
       {selectedImage && (
-        <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-          <DialogContent className="max-w-4xl" aria-labelledby="image-detail-title">
+        <Dialog open={!!selectedImage} onOpenChange={(open) => { if (!open) setSelectedImage(null) }}>
+          <DialogContent className="max-w-4xl" aria-labelledby="image-detail-title" aria-describedby="image-detail-desc">
             <DialogHeader>
               <DialogTitle id="image-detail-title">Image Details</DialogTitle>
+              <DialogDescription id="image-detail-desc">View, download, and re-use the generated image and its prompt.</DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               <div className="relative">
@@ -586,10 +587,11 @@ export default function GalleryPage() {
       )}
 
       {editingImage && (
-        <Dialog open={!!editingImage} onOpenChange={() => setEditingImage(null)}>
-          <DialogContent className="max-w-2xl" aria-labelledby="edit-image-title">
+        <Dialog open={!!editingImage} onOpenChange={(open) => { if (!open) setEditingImage(null) }}>
+          <DialogContent className="max-w-2xl" aria-labelledby="edit-image-title" aria-describedby="edit-image-desc">
             <DialogHeader>
               <DialogTitle id="edit-image-title">Edit Image Details</DialogTitle>
+              <DialogDescription id="edit-image-desc">Update the stored prompt or metadata for this image.</DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               <div className="relative">

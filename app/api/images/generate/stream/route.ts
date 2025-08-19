@@ -1,9 +1,11 @@
 import type { NextRequest } from "next/server"
 import OpenAI from "openai"
 import { writeFile, mkdir, readFile } from "fs/promises"
+
 import { existsSync, createReadStream } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
+import { sanitizePromptForImage } from "../../../../../lib/prompt-sanitizer"
 
 interface GenerateRequest {
   prompt: string
@@ -50,8 +52,14 @@ function dataURLToBuffer(dataURL: string): Buffer {
   return Buffer.from(base64Data, "base64")
 }
 
-function getBaseImagePath(baseImageId: string): string {
-  return path.join(process.cwd(), "public", "uploads", "base", `${baseImageId}.png`)
+function getBaseImagePath(baseImageId: string): string | null {
+  const baseDir = path.join(process.cwd(), "public", "uploads", "base")
+  const exts = [".png", ".jpg", ".jpeg", ".webp", ".avif"]
+  for (const ext of exts) {
+    const p = path.join(baseDir, `${baseImageId}${ext}`)
+    if (existsSync(p)) return p
+  }
+  return null
 }
 
 export async function POST(request: NextRequest) {
@@ -91,7 +99,7 @@ export async function POST(request: NextRequest) {
         console.log("[v0] OpenAI API key is present")
 
         const body: GenerateRequest = await request.json()
-        const { prompt, expandedPrompt, size, n, seed, baseImageId, maskData } = body
+  const { prompt, expandedPrompt, size, n, seed, baseImageId, maskData } = body
 
         console.log("[v0] Request body parsed:", {
           prompt: prompt?.substring(0, 50) + "...",
@@ -193,6 +201,12 @@ export async function POST(request: NextRequest) {
         const images: GeneratedImage[] = []
 
         try {
+          const finalPrompt = sanitizePromptForImage(expandedPrompt?.trim() ? expandedPrompt! : prompt)
+
+          // Map unsupported 768 to 1024 for provider call
+          const providerSize: "256x256" | "512x512" | "1024x1024" =
+            size === "768x768" ? "1024x1024" : (size as "256x256" | "512x512" | "1024x1024")
+
           if (maskData && baseImageId) {
             console.log("[v0] Processing mask-based image editing")
 
@@ -206,7 +220,7 @@ export async function POST(request: NextRequest) {
 
             // Verify base image exists
             const baseImagePath = getBaseImagePath(baseImageId)
-            if (!existsSync(baseImagePath)) {
+            if (!baseImagePath) {
               sendProgressEvent(encoder, controller, {
                 type: "error",
                 status: "error",
@@ -239,7 +253,6 @@ export async function POST(request: NextRequest) {
               prompt,
               size: size as "256x256" | "512x512" | "1024x1024",
               n: 1,
-              response_format: "url",
             })
 
             console.log("[v0] OpenAI image edit response received")
@@ -265,49 +278,54 @@ export async function POST(request: NextRequest) {
               totalCount: n,
             })
 
-            const imageData = response.data[0]
-            if (!imageData?.url) {
-              console.error("[v0] Image has no URL")
+            const imageData = response.data[0] as any
+            let imageBufferArray: ArrayBuffer
+            if (imageData?.url) {
+              // Download and save the edited image via URL
+              console.log("[v0] Downloading edited image")
+              const imageResponse = await fetch(imageData.url)
+
+              if (!imageResponse.ok) {
+                console.error(`[v0] Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`)
+                sendProgressEvent(encoder, controller, {
+                  type: "error",
+                  status: "error",
+                  progress: 70,
+                  message: "Failed to download generated image",
+                  error: "Failed to download generated image",
+                })
+                controller.close()
+                return
+              }
+
+              imageBufferArray = await imageResponse.arrayBuffer()
+            } else if (imageData?.b64_json) {
+              // Handle base64-encoded image
+              console.log("[v0] Decoding base64 edited image")
+              imageBufferArray = Buffer.from(imageData.b64_json, "base64").buffer
+            } else {
+              console.error("[v0] Image has neither URL nor base64 data")
               sendProgressEvent(encoder, controller, {
                 type: "error",
                 status: "error",
                 progress: 70,
-                message: "Generated image has no URL",
-                error: "Generated image has no URL",
+                message: "Generated image missing URL and base64 data",
+                error: "Generated image missing URL and base64 data",
               })
               controller.close()
               return
             }
-
-            // Download and save the edited image
-            console.log("[v0] Downloading edited image")
-            const imageResponse = await fetch(imageData.url)
-
-            if (!imageResponse.ok) {
-              console.error(`[v0] Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`)
-              sendProgressEvent(encoder, controller, {
-                type: "error",
-                status: "error",
-                progress: 70,
-                message: "Failed to download generated image",
-                error: "Failed to download generated image",
-              })
-              controller.close()
-              return
-            }
-
-            const imageBuffer = await imageResponse.arrayBuffer()
             const imageId = uuidv4()
             const filename = `${imageId}.png`
             const filepath = path.join(generatedDir, filename)
 
-            await writeFile(filepath, Buffer.from(imageBuffer))
+            await writeFile(filepath, Buffer.from(imageBufferArray))
 
             images.push({
               id: imageId,
               url: `/generated/${filename}`,
               metadata: {
-                prompt,
+                prompt: finalPrompt,
                 expandedPrompt: expandedPrompt || undefined,
                 size,
                 seed: seed ?? undefined,
@@ -342,16 +360,12 @@ export async function POST(request: NextRequest) {
             })
 
             const openaiRequest: any = {
-              model: "dall-e-2",
-              prompt,
-              size,
+              model: "gpt-image-1",
+              prompt: finalPrompt,
+              size: providerSize,
               n: n,
-              response_format: "url",
             }
-
-            if (baseImageId) {
-              openaiRequest.prompt = `Based on the uploaded image with ID ${baseImageId}: ${prompt}`
-            }
+            // Avoid embedding internal IDs in prompts; base-image cases go via edit path
 
             console.log("[v0] OpenAI request prepared:", {
               model: openaiRequest.model,
@@ -386,8 +400,8 @@ export async function POST(request: NextRequest) {
 
             // Process each generated image
             for (let i = 0; i < response.data.length; i++) {
-              const imageData = response.data[i]
-              console.log("[v0] Processing image", i, "URL present:", !!imageData?.url)
+              const imageData = response.data[i] as any
+              console.log("[v0] Processing image", i, "URL present:", !!imageData?.url, "b64 present:", !!imageData?.b64_json)
 
               const currentProgress = 60 + (i / response.data.length) * 30
 
@@ -400,43 +414,47 @@ export async function POST(request: NextRequest) {
                 totalCount: n,
               })
 
-              if (!imageData?.url) {
-                console.error(`[v0] Image ${i} has no URL`)
-                continue
-              }
-
               try {
-                console.log("[v0] Downloading image", i)
-                const imageResponse = await fetch(imageData.url)
+                let imageBufferArray: ArrayBuffer
+                if (imageData?.url) {
+                  console.log("[v0] Downloading image", i)
+                  const imageResponse = await fetch(imageData.url)
 
-                if (!imageResponse.ok) {
-                  console.error(
-                    `[v0] Failed to download image ${i}: ${imageResponse.status} ${imageResponse.statusText}`,
-                  )
+                  if (!imageResponse.ok) {
+                    console.error(
+                      `[v0] Failed to download image ${i}: ${imageResponse.status} ${imageResponse.statusText}`,
+                    )
+                    continue
+                  }
+
+                  const contentType = imageResponse.headers.get("content-type")
+                  if (!contentType?.startsWith("image/")) {
+                    console.error(`[v0] Invalid content type for image ${i}: ${contentType}`)
+                    continue
+                  }
+
+                  console.log("[v0] Converting image", i, "to buffer")
+                  imageBufferArray = await imageResponse.arrayBuffer()
+                } else if (imageData?.b64_json) {
+                  console.log("[v0] Decoding base64 image", i)
+                  imageBufferArray = Buffer.from(imageData.b64_json, "base64").buffer
+                } else {
+                  console.error(`[v0] Image ${i} has neither URL nor base64 data`)
                   continue
                 }
-
-                const contentType = imageResponse.headers.get("content-type")
-                if (!contentType?.startsWith("image/")) {
-                  console.error(`[v0] Invalid content type for image ${i}: ${contentType}`)
-                  continue
-                }
-
-                console.log("[v0] Converting image", i, "to buffer")
-                const imageBuffer = await imageResponse.arrayBuffer()
 
                 const imageId = uuidv4()
                 const filename = `${imageId}.png`
                 const filepath = path.join(generatedDir, filename)
 
                 console.log("[v0] Saving image", i, "to", filepath)
-                await writeFile(filepath, Buffer.from(imageBuffer))
+                await writeFile(filepath, Buffer.from(imageBufferArray))
 
                 images.push({
                   id: imageId,
                   url: `/generated/${filename}`,
                   metadata: {
-                    prompt,
+                    prompt: finalPrompt,
                     expandedPrompt: expandedPrompt || undefined,
                     size,
                     seed: seed ?? undefined,

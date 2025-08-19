@@ -26,12 +26,20 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
     async (file: File) => {
       if (disabled) return
 
-      // Validate file type
-      const allowedTypes = ["image/png", "image/jpeg", "image/webp"]
-      if (!allowedTypes.includes(file.type)) {
+      // Validate file type (broader set; server will convert HEIC/AVIF to webp)
+      const allowedTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "image/webp",
+        "image/heic",
+        "image/heif",
+        "image/avif",
+      ]
+    if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
-          description: "Only PNG, JPEG, and WebP files are allowed.",
+      description: "Only PNG, JPEG, WebP, HEIC/HEIF, and AVIF files are allowed.",
           variant: "destructive",
         })
         return
@@ -250,7 +258,7 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
             <p className="text-sm text-muted-foreground mb-4" id="upload-description">
               Drop a base image or click to upload
               <br />
-              PNG, JPEG, WebP • Max 10MB
+              PNG, JPEG, WebP, HEIC/HEIF, AVIF • Max 10MB
             </p>
             <Button variant="outline" size="sm" disabled={disabled}>
               Choose File
@@ -262,7 +270,7 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp"
+        accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,image/avif"
         onChange={handleFileSelect}
         className="sr-only"
         disabled={disabled}

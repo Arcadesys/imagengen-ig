@@ -42,7 +42,7 @@ const ALL_VARS = [
 ]
 
 const DEFAULT_TEMPLATE = PROMPT_PRESETS.find((p) => p.id === DEFAULT_TOON_PRESET_ID)?.template ||
-  "Paint over the subject to transform them into a [[species]]-themed cartoon character while preserving pose and composition. Lighting: [[lighting]]. Safe-for-work, family-friendly."
+  "Live-action HDR photo plate in 4K with sharp detail; insert 2D/2.5D cartoon characters into the real-world environment without altering the background set [[mask_data|if:, edit only the masked regions]]. Preserve the original camera, lens, composition, and plate continuity with realistic depth of field (f/4–f/8). Style mix across characters: rubber hose::2, anime::2, Flash::2, Saturday-morning cel::2 — each retains its native style. Characters have bold black outlines, flat saturated colors (primary palette), expressive squash-and-stretch poses, and optional rim lighting or toon-glow for emphasis; no reflections on characters. Rendering: flat cel shading with two-tone shadows. Integration: cast clean contact shadows on real ground/props with correct perspective and softness; contrast the realistic scene lighting ([[lighting]]) with the inked cartoon look. Subject: [[species|title]][[companion_summary|prefix:, with ,true]]. Primary toon style: [[body_style]]. Target blend [[blend_ratio]]% toon vs real for characters only; do not toonize the background. [[effects|prefix:Effects: ,true|join:, ]]. [[props_list|prefix:Props: ,true|join:, ]]. [[motion_lines|if:Include motion-line smears.]] Slight digital grain overlay for cohesion. [[custom_note]] Safe-for-work, family-friendly, non-violent."
 
 function classNames(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ")
@@ -216,6 +216,7 @@ export default function TurnToonPage() {
               <GenerateWithProgressButton
                 prompt={output}
                 baseImage={baseImage}
+                baseImageId={baseImageId || undefined}
                 maskData={maskData}
                 progressModal={progressModal}
                 size={outputSize}
@@ -1009,6 +1010,7 @@ function runCase(c: any) {
 function GenerateWithProgressButton({
   prompt,
   baseImage,
+  baseImageId: initialBaseImageId,
   maskData,
   progressModal,
   size,
@@ -1017,6 +1019,7 @@ function GenerateWithProgressButton({
 }: {
   prompt: string
   baseImage?: string | null
+  baseImageId?: string
   maskData?: string | null
   progressModal: ReturnType<typeof useGenerationProgress>
   size: "512x512" | "768x768" | "1024x1024"
@@ -1038,27 +1041,33 @@ function GenerateWithProgressButton({
   progressModal.startGeneration(count)
 
     try {
-      // Step 1: Upload base image if provided
-      let baseImageId = null
+      // Step 1: Upload base image if provided (skip if already an uploaded base image)
+      let baseImageId: string | null = null
       if (baseImage) {
-        progressModal.updateProgress("uploading", 10, "Uploading base image...")
+        const isAlreadyUploaded = baseImage.startsWith("/uploads/base/") && !!initialBaseImageId
+        if (isAlreadyUploaded) {
+          baseImageId = initialBaseImageId as string
+        } else {
+          progressModal.updateProgress("uploading", 10, "Uploading base image...")
 
-        const formData = new FormData()
-        const response = await fetch(baseImage)
-        const blob = await response.blob()
-        formData.append("image", blob, "base-image.png")
+          const formData = new FormData()
+          const response = await fetch(baseImage)
+          const blob = await response.blob()
+          // API expects the field name "file"
+          formData.append("file", blob, "base-image.png")
 
-        const uploadResponse = await fetch("/api/images/upload", {
-          method: "POST",
-          body: formData,
-        })
+          const uploadResponse = await fetch("/api/images/upload", {
+            method: "POST",
+            body: formData,
+          })
 
-        if (!uploadResponse.ok) {
-          throw new Error("Failed to upload base image")
+          if (!uploadResponse.ok) {
+            throw new Error("Failed to upload base image")
+          }
+
+          const uploadResult = await uploadResponse.json()
+          baseImageId = uploadResult.baseImageId
         }
-
-        const uploadResult = await uploadResponse.json()
-        baseImageId = uploadResult.id
       }
 
   // Step 2: Generate image(s)
