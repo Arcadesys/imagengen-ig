@@ -94,6 +94,7 @@ export default function TurnToonPage() {
   const [templateText, setTemplateText] = useState(DEFAULT_TEMPLATE)
   const [copyStatus, setCopyStatus] = useState<{ ok: boolean; method: string; message: string } | null>(null)
   const [baseImage, setBaseImage] = useState<string | null>(null)
+  const [baseImageId, setBaseImageId] = useState<string | null>(null)
   const [maskData, setMaskData] = useState<string | null>(null)
 
   const previewRef = useRef<HTMLPreElement | null>(null) // For select-text fallback
@@ -207,7 +208,19 @@ export default function TurnToonPage() {
         <div>
           {/* Image Upload & Mask Painting Section */}
           <Section title="Image Upload & Mask">
-            <EnhancedImageUpload onImageChange={setBaseImage} onMaskChange={setMaskData} className="w-full" />
+            <EnhancedImageUpload
+              onUpload={(id, url) => {
+                setBaseImageId(id)
+                setBaseImage(url)
+              }}
+              onRemove={() => {
+                setBaseImage(null)
+                setBaseImageId(null)
+                setMaskData(null)
+              }}
+              onMaskChange={setMaskData}
+              uploadedImage={baseImage ? { id: baseImageId ?? "", url: baseImage } : null}
+            />
             {baseImage && (
               <div className="mt-3 text-sm">
                 <div className="font-bold">✓ Base image uploaded</div>

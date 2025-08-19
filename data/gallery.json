@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "id": "db64183e-2104-47c7-90f3-531ca5b85902",
+    "url": "/uploads/base/db64183e-2104-47c7-90f3-531ca5b85902.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "db64183e-2104-47c7-90f3-531ca5b85902",
+    "createdAt": "2025-08-18T23:57:51.297Z"
+  },
+  {
+    "id": "3a35f3f4-a561-409b-a83c-ab5e2c73827d",
+    "url": "/uploads/base/3a35f3f4-a561-409b-a83c-ab5e2c73827d.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "3a35f3f4-a561-409b-a83c-ab5e2c73827d",
+    "createdAt": "2025-08-18T23:57:51.325Z"
+  },
+  {
+    "id": "5fc09750-3739-4540-ac37-4c1d36eaa68c",
+    "url": "/uploads/base/5fc09750-3739-4540-ac37-4c1d36eaa68c.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "5fc09750-3739-4540-ac37-4c1d36eaa68c",
+    "createdAt": "2025-08-18T23:59:17.118Z"
+  },
+  {
+    "id": "c96238d2-fda6-4940-856b-9fc8057c5873",
+    "url": "/uploads/base/c96238d2-fda6-4940-856b-9fc8057c5873.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "c96238d2-fda6-4940-856b-9fc8057c5873",
+    "createdAt": "2025-08-18T23:59:17.158Z"
+  },
+  {
+    "id": "54266267-f410-4ed8-ab59-ee40fe390be6",
+    "url": "/generated/54266267-f410-4ed8-ab59-ee40fe390be6.png",
+    "prompt": "cat with a modern cartoon body, in the hybrid world, blend 40% real. Effects:ink splatter, toon pop impact stars. Props:magic paintbrush. with motion-line smears. Companion:1 floating paintbrush. Lighting: cel-shaded glow. Safe-for-work, family-friendly, suitable for all ages, non-violent.",
+    "size": "1024x1024",
+    "baseImageId": null,
+    "createdAt": "2025-08-19T00:03:25.730Z"
+  }
+]

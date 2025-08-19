@@ -102,4 +102,46 @@ describe("[API] /api/gallery", () => {
     },
     20000,
   )
+
+  it(
+    "accepts batch payload { images: [...] } and returns them via GET",
+    async () => {
+      const genId = "generated-batch-1"
+      const payload = {
+        images: [
+          {
+            id: genId,
+            url: "/generated/generated-batch-1.png",
+            metadata: {
+              prompt: "toon cat",
+              size: "512x512" as const,
+              seed: 42,
+              baseImageId: null,
+            },
+          },
+        ],
+      }
+
+      const resPost = await request.post("/api/gallery").send(payload)
+      expect(resPost.status).toBe(200)
+      const saved = resPost.body as any[]
+      expect(Array.isArray(saved)).toBe(true)
+      expect(saved[0].id).toBe(genId)
+      expect(saved[0].prompt).toBe("toon cat")
+
+      const resGet = await request.get("/api/gallery")
+      expect(resGet.status).toBe(200)
+      const list = resGet.body as any[]
+      const rec = list.find((x) => x.id === genId)
+      expect(rec).toBeTruthy()
+
+      // cleanup
+      try {
+        const json = (await readJson<any[]>(galleryPath)) || []
+        const filtered = json.filter((x) => x.id !== genId)
+        await fs.promises.writeFile(galleryPath, JSON.stringify(filtered, null, 2), "utf8")
+      } catch {}
+    },
+    20000,
+  )
 })

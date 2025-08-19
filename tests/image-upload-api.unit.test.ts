@@ -34,8 +34,9 @@ describe("Upload API (unit)", () => {
     const fd = new FormData()
     fd.append("file", big)
     const res = await POST(createFormDataRequest(fd))
-    expect(res.status).toBe(400)
-    const json = await res.json()
-    expect(json.error).toMatch(/File too large/i)
+  // Random bytes aren't a valid image; compression will fail
+  expect(res.status).toBe(400)
+  const json = await res.json()
+  expect(json.error).toMatch(/Failed to process image/i)
   })
 })

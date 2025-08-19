@@ -22,6 +22,8 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
   const [brushSize, setBrushSize] = useState([20])
   const [tool, setTool] = useState<"brush" | "eraser">("brush")
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [aspectRatio, setAspectRatio] = useState(1) // height / width
+  const [canvasDims, setCanvasDims] = useState<{ w: number; h: number }>({ w: 512, h: 512 })
 
   const initializeCanvas = useCallback(() => {
     const canvas = canvasRef.current
@@ -36,16 +38,16 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
     img.crossOrigin = "anonymous"
     img.onload = () => {
       // Set canvas dimensions to match image
-      const aspectRatio = img.width / img.height
+      const imgAspect = img.width / img.height
       const maxWidth = 512
       const maxHeight = 512
 
       let canvasWidth = maxWidth
-      let canvasHeight = maxWidth / aspectRatio
+      let canvasHeight = maxWidth / imgAspect
 
       if (canvasHeight > maxHeight) {
         canvasHeight = maxHeight
-        canvasWidth = maxHeight * aspectRatio
+        canvasWidth = maxHeight * imgAspect
       }
 
       canvas.width = canvasWidth
@@ -60,7 +62,9 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
       maskCtx.fillStyle = "rgba(0, 0, 0, 0)"
       maskCtx.fillRect(0, 0, canvasWidth, canvasHeight)
 
-      setImageLoaded(true)
+  setAspectRatio(canvasHeight / canvasWidth)
+  setCanvasDims({ w: canvasWidth, h: canvasHeight })
+  setImageLoaded(true)
     }
     img.src = baseImage
   }, [baseImage])
@@ -77,9 +81,11 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
       const canvas = maskCanvasRef.current
       if (!canvas) return
 
-      const rect = canvas.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
+  const rect = canvas.getBoundingClientRect()
+  const scaleX = canvas.width / rect.width
+  const scaleY = canvas.height / rect.height
+  const x = (e.clientX - rect.left) * scaleX
+  const y = (e.clientY - rect.top) * scaleY
 
       const ctx = canvas.getContext("2d")
       if (!ctx) return
@@ -102,9 +108,11 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
       const canvas = maskCanvasRef.current
       if (!canvas) return
 
-      const rect = canvas.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
+  const rect = canvas.getBoundingClientRect()
+  const scaleX = canvas.width / rect.width
+  const scaleY = canvas.height / rect.height
+  const x = (e.clientX - rect.left) * scaleX
+  const y = (e.clientY - rect.top) * scaleY
 
       const ctx = canvas.getContext("2d")
       if (!ctx) return
@@ -216,16 +224,23 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
           </div>
         </div>
 
-        <div className="relative border rounded-lg overflow-hidden bg-checkered">
-          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ imageRendering: "pixelated" }} />
+        <div
+          className="relative border rounded-lg overflow-hidden bg-checkered"
+          style={{ width: "100%", paddingTop: `${aspectRatio * 100}%` }}
+        >
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0"
+            style={{ width: "100%", height: "100%", imageRendering: "pixelated" }}
+          />
           <canvas
             ref={maskCanvasRef}
-            className={cn("absolute inset-0 w-full h-full cursor-crosshair", disabled && "cursor-not-allowed")}
+            className={cn("absolute inset-0 cursor-crosshair", disabled && "cursor-not-allowed")}
             onMouseDown={startDrawing}
             onMouseMove={draw}
             onMouseUp={stopDrawing}
             onMouseLeave={stopDrawing}
-            style={{ imageRendering: "pixelated" }}
+            style={{ width: "100%", height: "100%", imageRendering: "pixelated" }}
           />
         </div>
 

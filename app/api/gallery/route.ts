@@ -38,12 +38,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-  const body: GalleryImage = await request.json()
-
-    // Validate required fields
-  if (!body.id || !body.url || !body.prompt || !body.size) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
+    const data = await request.json()
 
     const dataDir = path.join(process.cwd(), "data")
     const galleryFile = path.join(dataDir, "gallery.json")
@@ -60,18 +55,76 @@ export async function POST(request: NextRequest) {
       gallery = JSON.parse(galleryData)
     }
 
-    // Add new image with timestamp
-  const newImage: GalleryImage = {
-      ...body,
-      createdAt: new Date().toISOString(),
+    // Support two payload shapes:
+    // 1) Single GalleryImage (legacy/test harness)
+    // 2) { images: Array<{ id, url, metadata: { prompt, expandedPrompt?, size, seed?, baseImageId? } }> }
+    if (Array.isArray(data?.images)) {
+      const incoming = data.images as Array<
+        {
+          id: string
+          url: string
+          metadata?: {
+            prompt: string
+            expandedPrompt?: string
+            size: "512x512" | "768x768" | "1024x1024"
+            seed?: string | number
+            baseImageId?: string | null
+          }
+        }
+      >
+
+      if (incoming.length === 0) {
+        return NextResponse.json({ error: "No images provided" }, { status: 400 })
+      }
+
+      const now = new Date()
+      const mapped: GalleryImage[] = incoming
+        .filter((img) => img && img.id && img.url && img.metadata && img.metadata.prompt && img.metadata.size)
+        .map((img, idx) => ({
+          id: img.id,
+          url: img.url,
+          prompt: img.metadata!.expandedPrompt || img.metadata!.prompt,
+          expandedPrompt: img.metadata!.expandedPrompt,
+          size: img.metadata!.size,
+          seed: img.metadata!.seed,
+          baseImageId: img.metadata!.baseImageId ?? null,
+          createdAt: new Date(now.getTime() + idx).toISOString(),
+        }))
+
+      if (mapped.length === 0) {
+        return NextResponse.json({ error: "Invalid images payload" }, { status: 400 })
+      }
+
+      gallery.push(...mapped)
+      await writeFile(galleryFile, JSON.stringify(gallery, null, 2))
+      return NextResponse.json(mapped)
+    } else {
+      const body = data as Partial<GalleryImage>
+
+      // Validate required fields
+      if (!body.id || !body.url || !body.prompt || !body.size) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      }
+
+      // Add new image with timestamp
+      const newImage: GalleryImage = {
+        id: body.id,
+        url: body.url,
+        prompt: body.prompt,
+        expandedPrompt: body.expandedPrompt,
+        size: body.size,
+        seed: body.seed,
+        baseImageId: body.baseImageId ?? null,
+        createdAt: new Date().toISOString(),
+      }
+
+      gallery.push(newImage)
+
+      // Save updated gallery
+      await writeFile(galleryFile, JSON.stringify(gallery, null, 2))
+
+      return NextResponse.json(newImage)
     }
-
-    gallery.push(newImage)
-
-    // Save updated gallery
-    await writeFile(galleryFile, JSON.stringify(gallery, null, 2))
-
-    return NextResponse.json(newImage)
   } catch (error) {
     console.error("Error saving to gallery:", error)
     return NextResponse.json({ error: "Failed to save to gallery" }, { status: 500 })
