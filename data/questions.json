@@ -1,0 +1,12 @@
+{
+  "title": "Photobooth Session",
+  "intro": "Answer a couple of quick questions, take a webcam snapshot, and we’ll generate your styled photo.",
+  "questions": [
+    { "id": "subject", "text": "What is your name?", "placeholder": "e.g., Alex" },
+    { "id": "style", "text": "Pick a style (keywords)", "placeholder": "e.g., studio portrait, cinematic, moody" }
+  ],
+  "references": [
+    { "label": "Lighting reference", "url": "/placeholder.jpg" }
+  ],
+  "promptTemplate": "High-quality portrait of {{subject}}. Style: {{style}}. Match references: {{references}}. Photography, realistic skin, sharp focus, flattering light."
+}

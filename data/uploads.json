@@ -40,5 +40,53 @@
     "url": "/uploads/base/a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6.png",
     "filename": "base-image.png",
     "createdAt": "2025-08-19T03:39:27.667Z"
+  },
+  {
+    "id": "380490d4-c342-40e0-9aa7-6e286571183b",
+    "url": "/uploads/base/380490d4-c342-40e0-9aa7-6e286571183b.jpg",
+    "filename": "20240421_135215.jpg",
+    "createdAt": "2025-08-19T03:46:53.686Z"
+  },
+  {
+    "id": "5a3cb641-ff6d-4fc1-a552-a072089328a2",
+    "url": "/uploads/base/5a3cb641-ff6d-4fc1-a552-a072089328a2.png",
+    "filename": "base-image.png",
+    "createdAt": "2025-08-19T03:47:26.820Z"
+  },
+  {
+    "id": "1a70e581-8fcd-4410-81e2-3fb9287a55ce",
+    "url": "/uploads/base/1a70e581-8fcd-4410-81e2-3fb9287a55ce.png",
+    "filename": "base-image.png",
+    "createdAt": "2025-08-19T15:15:54.210Z"
+  },
+  {
+    "id": "b9f93b32-3b56-406e-9af8-7e312182034b",
+    "url": "/uploads/base/b9f93b32-3b56-406e-9af8-7e312182034b.png",
+    "filename": "base-image.png",
+    "createdAt": "2025-08-19T15:18:51.172Z"
+  },
+  {
+    "id": "6f32199f-b1f6-45e1-8203-6d725003244c",
+    "url": "/uploads/base/6f32199f-b1f6-45e1-8203-6d725003244c.png",
+    "filename": "base-image.png",
+    "createdAt": "2025-08-19T15:28:50.267Z"
+  },
+  {
+    "id": "e7d6eb7c-fb02-4b1e-98ba-fefb6c07969d",
+    "url": "/uploads/base/e7d6eb7c-fb02-4b1e-98ba-fefb6c07969d.jpeg",
+    "filename": "IMG_3207.JPEG",
+    "createdAt": "2025-08-19T15:46:49.785Z"
+  },
+  {
+    "id": "b9679e45-c97e-4771-85fb-9ced4f4b9da7",
+    "url": "/uploads/base/b9679e45-c97e-4771-85fb-9ced4f4b9da7.png",
+    "filename": "base-image.png",
+    "createdAt": "2025-08-19T15:47:30.973Z"
+  },
+  {
+    "id": "80e0172a-4604-472a-a1c8-49748330c109",
+    "url": "/uploads/base/80e0172a-4604-472a-a1c8-49748330c109.png",
+    "filename": "snapshot.png",
+    "createdAt": "2025-08-19T18:22:44.907Z"
   }
 ]

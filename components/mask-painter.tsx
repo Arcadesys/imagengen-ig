@@ -16,8 +16,9 @@ interface MaskPainterProps {
 }
 
 export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const maskCanvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null) // base image canvas (visible)
+  const maskCanvasRef = useRef<HTMLCanvasElement>(null) // actual mask data (hidden)
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null) // visual overlay (visible)
   const [isDrawing, setIsDrawing] = useState(false)
   const [brushSize, setBrushSize] = useState([20])
   const [tool, setTool] = useState<"brush" | "eraser">("brush")
@@ -26,15 +27,17 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
   const [canvasDims, setCanvasDims] = useState<{ w: number; h: number }>({ w: 512, h: 512 })
 
   const initializeCanvas = useCallback(() => {
-    const canvas = canvasRef.current
-    const maskCanvas = maskCanvasRef.current
-    if (!canvas || !maskCanvas || !baseImage) return
+  const canvas = canvasRef.current
+  const maskCanvas = maskCanvasRef.current
+  const overlayCanvas = overlayCanvasRef.current
+  if (!canvas || !maskCanvas || !overlayCanvas || !baseImage) return
 
-    const ctx = canvas.getContext("2d")
-    const maskCtx = maskCanvas.getContext("2d")
-    if (!ctx || !maskCtx) return
+  const ctx = canvas.getContext("2d")
+  const maskCtx = maskCanvas.getContext("2d")
+  const overlayCtx = overlayCanvas.getContext("2d")
+  if (!ctx || !maskCtx || !overlayCtx) return
 
-    const img = new Image()
+  const img = new Image()
     img.crossOrigin = "anonymous"
     img.onload = () => {
       // Set canvas dimensions to match image
@@ -52,15 +55,21 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
 
       canvas.width = canvasWidth
       canvas.height = canvasHeight
-      maskCanvas.width = canvasWidth
-      maskCanvas.height = canvasHeight
+  maskCanvas.width = canvasWidth
+  maskCanvas.height = canvasHeight
+  overlayCanvas.width = canvasWidth
+  overlayCanvas.height = canvasHeight
 
       // Draw base image
       ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight)
 
-      // Initialize mask canvas with transparent background
-      maskCtx.fillStyle = "rgba(0, 0, 0, 0)"
-      maskCtx.fillRect(0, 0, canvasWidth, canvasHeight)
+  // Initialize hidden mask canvas as fully opaque (preserve everywhere by default)
+  // OpenAI edits: transparent areas are replaced/modified; non-transparent are preserved
+  maskCtx.fillStyle = "rgba(255, 255, 255, 1)"
+  maskCtx.fillRect(0, 0, canvasWidth, canvasHeight)
+
+  // Initialize visible overlay as fully transparent (just shows painted regions)
+  overlayCtx.clearRect(0, 0, canvasWidth, canvasHeight)
 
   setAspectRatio(canvasHeight / canvasWidth)
   setCanvasDims({ w: canvasWidth, h: canvasHeight })
@@ -78,23 +87,48 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
       if (disabled || !imageLoaded) return
 
       setIsDrawing(true)
-      const canvas = maskCanvasRef.current
-      if (!canvas) return
+      const maskCanvas = maskCanvasRef.current
+      const overlayCanvas = overlayCanvasRef.current
+      if (!maskCanvas || !overlayCanvas) return
 
-  const rect = canvas.getBoundingClientRect()
-  const scaleX = canvas.width / rect.width
-  const scaleY = canvas.height / rect.height
-  const x = (e.clientX - rect.left) * scaleX
-  const y = (e.clientY - rect.top) * scaleY
+      const rect = overlayCanvas.getBoundingClientRect()
+      const scaleX = overlayCanvas.width / rect.width
+      const scaleY = overlayCanvas.height / rect.height
+      const x = (e.clientX - rect.left) * scaleX
+      const y = (e.clientY - rect.top) * scaleY
 
-      const ctx = canvas.getContext("2d")
-      if (!ctx) return
+      const maskCtx = maskCanvas.getContext("2d")
+      const overlayCtx = overlayCanvas.getContext("2d")
+      if (!maskCtx || !overlayCtx) return
 
-      ctx.globalCompositeOperation = tool === "brush" ? "source-over" : "destination-out"
-      ctx.beginPath()
-      ctx.arc(x, y, brushSize[0] / 2, 0, 2 * Math.PI)
-      ctx.fillStyle = "rgba(255, 255, 255, 0.7)"
-      ctx.fill()
+      const r = brushSize[0] / 2
+      // Update actual mask data
+      if (tool === "brush") {
+        maskCtx.globalCompositeOperation = "destination-out" // transparent = editable
+        maskCtx.beginPath()
+        maskCtx.arc(x, y, r, 0, 2 * Math.PI)
+        maskCtx.fill()
+      } else {
+        maskCtx.globalCompositeOperation = "source-over" // opaque = preserve
+        maskCtx.beginPath()
+        maskCtx.arc(x, y, r, 0, 2 * Math.PI)
+        maskCtx.fillStyle = "rgba(255, 255, 255, 1)"
+        maskCtx.fill()
+      }
+
+      // Update visible overlay (tinted highlight for edited regions)
+      if (tool === "brush") {
+        overlayCtx.globalCompositeOperation = "source-over"
+        overlayCtx.beginPath()
+        overlayCtx.arc(x, y, r, 0, 2 * Math.PI)
+        overlayCtx.fillStyle = "rgba(0, 200, 255, 0.35)"
+        overlayCtx.fill()
+      } else {
+        overlayCtx.globalCompositeOperation = "destination-out" // erase highlight
+        overlayCtx.beginPath()
+        overlayCtx.arc(x, y, r, 0, 2 * Math.PI)
+        overlayCtx.fill()
+      }
 
       updateMask()
     },
@@ -105,23 +139,44 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!isDrawing || disabled || !imageLoaded) return
 
-      const canvas = maskCanvasRef.current
-      if (!canvas) return
+      const maskCanvas = maskCanvasRef.current
+      const overlayCanvas = overlayCanvasRef.current
+      if (!maskCanvas || !overlayCanvas) return
 
-  const rect = canvas.getBoundingClientRect()
-  const scaleX = canvas.width / rect.width
-  const scaleY = canvas.height / rect.height
-  const x = (e.clientX - rect.left) * scaleX
-  const y = (e.clientY - rect.top) * scaleY
+      const rect = overlayCanvas.getBoundingClientRect()
+      const scaleX = overlayCanvas.width / rect.width
+      const scaleY = overlayCanvas.height / rect.height
+      const x = (e.clientX - rect.left) * scaleX
+      const y = (e.clientY - rect.top) * scaleY
 
-      const ctx = canvas.getContext("2d")
-      if (!ctx) return
+      const maskCtx = maskCanvas.getContext("2d")
+      const overlayCtx = overlayCanvas.getContext("2d")
+      if (!maskCtx || !overlayCtx) return
 
-      ctx.globalCompositeOperation = tool === "brush" ? "source-over" : "destination-out"
-      ctx.beginPath()
-      ctx.arc(x, y, brushSize[0] / 2, 0, 2 * Math.PI)
-      ctx.fillStyle = "rgba(255, 255, 255, 0.7)"
-      ctx.fill()
+      const r = brushSize[0] / 2
+      if (tool === "brush") {
+        maskCtx.globalCompositeOperation = "destination-out"
+        maskCtx.beginPath()
+        maskCtx.arc(x, y, r, 0, 2 * Math.PI)
+        maskCtx.fill()
+
+        overlayCtx.globalCompositeOperation = "source-over"
+        overlayCtx.beginPath()
+        overlayCtx.arc(x, y, r, 0, 2 * Math.PI)
+        overlayCtx.fillStyle = "rgba(0, 200, 255, 0.35)"
+        overlayCtx.fill()
+      } else {
+        maskCtx.globalCompositeOperation = "source-over"
+        maskCtx.beginPath()
+        maskCtx.arc(x, y, r, 0, 2 * Math.PI)
+        maskCtx.fillStyle = "rgba(255, 255, 255, 1)"
+        maskCtx.fill()
+
+        overlayCtx.globalCompositeOperation = "destination-out"
+        overlayCtx.beginPath()
+        overlayCtx.arc(x, y, r, 0, 2 * Math.PI)
+        overlayCtx.fill()
+      }
 
       updateMask()
     },
@@ -133,21 +188,27 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
   }, [])
 
   const updateMask = useCallback(() => {
-    const maskCanvas = maskCanvasRef.current
-    if (!maskCanvas) return
-
-    const maskDataUrl = maskCanvas.toDataURL("image/png")
-    onMaskChange(maskDataUrl)
+  const maskCanvas = maskCanvasRef.current
+  if (!maskCanvas) return
+  const maskDataUrl = maskCanvas.toDataURL("image/png")
+  onMaskChange(maskDataUrl)
   }, [onMaskChange])
 
   const clearMask = useCallback(() => {
-    const maskCanvas = maskCanvasRef.current
-    if (!maskCanvas) return
+  const maskCanvas = maskCanvasRef.current
+  const overlayCanvas = overlayCanvasRef.current
+  if (!maskCanvas || !overlayCanvas) return
 
-    const ctx = maskCanvas.getContext("2d")
-    if (!ctx) return
+  const mctx = maskCanvas.getContext("2d")
+  const octx = overlayCanvas.getContext("2d")
+  if (!mctx || !octx) return
 
-    ctx.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
+  // Reset mask to fully opaque (preserve everywhere)
+  mctx.globalCompositeOperation = "source-over"
+  mctx.fillStyle = "rgba(255, 255, 255, 1)"
+  mctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height)
+  // Clear overlay highlight
+  octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
     updateMask()
   }, [updateMask])
 
@@ -233,8 +294,9 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
             className="absolute inset-0"
             style={{ width: "100%", height: "100%", imageRendering: "pixelated" }}
           />
+          {/* Visible overlay where user paints (tinted). The actual mask canvas is hidden. */}
           <canvas
-            ref={maskCanvasRef}
+            ref={overlayCanvasRef}
             className={cn("absolute inset-0 cursor-crosshair", disabled && "cursor-not-allowed")}
             onMouseDown={startDrawing}
             onMouseMove={draw}
@@ -242,10 +304,11 @@ export function MaskPainter({ baseImage, onMaskChange, disabled }: MaskPainterPr
             onMouseLeave={stopDrawing}
             style={{ width: "100%", height: "100%", imageRendering: "pixelated" }}
           />
+          <canvas ref={maskCanvasRef} className="hidden" />
         </div>
 
         <div className="text-sm text-muted-foreground">
-          <p>Paint over areas you want to change. White areas will be modified during generation.</p>
+          <p>Paint over areas you want to change. Highlighted regions will be modified; unpainted regions are preserved.</p>
         </div>
       </div>
     </Card>

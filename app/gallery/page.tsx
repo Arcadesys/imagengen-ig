@@ -504,7 +504,7 @@ export default function GalleryPage() {
       </div>
 
       {selectedImage && (
-        <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <Dialog open={!!selectedImage} onOpenChange={(open) => { if (!open) setSelectedImage(null) }}>
           <DialogContent className="max-w-4xl" aria-labelledby="image-detail-title" aria-describedby="image-detail-desc">
             <DialogHeader>
               <DialogTitle id="image-detail-title">Image Details</DialogTitle>
@@ -587,7 +587,7 @@ export default function GalleryPage() {
       )}
 
       {editingImage && (
-        <Dialog open={!!editingImage} onOpenChange={() => setEditingImage(null)}>
+        <Dialog open={!!editingImage} onOpenChange={(open) => { if (!open) setEditingImage(null) }}>
           <DialogContent className="max-w-2xl" aria-labelledby="edit-image-title" aria-describedby="edit-image-desc">
             <DialogHeader>
               <DialogTitle id="edit-image-title">Edit Image Details</DialogTitle>

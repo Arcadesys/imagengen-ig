@@ -116,6 +116,9 @@ export async function POST(request: NextRequest) {
     try {
       // Build final prompt sent to provider
       const finalPrompt = sanitizePromptForImage(expandedPrompt?.trim() ? expandedPrompt! : prompt)
+      // Map unsupported provider size to nearest supported for OpenAI
+      const providerSize: "256x256" | "512x512" | "1024x1024" =
+        size === "768x768" ? "1024x1024" : (size as "256x256" | "512x512" | "1024x1024")
       if (maskData && baseImageId) {
         console.log("[v0] Processing mask-based image editing")
 
@@ -136,7 +139,7 @@ export async function POST(request: NextRequest) {
           image: createReadStream(baseImagePath),
           mask: createReadStream(maskPath),
           prompt: finalPrompt,
-          size: size as "256x256" | "512x512" | "1024x1024",
+          size: providerSize,
           n: 1, // Image editing only supports n=1
         })
 
@@ -198,7 +201,7 @@ export async function POST(request: NextRequest) {
   const openaiRequest: any = {
           model: "gpt-image-1",
           prompt: finalPrompt,
-          size,
+          size: providerSize,
           n: n,
         }
 
