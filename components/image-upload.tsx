@@ -26,12 +26,20 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
     async (file: File) => {
       if (disabled) return
 
-      // Validate file type
-      const allowedTypes = ["image/png", "image/jpeg", "image/webp"]
-      if (!allowedTypes.includes(file.type)) {
+      // Validate file type (broader set; server will convert HEIC/AVIF to webp)
+      const allowedTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "image/webp",
+        "image/heic",
+        "image/heif",
+        "image/avif",
+      ]
+    if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
-          description: "Only PNG, JPEG, and WebP files are allowed.",
+      description: "Only PNG, JPEG, WebP, HEIC/HEIF, and AVIF files are allowed.",
           variant: "destructive",
         })
         return
@@ -60,8 +68,29 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
         })
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || "Upload failed")
+          const contentType = response.headers.get("content-type")
+          let errorMessage = "Upload failed"
+
+          if (contentType && contentType.includes("application/json")) {
+            try {
+              const error = await response.json()
+              errorMessage = error.error || errorMessage
+            } catch {
+              errorMessage = "Server error occurred"
+            }
+          } else {
+            // Handle HTML error responses
+            const text = await response.text()
+            if (response.status === 500) {
+              errorMessage = "Server error. Please try again later."
+            } else if (response.status === 413) {
+              errorMessage = "File too large for server"
+            } else {
+              errorMessage = `Server error (${response.status})`
+            }
+          }
+
+          throw new Error(errorMessage)
         }
 
         const result = await response.json()
@@ -163,7 +192,11 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
       <Card className="relative overflow-hidden">
         <div className="aspect-square relative">
           <img
-            src={uploadedImage.url || "/placeholder.svg?height=400&width=400&query=uploaded%20base%20image"}
+            src={
+              uploadedImage.url ||
+              "/placeholder.svg?height=400&width=400&query=uploaded%20base%20image" ||
+              "/placeholder.svg"
+            }
             alt="Uploaded base image for generation"
             className="w-full h-full object-cover"
           />
@@ -225,7 +258,7 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
             <p className="text-sm text-muted-foreground mb-4" id="upload-description">
               Drop a base image or click to upload
               <br />
-              PNG, JPEG, WebP • Max 10MB
+              PNG, JPEG, WebP, HEIC/HEIF, AVIF • Max 10MB
             </p>
             <Button variant="outline" size="sm" disabled={disabled}>
               Choose File
@@ -237,7 +270,7 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp"
+        accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,image/avif"
         onChange={handleFileSelect}
         className="sr-only"
         disabled={disabled}

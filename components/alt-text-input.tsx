@@ -51,7 +51,7 @@ export function AltTextInput({ imageUrl, currentAltText = "", onSave, disabled }
           <div className="space-y-4">
             <Card className="p-4">
               <img
-                src={imageUrl || "/placeholder.svg?height=256&width=400&query=image%20for%20alt%20text%20editing"}
+                src={imageUrl || "/v0-placeholder.svg?height=256&width=400&query=image%20for%20alt%20text%20editing"}
                 alt="Preview of image for alt text editing"
                 className="w-full h-auto max-h-64 object-contain rounded"
               />
@@ -71,7 +71,7 @@ export function AltTextInput({ imageUrl, currentAltText = "", onSave, disabled }
                 aria-describedby="alt-text-help"
               />
               <p className="text-xs text-muted-foreground" id="alt-text-help">
-                Good alt text is concise but descriptive. Avoid starting with "Image of" or "Picture of".
+                Good alt text is concise but descriptive. Avoid starting with &quot;Image of&quot; or &quot;Picture of&quot;.
                 {altText.length > 0 && ` (${altText.length}/250 characters)`}
               </p>
             </div>

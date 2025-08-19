@@ -6,7 +6,7 @@ import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Save, Trash2, Eye, Download } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { GeneratedImage } from "@/lib/types"
@@ -140,8 +140,8 @@ export function GenerationResults({ images, onSave, onDiscard }: GenerationResul
                 </div>
 
                 <div className="text-xs text-muted-foreground">
-                  <p className="truncate" title={image.metadata.prompt}>
-                    {image.metadata.prompt}
+                  <p className="truncate" title={image.metadata.expandedPrompt || image.metadata.prompt}>
+                    {image.metadata.expandedPrompt || image.metadata.prompt}
                   </p>
                   <p className="mt-1">
                     {image.metadata.size} • {image.metadata.provider}
@@ -156,16 +156,17 @@ export function GenerationResults({ images, onSave, onDiscard }: GenerationResul
 
       {/* Full size view dialog */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl" aria-labelledby="gen-image-title" aria-describedby="gen-image-desc">
           <DialogHeader>
-            <DialogTitle>Generated Image</DialogTitle>
+            <DialogTitle id="gen-image-title">Generated Image</DialogTitle>
+            <DialogDescription id="gen-image-desc">Preview the image, save it to your gallery, or download it.</DialogDescription>
           </DialogHeader>
           {selectedImage && (
             <div className="space-y-4">
               <div className="relative">
                 <img
                   src={
-                    selectedImage.url || "/placeholder.svg?height=600&width=800&query=full%20size%20generated%20image"
+                    selectedImage.url || "/placeholder.svg?height=600&width=600&query=full%20size%20generated%20image"
                   }
                   alt={`Full size view: ${selectedImage.metadata.prompt}`}
                   className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
@@ -174,7 +175,7 @@ export function GenerationResults({ images, onSave, onDiscard }: GenerationResul
 
               <div className="space-y-2">
                 <p className="text-sm">
-                  <strong>Prompt:</strong> {selectedImage.metadata.prompt}
+                  <strong>Prompt:</strong> {selectedImage.metadata.expandedPrompt || selectedImage.metadata.prompt}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Size: {selectedImage.metadata.size} • Provider: {selectedImage.metadata.provider}

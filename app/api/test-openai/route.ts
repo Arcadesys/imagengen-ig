@@ -72,28 +72,27 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  // Test 5: Test DALL-E availability
+  // Test 5: Test image model availability
   try {
-    console.log("[v0] Testing DALL-E model availability")
+    console.log("[v0] Testing gpt-image-1 availability")
     const imageResponse = await openai.images.generate({
-      model: "dall-e-2",
+      model: "gpt-image-1",
       prompt: "A simple test image",
       n: 1,
       size: "256x256",
     })
-
-    console.log("[v0] DALL-E test successful")
+    console.log("[v0] gpt-image-1 test successful")
     tests.push({
-      test: "DALL-E Image Generation",
+      test: "Image Generation (gpt-image-1)",
       status: "PASS",
-      details: `Generated image URL: ${imageResponse.data[0]?.url ? "Success" : "No URL returned"}`,
+      details: `Generated image URL: ${imageResponse.data?.[0]?.url ? "Success" : "No URL returned"}`,
     })
   } catch (error) {
-    console.log("[v0] DALL-E test failed:", error)
+    console.log("[v0] gpt-image-1 test failed:", error)
     tests.push({
-      test: "DALL-E Image Generation",
+      test: "Image Generation (gpt-image-1)",
       status: "FAIL",
-      details: `DALL-E call failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      details: `Image call failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     })
   }
 

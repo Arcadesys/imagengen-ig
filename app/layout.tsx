@@ -13,12 +13,14 @@ export const metadata: Metadata = {
   generator: "v0.app",
   keywords: ["AI", "image generation", "artificial intelligence", "creative tools", "accessibility"],
   authors: [{ name: "AI Image Generator" }],
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
 }
+
+export const viewport = "width=device-width, initial-scale=1"
+
+export const themeColor = [
+  { media: "(prefers-color-scheme: light)", color: "white" },
+  { media: "(prefers-color-scheme: dark)", color: "black" },
+]
 
 export default function RootLayout({
   children,

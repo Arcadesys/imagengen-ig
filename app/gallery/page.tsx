@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { LiveRegion } from "@/components/accessibility/live-region"
 import { AltTextInput } from "@/components/alt-text-input"
 import { useToast } from "@/hooks/use-toast"
-import { ImageIcon, ArrowLeft, Trash2, RotateCcw, Calendar, Palette, Eye, Download } from "lucide-react"
+import { ImageIcon, ArrowLeft, Trash2, RotateCcw, Calendar, Palette, Eye, Download, Edit } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { GalleryImage } from "@/lib/types"
@@ -18,8 +20,11 @@ export default function GalleryPage() {
   const [images, setImages] = useState<GalleryImage[]>([])
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set())
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
+  const [editingImage, setEditingImage] = useState<GalleryImage | null>(null)
+  const [editForm, setEditForm] = useState({ prompt: "", expandedPrompt: "" })
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [liveMessage, setLiveMessage] = useState("")
   const [imageAltTexts, setImageAltTexts] = useState<Record<string, string>>({})
 
@@ -28,18 +33,15 @@ export default function GalleryPage() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape to close dialogs
       if (e.key === "Escape" && selectedImage) {
         setSelectedImage(null)
       }
 
-      // Delete selected images with Delete key
       if (e.key === "Delete" && selectedImages.size > 0 && !selectedImage) {
         e.preventDefault()
         handleBulkDelete()
       }
 
-      // Ctrl/Cmd + A to select all
       if ((e.ctrlKey || e.metaKey) && e.key === "a" && !selectedImage) {
         e.preventDefault()
         handleSelectAll(selectedImages.size !== images.length)
@@ -50,7 +52,6 @@ export default function GalleryPage() {
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [selectedImages, images.length, selectedImage])
 
-  // Load gallery images
   useEffect(() => {
     const loadGallery = async () => {
       try {
@@ -77,7 +78,6 @@ export default function GalleryPage() {
     loadGallery()
   }, [toast])
 
-  // Handle individual image selection
   const handleImageSelect = useCallback((imageId: string, selected: boolean) => {
     setSelectedImages((prev) => {
       const newSet = new Set(prev)
@@ -91,7 +91,6 @@ export default function GalleryPage() {
     })
   }, [])
 
-  // Handle select all
   const handleSelectAll = useCallback(
     (selected: boolean) => {
       if (selected) {
@@ -105,7 +104,6 @@ export default function GalleryPage() {
     [images],
   )
 
-  // Handle bulk delete
   const handleBulkDelete = useCallback(async () => {
     if (selectedImages.size === 0) return
 
@@ -124,7 +122,6 @@ export default function GalleryPage() {
 
       await Promise.all(deletePromises)
 
-      // Remove deleted images from state
       setImages((prev) => prev.filter((img) => !selectedImages.has(img.id)))
       setSelectedImages(new Set())
       setLiveMessage(`Successfully deleted ${selectedImages.size} images`)
@@ -146,7 +143,6 @@ export default function GalleryPage() {
     }
   }, [selectedImages, toast])
 
-  // Handle single image delete
   const handleSingleDelete = useCallback(
     async (imageId: string) => {
       const confirmDelete = window.confirm("Are you sure you want to delete this image? This action cannot be undone.")
@@ -183,7 +179,6 @@ export default function GalleryPage() {
     [toast],
   )
 
-  // Handle re-use prompt
   const handleReusePrompt = useCallback(
     (image: GalleryImage) => {
       const reuseData = {
@@ -199,7 +194,6 @@ export default function GalleryPage() {
     [router],
   )
 
-  // Handle download
   const handleDownload = useCallback(
     async (image: GalleryImage) => {
       try {
@@ -231,6 +225,61 @@ export default function GalleryPage() {
     setImageAltTexts((prev) => ({ ...prev, [imageId]: altText }))
     setLiveMessage("Alt text saved for accessibility")
   }, [])
+
+  const handleEditImage = useCallback((image: GalleryImage) => {
+    setEditingImage(image)
+    setEditForm({
+      prompt: image.prompt,
+      expandedPrompt: image.expandedPrompt || "",
+    })
+    setSelectedImage(null) // Close detail view
+  }, [])
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingImage) return
+
+    setIsSaving(true)
+    setLiveMessage("Saving image changes...")
+
+    try {
+      const response = await fetch(`/api/images/${editingImage.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: editForm.prompt,
+          expandedPrompt: editForm.expandedPrompt || undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update image")
+      }
+
+      const updatedImage = await response.json()
+
+      setImages((prev) => prev.map((img) => (img.id === editingImage.id ? { ...img, ...updatedImage } : img)))
+
+      setEditingImage(null)
+      setLiveMessage("Image updated successfully")
+
+      toast({
+        title: "Image updated",
+        description: "Image details have been saved.",
+      })
+    } catch (error) {
+      console.error("Error updating image:", error)
+      setLiveMessage("Failed to update image")
+      toast({
+        title: "Update failed",
+        description: "Could not update image. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }, [editingImage, editForm, toast])
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -274,7 +323,6 @@ export default function GalleryPage() {
       <LiveRegion message={liveMessage} />
 
       <div className="min-h-screen bg-background">
-        {/* Header */}
         <header className="border-b bg-card" role="banner">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
@@ -291,7 +339,6 @@ export default function GalleryPage() {
                 </Badge>
               </div>
 
-              {/* Bulk actions */}
               {selectedImages.size > 0 && (
                 <div className="flex items-center gap-2" role="toolbar" aria-label="Bulk actions">
                   <span className="text-sm text-muted-foreground" aria-live="polite">
@@ -311,7 +358,6 @@ export default function GalleryPage() {
               )}
             </div>
 
-            {/* Select all checkbox */}
             {images.length > 0 && (
               <div className="flex items-center gap-2 mt-4">
                 <Checkbox
@@ -353,11 +399,10 @@ export default function GalleryPage() {
               aria-label="Gallery images"
             >
               {images.map((image, index) => {
-                const altText = imageAltTexts[image.id] || image.prompt.slice(0, 100)
+                const altText = imageAltTexts[image.id] || (image.expandedPrompt || image.prompt).slice(0, 100)
 
                 return (
                   <Card key={image.id} className="overflow-hidden group" role="gridcell">
-                    {/* Selection checkbox */}
                     <div className="absolute top-2 left-2 z-10">
                       <Checkbox
                         checked={selectedImages.has(image.id)}
@@ -367,15 +412,17 @@ export default function GalleryPage() {
                       />
                     </div>
 
-                    {/* Image */}
                     <div className="aspect-square relative cursor-pointer" onClick={() => setSelectedImage(image)}>
                       <img
-                        src={image.url || "/placeholder.svg?height=400&width=400&query=generated%20image%20placeholder"}
+                        src={
+                          image.url ||
+                          "https://example.com/v0-placeholder.svg?height=400&width=400&query=generated%20image%20placeholder" ||
+                          "/placeholder.svg"
+                        }
                         alt={altText}
                         className="w-full h-full object-cover"
                       />
 
-                      {/* Hover overlay */}
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button size="sm" variant="secondary" aria-label={`View full size image ${index + 1}`}>
                           <Eye className="h-4 w-4 mr-2" />
@@ -383,17 +430,18 @@ export default function GalleryPage() {
                         </Button>
                       </div>
 
-                      {/* Base image indicator */}
                       {image.baseImageId && (
                         <Badge className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-700">Base Image Used</Badge>
                       )}
                     </div>
 
-                    {/* Content */}
                     <div className="p-4 space-y-3">
                       <div>
-                        <p className="text-sm font-medium line-clamp-2 mb-1" title={image.prompt}>
-                          {image.prompt}
+                        <p
+                          className="text-sm font-medium line-clamp-2 mb-1"
+                          title={image.expandedPrompt || image.prompt}
+                        >
+                          {image.expandedPrompt || image.prompt}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" aria-hidden="true" />
@@ -412,14 +460,12 @@ export default function GalleryPage() {
                         )}
                       </div>
 
-                      {/* Alt text input */}
                       <AltTextInput
                         imageUrl={image.url}
                         currentAltText={imageAltTexts[image.id] || ""}
                         onSave={(altText) => handleAltTextSave(image.id, altText)}
                       />
 
-                      {/* Actions */}
                       <div className="flex gap-2" role="group" aria-label={`Actions for image ${index + 1}`}>
                         <Button
                           size="sm"
@@ -430,6 +476,14 @@ export default function GalleryPage() {
                         >
                           <RotateCcw className="h-3 w-3 mr-1" />
                           Re-use
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditImage(image)}
+                          aria-label={`Edit image ${index + 1}`}
+                        >
+                          <Edit className="h-3 w-3" />
                         </Button>
                         <Button
                           size="sm"
@@ -449,18 +503,20 @@ export default function GalleryPage() {
         </main>
       </div>
 
-      {/* Image detail dialog */}
       {selectedImage && (
-        <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-          <DialogContent className="max-w-4xl" aria-labelledby="image-detail-title">
+        <Dialog open={!!selectedImage} onOpenChange={(open) => { if (!open) setSelectedImage(null) }}>
+          <DialogContent className="max-w-4xl" aria-labelledby="image-detail-title" aria-describedby="image-detail-desc">
             <DialogHeader>
               <DialogTitle id="image-detail-title">Image Details</DialogTitle>
+              <DialogDescription id="image-detail-desc">View, download, and re-use the generated image and its prompt.</DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               <div className="relative">
                 <img
                   src={
-                    selectedImage.url || "/placeholder.svg?height=600&width=600&query=full%20size%20generated%20image"
+                    selectedImage.url ||
+                    "https://example.com/v0-placeholder.svg?height=600&width=600&query=full%20size%20generated%20image" ||
+                    "/placeholder.svg"
                   }
                   alt={imageAltTexts[selectedImage.id] || selectedImage.prompt}
                   className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
@@ -470,7 +526,9 @@ export default function GalleryPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-medium mb-2">Prompt</h3>
-                  <p className="text-sm bg-muted p-3 rounded-lg">{selectedImage.prompt}</p>
+                  <p className="text-sm bg-muted p-3 rounded-lg">
+                    {selectedImage.expandedPrompt || selectedImage.prompt}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -504,6 +562,10 @@ export default function GalleryPage() {
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Re-use Prompt
                 </Button>
+                <Button variant="outline" onClick={() => handleEditImage(selectedImage)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
                 <Button variant="outline" onClick={() => handleDownload(selectedImage)}>
                   <Download className="h-4 w-4 mr-2" />
                   Download
@@ -517,6 +579,84 @@ export default function GalleryPage() {
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {editingImage && (
+        <Dialog open={!!editingImage} onOpenChange={(open) => { if (!open) setEditingImage(null) }}>
+          <DialogContent className="max-w-2xl" aria-labelledby="edit-image-title" aria-describedby="edit-image-desc">
+            <DialogHeader>
+              <DialogTitle id="edit-image-title">Edit Image Details</DialogTitle>
+              <DialogDescription id="edit-image-desc">Update the stored prompt or metadata for this image.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div className="relative">
+                <img
+                  src={editingImage.url || "/placeholder.svg?height=300&width=300&query=editing%20image%20preview"}
+                  alt={editingImage.prompt}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-prompt">Prompt</Label>
+                  <Textarea
+                    id="edit-prompt"
+                    value={editForm.prompt}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, prompt: e.target.value }))}
+                    placeholder="Enter the main prompt..."
+                    className="min-h-[100px]"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-expanded-prompt">Expanded Prompt (Optional)</Label>
+                  <Textarea
+                    id="edit-expanded-prompt"
+                    value={editForm.expandedPrompt}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, expandedPrompt: e.target.value }))}
+                    placeholder="Enter detailed or expanded prompt..."
+                    className="min-h-[100px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm bg-muted p-3 rounded-lg">
+                  <div>
+                    <span className="font-medium">Created:</span>
+                    <p className="text-muted-foreground">
+                      <time dateTime={editingImage.createdAt}>{formatDate(editingImage.createdAt)}</time>
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Size:</span>
+                    <p className="text-muted-foreground">{editingImage.size}</p>
+                  </div>
+                  {editingImage.seed && (
+                    <div>
+                      <span className="font-medium">Seed:</span>
+                      <p className="text-muted-foreground">{editingImage.seed}</p>
+                    </div>
+                  )}
+                  {editingImage.baseImageId && (
+                    <div>
+                      <span className="font-medium">Base Image:</span>
+                      <p className="text-muted-foreground">Used for generation</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t" role="group" aria-label="Edit actions">
+                <Button onClick={handleSaveEdit} disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+                <Button variant="outline" onClick={() => setEditingImage(null)}>
+                  Cancel
                 </Button>
               </div>
             </div>

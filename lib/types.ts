@@ -3,6 +3,7 @@ export interface GeneratedImage {
   url: string
   metadata: {
     prompt: string
+    expandedPrompt?: string
     size: "512x512" | "768x768" | "1024x1024"
     seed?: string | number
     baseImageId?: string | null
@@ -14,6 +15,7 @@ export interface GalleryImage {
   id: string
   url: string
   prompt: string
+  expandedPrompt?: string
   size: "512x512" | "768x768" | "1024x1024"
   seed?: string | number
   baseImageId?: string | null
@@ -29,8 +31,67 @@ export interface UploadedImage {
 
 export interface GenerateRequest {
   prompt: string
+  expandedPrompt?: string | null
   size: "512x512" | "768x768" | "1024x1024"
   n: number
   seed?: string | number | null
   baseImageId?: string | null
+}
+
+export type TraitCategory = "Color" | "Style" | "Lighting" | "Mood" | "Composition" | "Camera" | "Details"
+
+export interface Trait {
+  id: string
+  name: string
+  category: TraitCategory
+  aliases?: string[]
+}
+
+export interface PhotoBoothStyle {
+  id: string
+  name: string
+  description: string
+  prompt: string
+  preview?: string
+}
+
+export interface GenerationStep {
+  id: string
+  name: string
+  description: string
+  duration: number
+}
+
+export interface PhotoBoothEvent {
+  id: string
+  name: string
+  active: boolean
+  startTime: string
+  endTime: string
+  photoCount: number
+  settings: {
+    allowedStyles: string[]
+    maxPhotosPerUser: number
+    requireEmail: boolean
+    enableWall: boolean
+    wallRefreshInterval: number
+  }
+}
+
+export interface WallPhoto {
+  id: string
+  imageUrl: string
+  style: string
+  timestamp: string
+  email?: string
+}
+
+export interface PhotoRecord {
+  id: string
+  email: string
+  imageUrl: string
+  style: string
+  timestamp: string
+  shared: boolean
+  eventId: string
 }
