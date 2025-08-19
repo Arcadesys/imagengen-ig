@@ -1,4 +1,27 @@
-import { type NextRequest, NextResponse } from "next/server"
+[Fast Refresh] done in 522ms
+intercept-console-error.js:50 React does not recognize the `hideCloseButton` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `hideclosebutton` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+error @ intercept-console-error.js:50Understand this error
+intercept-console-error.js:50 `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+error @ intercept-console-error.js:50Understand this error
+index.mjs:477 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+DescriptionWarning.useEffect @ index.mjs:477Understand this warning
+intercept-console-error.js:50 `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+error @ intercept-console-error.js:50Understand this error
+index.mjs:477 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+DescriptionWarning.useEffect @ index.mjs:477Understand this warning
+api/images/upload:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+intercept-console-error.js:50 Generation error: Error: Failed to upload base image
+    at handleGenerate (page.tsx:1057:17)
+error @ intercept-console-error.js:50Understand this error
+turn-toon:1  Failed to load resource: the server responded with a status of 502 ()import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import { writeFile, mkdir } from "fs/promises"
 import { existsSync, createReadStream } from "fs"
@@ -186,7 +209,7 @@ export async function POST(request: NextRequest) {
         }
       } else {
         const openaiRequest: any = {
-          model: "dall-e-2", // Using DALL-E 2 which supports n=1-4
+          model: "gpt-image-1",
           prompt: finalPrompt,
           size,
           n: n,

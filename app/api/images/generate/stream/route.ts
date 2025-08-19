@@ -344,7 +344,7 @@ export async function POST(request: NextRequest) {
             })
 
             const openaiRequest: any = {
-              model: "dall-e-2",
+              model: "gpt-image-1",
               prompt: finalPrompt,
               size,
               n: n,
