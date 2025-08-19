@@ -51,7 +51,7 @@ export function AltTextInput({ imageUrl, currentAltText = "", onSave, disabled }
           <div className="space-y-4">
             <Card className="p-4">
               <img
-                src={imageUrl || "https://via.placeholder.com/400x256.png?text=image+for+alt+text+editing"}
+                src={imageUrl || "/placeholder.svg?height=256&width=400&query=image%20for%20alt%20text%20editing"}
                 alt="Preview of image for alt text editing"
                 className="w-full h-auto max-h-64 object-contain rounded"
               />

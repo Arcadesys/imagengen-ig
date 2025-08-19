@@ -186,7 +186,8 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
           <img
             src={
               uploadedImage.url ||
-              "https://example.com/v0-placeholder.svg?height=400&width=400&query=uploaded%20base%20image" ||
+              "/placeholder.svg?height=400&width=400&query=uploaded%20base%20image" ||
+              "/placeholder.svg" ||
               "/placeholder.svg"
             }
             alt="Uploaded base image for generation"
