@@ -3,6 +3,7 @@
 import type React from "react"
 import { useMemo, useRef, useState } from "react"
 import { renderTemplate } from "@/lib/template"
+import { PROMPT_PRESETS, DEFAULT_TOON_PRESET_ID } from "@/lib/prompt-presets"
 import { EnhancedImageUpload } from "@/components/enhanced-image-upload"
 import { GenerationProgressModal } from "@/components/generation-progress-modal"
 import { useGenerationProgress } from "@/hooks/use-generation-progress"
@@ -27,10 +28,21 @@ const ALL_VARS = [
   "lighting",
   "base_image",
   "mask_data",
+  // Advanced stylization
+  "line_weight",
+  "cel_shade_intensity",
+  "rim_light",
+  "halftone_density",
+  "palette_vibrancy",
+  "texture_amount",
+  "outline_smoothness",
+  "background_toonization",
+  "identity_preservation",
+  "mask_feather_px",
 ]
 
-const DEFAULT_TEMPLATE =
-  "[[species]] with a [[body_style]] body, in the [[world_type]], blend [[blend_ratio]]% real. [[effects|prefix:Effects: ,true|join:, ]]. [[props_list|prefix:Props: ,true|join:, ]]. [[motion_lines|if:with motion-line smears.]] [[custom_note]] [[companion_summary|omit:none|prefix:Companion: ,true]]. Lighting: [[lighting]]. Safe-for-work, family-friendly, suitable for all ages, non-violent."
+const DEFAULT_TEMPLATE = PROMPT_PRESETS.find((p) => p.id === DEFAULT_TOON_PRESET_ID)?.template ||
+  "Paint over the subject to transform them into a [[species]]-themed cartoon character while preserving pose and composition. Lighting: [[lighting]]. Safe-for-work, family-friendly."
 
 function classNames(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ")
@@ -92,10 +104,27 @@ export default function TurnToonPage() {
   const [companionCount, setCompanionCount] = useState(1)
   const [lighting, setLighting] = useState("cel-shaded glow")
   const [templateText, setTemplateText] = useState(DEFAULT_TEMPLATE)
+  const [presetId, setPresetId] = useState(DEFAULT_TOON_PRESET_ID)
   const [copyStatus, setCopyStatus] = useState<{ ok: boolean; method: string; message: string } | null>(null)
   const [baseImage, setBaseImage] = useState<string | null>(null)
   const [baseImageId, setBaseImageId] = useState<string | null>(null)
   const [maskData, setMaskData] = useState<string | null>(null)
+  // Advanced output dials
+  const [outputSize, setOutputSize] = useState<"512x512" | "768x768" | "1024x1024">("1024x1024")
+  const [imageCount, setImageCount] = useState<number>(1)
+  const [seed, setSeed] = useState<string>("")
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false)
+  // Stylization dials (0..100 except where noted)
+  const [lineWeight, setLineWeight] = useState<number>(6) // 1..10
+  const [celShadeIntensity, setCelShadeIntensity] = useState<number>(60)
+  const [rimLight, setRimLight] = useState<number>(40)
+  const [halftoneDensity, setHalftoneDensity] = useState<number>(30)
+  const [paletteVibrancy, setPaletteVibrancy] = useState<number>(60)
+  const [textureAmount, setTextureAmount] = useState<number>(30)
+  const [outlineSmoothness, setOutlineSmoothness] = useState<number>(60)
+  const [backgroundToonization, setBackgroundToonization] = useState<number>(40)
+  const [identityPreservation, setIdentityPreservation] = useState<number>(80)
+  const [maskFeatherPx, setMaskFeatherPx] = useState<number>(8) // 0..50
 
   const previewRef = useRef<HTMLPreElement | null>(null) // For select-text fallback
 
@@ -120,6 +149,17 @@ export default function TurnToonPage() {
       lighting,
       base_image: baseImage,
       mask_data: maskData,
+  // Advanced stylization
+  line_weight: lineWeight,
+  cel_shade_intensity: celShadeIntensity,
+  rim_light: rimLight,
+  halftone_density: halftoneDensity,
+  palette_vibrancy: paletteVibrancy,
+  texture_amount: textureAmount,
+  outline_smoothness: outlineSmoothness,
+  background_toonization: backgroundToonization,
+  identity_preservation: identityPreservation,
+  mask_feather_px: maskFeatherPx,
     }),
     [
       species,
@@ -178,6 +218,9 @@ export default function TurnToonPage() {
                 baseImage={baseImage}
                 maskData={maskData}
                 progressModal={progressModal}
+                size={outputSize}
+                n={imageCount}
+                seed={seed.trim() ? seed.trim() : undefined}
               />
             </div>
           </div>
@@ -448,6 +491,26 @@ export default function TurnToonPage() {
               </button>
             }
           >
+            <div className="mb-3 flex items-center gap-2">
+              <label htmlFor="preset" className="text-sm font-bold">Preset</label>
+              <select
+                id="preset"
+                className="input"
+                value={presetId}
+                onChange={(e) => {
+                  const id = e.target.value
+                  setPresetId(id)
+                  const p = PROMPT_PRESETS.find((x) => x.id === id)
+                  if (p) setTemplateText(p.template)
+                }}
+              >
+                {PROMPT_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Labeled
               label="Prompt Template (supports [[placeholders]])"
               hint="Use [[var]] and filters: |join:,  |if:text |omit:none |prefix:Text ,true |upper |lower |title"
@@ -471,6 +534,104 @@ export default function TurnToonPage() {
                     <li key={i}>{e}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+          </Section>
+
+          <Section
+            title="Advanced (Output Dials)"
+            right={
+              <button
+                className="text-sm underline font-bold"
+                onClick={() => setShowAdvanced((v) => !v)}
+                aria-expanded={showAdvanced}
+                aria-controls="advanced-content"
+              >
+                {showAdvanced ? "Collapse" : "Expand"}
+              </button>
+            }
+          >
+            {showAdvanced && (
+              <div id="advanced-content" className="grid gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Labeled label="Output Size" id="out-size">
+                    <select
+                      id="out-size"
+                      className="input"
+                      value={outputSize}
+                      onChange={(e) => setOutputSize(e.target.value as any)}
+                    >
+                      <option value="512x512">512 × 512</option>
+                      <option value="768x768">768 × 768</option>
+                      <option value="1024x1024">1024 × 1024</option>
+                    </select>
+                  </Labeled>
+                  <Labeled label="Number of Images" id="out-count">
+                    <div className="flex items-center gap-3">
+                      <input
+                        id="out-count"
+                        type="range"
+                        min={1}
+                        max={4}
+                        step={1}
+                        value={imageCount}
+                        onChange={(e) => setImageCount(Number(e.target.value))}
+                        className="w-full accent-black dark:accent-white"
+                        aria-label="Number of images to generate"
+                      />
+                      <span className="w-8 text-right tabular-nums font-bold">{imageCount}</span>
+                    </div>
+                    {maskData && imageCount > 1 && (
+                      <div className="text-xs mt-2 text-red-600 dark:text-red-400">
+                        Mask editing supports only 1 image at a time.
+                      </div>
+                    )}
+                  </Labeled>
+                  <Labeled label="Seed (optional)" id="out-seed">
+                    <input
+                      id="out-seed"
+                      className="input"
+                      placeholder="e.g., 12345"
+                      value={seed}
+                      onChange={(e) => setSeed(e.target.value)}
+                    />
+                  </Labeled>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Labeled label={`Line Weight (${lineWeight}/10)`} id="lw">
+                    <input id="lw" type="range" min={1} max={10} step={1} value={lineWeight} onChange={(e) => setLineWeight(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                  <Labeled label={`Cel Shade Intensity (${celShadeIntensity}%)`} id="csi">
+                    <input id="csi" type="range" min={0} max={100} step={5} value={celShadeIntensity} onChange={(e) => setCelShadeIntensity(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                  <Labeled label={`Rim Light (${rimLight}%)`} id="rl">
+                    <input id="rl" type="range" min={0} max={100} step={5} value={rimLight} onChange={(e) => setRimLight(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                  <Labeled label={`Halftone Density (${halftoneDensity}%)`} id="hd">
+                    <input id="hd" type="range" min={0} max={100} step={5} value={halftoneDensity} onChange={(e) => setHalftoneDensity(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                  <Labeled label={`Palette Vibrancy (${paletteVibrancy}%)`} id="pv">
+                    <input id="pv" type="range" min={0} max={100} step={5} value={paletteVibrancy} onChange={(e) => setPaletteVibrancy(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                  <Labeled label={`Texture Amount (${textureAmount}%)`} id="ta">
+                    <input id="ta" type="range" min={0} max={100} step={5} value={textureAmount} onChange={(e) => setTextureAmount(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                  <Labeled label={`Outline Smoothness (${outlineSmoothness}%)`} id="os">
+                    <input id="os" type="range" min={0} max={100} step={5} value={outlineSmoothness} onChange={(e) => setOutlineSmoothness(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                  <Labeled label={`Background Toonization (${backgroundToonization}%)`} id="bt">
+                    <input id="bt" type="range" min={0} max={100} step={5} value={backgroundToonization} onChange={(e) => setBackgroundToonization(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                  <Labeled label={`Identity Preservation (${identityPreservation}%)`} id="ip">
+                    <input id="ip" type="range" min={0} max={100} step={5} value={identityPreservation} onChange={(e) => setIdentityPreservation(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                  <Labeled label={`Mask Feather (${maskFeatherPx}px)`} id="mf">
+                    <input id="mf" type="range" min={0} max={50} step={1} value={maskFeatherPx} onChange={(e) => setMaskFeatherPx(Number(e.target.value))} className="w-full accent-black dark:accent-white" />
+                  </Labeled>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Tip: With a mask, generation will force n=1. Larger sizes take longer.
+                </div>
               </div>
             )}
           </Section>
@@ -850,11 +1011,17 @@ function GenerateWithProgressButton({
   baseImage,
   maskData,
   progressModal,
+  size,
+  n,
+  seed,
 }: {
   prompt: string
   baseImage?: string | null
   maskData?: string | null
   progressModal: ReturnType<typeof useGenerationProgress>
+  size: "512x512" | "768x768" | "1024x1024"
+  n: number
+  seed?: string
 }) {
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -864,8 +1031,11 @@ function GenerateWithProgressButton({
       return
     }
 
-    setIsGenerating(true)
-    progressModal.startGeneration(1)
+  // Enforce mask editing constraint
+  const count = maskData ? 1 : Math.max(1, Math.min(4, n))
+
+  setIsGenerating(true)
+  progressModal.startGeneration(count)
 
     try {
       // Step 1: Upload base image if provided
@@ -891,7 +1061,7 @@ function GenerateWithProgressButton({
         baseImageId = uploadResult.id
       }
 
-      // Step 2: Generate image
+  // Step 2: Generate image(s)
       progressModal.updateProgress("generating", 30, "Generating your toon image...")
 
       const generateResponse = await fetch("/api/images/generate", {
@@ -901,10 +1071,11 @@ function GenerateWithProgressButton({
         },
         body: JSON.stringify({
           prompt: prompt.trim(),
-          n: 1,
-          size: "1024x1024",
+          n: count,
+          size,
           baseImageId,
           maskData,
+          seed: seed && seed.length ? seed : undefined,
         }),
       })
 
@@ -918,7 +1089,7 @@ function GenerateWithProgressButton({
         }
       }
 
-      progressModal.updateProgress("downloading", 80, "Saving generated image...")
+  progressModal.updateProgress("downloading", 80, count > 1 ? "Saving generated images..." : "Saving generated image...")
 
       const result = await generateResponse.json()
 
