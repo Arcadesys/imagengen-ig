@@ -22,5 +22,23 @@
     "url": "/uploads/base/ec7100c8-b1f8-444b-aacc-d085f7efbecd.jpg",
     "filename": "21BE7BC1-9171-4CFA-9B4F-FC71AE788702.jpg",
     "createdAt": "2025-08-18T23:41:23.399Z"
+  },
+  {
+    "id": "bf889287-8c5e-4a68-bdc2-6eff1e8f5ea1",
+    "url": "/uploads/base/bf889287-8c5e-4a68-bdc2-6eff1e8f5ea1.png",
+    "filename": "base-image.png",
+    "createdAt": "2025-08-19T01:16:03.442Z"
+  },
+  {
+    "id": "46ea41d7-a656-46cf-b85b-085e059d044c",
+    "url": "/uploads/base/46ea41d7-a656-46cf-b85b-085e059d044c.png",
+    "filename": "base-image.png",
+    "createdAt": "2025-08-19T03:32:01.656Z"
+  },
+  {
+    "id": "a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6",
+    "url": "/uploads/base/a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6.png",
+    "filename": "base-image.png",
+    "createdAt": "2025-08-19T03:39:27.667Z"
   }
 ]

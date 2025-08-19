@@ -166,5 +166,53 @@
     "size": "1024x1024",
     "baseImageId": "84986d4a-3c37-45ca-b6b7-250854086f72",
     "createdAt": "2025-08-19T01:10:42.977Z"
+  },
+  {
+    "id": "bf889287-8c5e-4a68-bdc2-6eff1e8f5ea1",
+    "url": "/uploads/base/bf889287-8c5e-4a68-bdc2-6eff1e8f5ea1.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "bf889287-8c5e-4a68-bdc2-6eff1e8f5ea1",
+    "createdAt": "2025-08-19T01:16:03.443Z"
+  },
+  {
+    "id": "46ea41d7-a656-46cf-b85b-085e059d044c",
+    "url": "/uploads/base/46ea41d7-a656-46cf-b85b-085e059d044c.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "46ea41d7-a656-46cf-b85b-085e059d044c",
+    "createdAt": "2025-08-19T03:32:01.659Z"
+  },
+  {
+    "id": "cb6e1a13-22f7-4168-83c0-b69e88703289",
+    "url": "/uploads/base/cb6e1a13-22f7-4168-83c0-b69e88703289.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "cb6e1a13-22f7-4168-83c0-b69e88703289",
+    "createdAt": "2025-08-19T03:37:40.275Z"
+  },
+  {
+    "id": "ae4f08c2-6c18-44aa-89b0-8364a1134864",
+    "url": "/uploads/base/ae4f08c2-6c18-44aa-89b0-8364a1134864.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "ae4f08c2-6c18-44aa-89b0-8364a1134864",
+    "createdAt": "2025-08-19T03:37:40.296Z"
+  },
+  {
+    "id": "a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6",
+    "url": "/uploads/base/a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6",
+    "createdAt": "2025-08-19T03:39:27.669Z"
+  },
+  {
+    "id": "7e5344ea-13bb-49e3-bd21-5fd7c0c62d66",
+    "url": "/generated/7e5344ea-13bb-49e3-bd21-5fd7c0c62d66.png",
+    "prompt": "Paint over the subject to transform them into a Cat-themed cartoon character while preserving the original pose, camera, and composition. Preserve identity and wardrobe, converting materials to ink-and-paint equivalents. Add clean black line art with varied line weight, 2D cel shading with two-tone shadows and gentle rimlight, and subtle halftone in shadows. mid-century cartoon. real world. cel-shaded glow.... No text, captions, labels, logos, or watermarks.",
+    "size": "1024x1024",
+    "baseImageId": "a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6",
+    "createdAt": "2025-08-19T03:39:51.922Z"
   }
 ]

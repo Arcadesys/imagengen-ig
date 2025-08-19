@@ -1,12 +1,4 @@
-For more information, see https://radix-ui.com/primitives/docs/components/dialog
-error @ intercept-console-error.js:50Understand this error
-index.mjs:477 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
-DescriptionWarning.useEffect @ index.mjs:477Understand this warning
-api/images/upload:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
-intercept-console-error.js:50 Generation error: Error: Failed to upload base image
-    at handleGenerate (page.tsx:1057:17)
-error @ intercept-console-error.js:50Understand this error
-turn-toon:1  Failed to load resource: the server responded with a status of 502 ()import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import { writeFile, mkdir } from "fs/promises"
 import { existsSync, createReadStream } from "fs"
@@ -146,7 +138,6 @@ export async function POST(request: NextRequest) {
           prompt: finalPrompt,
           size: size as "256x256" | "512x512" | "1024x1024",
           n: 1, // Image editing only supports n=1
-          response_format: "url",
         })
 
         console.log("[v0] OpenAI image edit response received")
@@ -156,27 +147,32 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "No images were generated" }, { status: 500 })
         }
 
-        const imageData = response.data[0]
-        if (!imageData?.url) {
-          console.error("[v0] Image has no URL")
-          return NextResponse.json({ error: "Generated image has no URL" }, { status: 500 })
+        const imageData = response.data[0] as any
+        let imageBufferArray: ArrayBuffer
+        if (imageData?.url) {
+          // Download and save the edited image via URL
+          console.log("[v0] Downloading edited image")
+          const imageResponse = await fetch(imageData.url)
+
+          if (!imageResponse.ok) {
+            console.error(`[v0] Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`)
+            return NextResponse.json({ error: "Failed to download generated image" }, { status: 500 })
+          }
+
+          imageBufferArray = await imageResponse.arrayBuffer()
+        } else if (imageData?.b64_json) {
+          // Handle base64-encoded image
+          console.log("[v0] Decoding base64 edited image")
+          imageBufferArray = Buffer.from(imageData.b64_json, "base64").buffer
+        } else {
+          console.error("[v0] Image has neither URL nor base64 data")
+          return NextResponse.json({ error: "Generated image missing URL and base64 data" }, { status: 500 })
         }
-
-        // Download and save the edited image
-        console.log("[v0] Downloading edited image")
-        const imageResponse = await fetch(imageData.url)
-
-        if (!imageResponse.ok) {
-          console.error(`[v0] Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`)
-          return NextResponse.json({ error: "Failed to download generated image" }, { status: 500 })
-        }
-
-        const imageBuffer = await imageResponse.arrayBuffer()
         const imageId = uuidv4()
         const filename = `${imageId}.png`
         const filepath = path.join(generatedDir, filename)
 
-        await writeFile(filepath, Buffer.from(imageBuffer))
+  await writeFile(filepath, Buffer.from(imageBufferArray))
 
         images.push({
           id: imageId,
@@ -199,12 +195,11 @@ export async function POST(request: NextRequest) {
           console.warn("[v0] Failed to clean up temporary mask file:", cleanupError)
         }
       } else {
-        const openaiRequest: any = {
+  const openaiRequest: any = {
           model: "gpt-image-1",
           prompt: finalPrompt,
           size,
           n: n,
-          response_format: "url",
         }
 
         // Note: We avoid embedding internal IDs or meta text into the prompt to
@@ -228,38 +223,42 @@ export async function POST(request: NextRequest) {
 
         // Process each generated image
         for (let i = 0; i < response.data.length; i++) {
-          const imageData = response.data[i]
-          console.log("[v0] Processing image", i, "URL present:", !!imageData?.url)
-
-          if (!imageData?.url) {
-            console.error(`[v0] Image ${i} has no URL`)
-            continue
-          }
+          const imageData = response.data[i] as any
+          console.log("[v0] Processing image", i, "URL present:", !!imageData?.url, "b64 present:", !!imageData?.b64_json)
 
           try {
-            console.log("[v0] Downloading image", i)
-            const imageResponse = await fetch(imageData.url)
+            let imageBufferArray: ArrayBuffer
+            if (imageData?.url) {
+              console.log("[v0] Downloading image", i)
+              const imageResponse = await fetch(imageData.url)
 
-            if (!imageResponse.ok) {
-              console.error(`[v0] Failed to download image ${i}: ${imageResponse.status} ${imageResponse.statusText}`)
+              if (!imageResponse.ok) {
+                console.error(`[v0] Failed to download image ${i}: ${imageResponse.status} ${imageResponse.statusText}`)
+                continue
+              }
+
+              const contentType = imageResponse.headers.get("content-type")
+              if (!contentType?.startsWith("image/")) {
+                console.error(`[v0] Invalid content type for image ${i}: ${contentType}`)
+                continue
+              }
+
+              console.log("[v0] Converting image", i, "to buffer")
+              imageBufferArray = await imageResponse.arrayBuffer()
+            } else if (imageData?.b64_json) {
+              console.log("[v0] Decoding base64 image", i)
+              imageBufferArray = Buffer.from(imageData.b64_json, "base64").buffer
+            } else {
+              console.error(`[v0] Image ${i} has neither URL nor base64 data`)
               continue
             }
-
-            const contentType = imageResponse.headers.get("content-type")
-            if (!contentType?.startsWith("image/")) {
-              console.error(`[v0] Invalid content type for image ${i}: ${contentType}`)
-              continue
-            }
-
-            console.log("[v0] Converting image", i, "to buffer")
-            const imageBuffer = await imageResponse.arrayBuffer()
 
             const imageId = uuidv4()
             const filename = `${imageId}.png`
             const filepath = path.join(generatedDir, filename)
 
             console.log("[v0] Saving image", i, "to", filepath)
-            await writeFile(filepath, Buffer.from(imageBuffer))
+            await writeFile(filepath, Buffer.from(imageBufferArray))
 
             images.push({
               id: imageId,

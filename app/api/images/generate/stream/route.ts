@@ -247,7 +247,6 @@ export async function POST(request: NextRequest) {
               prompt: finalPrompt,
               size: size as "256x256" | "512x512" | "1024x1024",
               n: 1,
-              response_format: "url",
             })
 
             console.log("[v0] OpenAI image edit response received")
@@ -273,43 +272,48 @@ export async function POST(request: NextRequest) {
               totalCount: n,
             })
 
-            const imageData = response.data[0]
-            if (!imageData?.url) {
-              console.error("[v0] Image has no URL")
+            const imageData = response.data[0] as any
+            let imageBufferArray: ArrayBuffer
+            if (imageData?.url) {
+              // Download and save the edited image via URL
+              console.log("[v0] Downloading edited image")
+              const imageResponse = await fetch(imageData.url)
+
+              if (!imageResponse.ok) {
+                console.error(`[v0] Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`)
+                sendProgressEvent(encoder, controller, {
+                  type: "error",
+                  status: "error",
+                  progress: 70,
+                  message: "Failed to download generated image",
+                  error: "Failed to download generated image",
+                })
+                controller.close()
+                return
+              }
+
+              imageBufferArray = await imageResponse.arrayBuffer()
+            } else if (imageData?.b64_json) {
+              // Handle base64-encoded image
+              console.log("[v0] Decoding base64 edited image")
+              imageBufferArray = Buffer.from(imageData.b64_json, "base64").buffer
+            } else {
+              console.error("[v0] Image has neither URL nor base64 data")
               sendProgressEvent(encoder, controller, {
                 type: "error",
                 status: "error",
                 progress: 70,
-                message: "Generated image has no URL",
-                error: "Generated image has no URL",
+                message: "Generated image missing URL and base64 data",
+                error: "Generated image missing URL and base64 data",
               })
               controller.close()
               return
             }
-
-            // Download and save the edited image
-            console.log("[v0] Downloading edited image")
-            const imageResponse = await fetch(imageData.url)
-
-            if (!imageResponse.ok) {
-              console.error(`[v0] Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`)
-              sendProgressEvent(encoder, controller, {
-                type: "error",
-                status: "error",
-                progress: 70,
-                message: "Failed to download generated image",
-                error: "Failed to download generated image",
-              })
-              controller.close()
-              return
-            }
-
-            const imageBuffer = await imageResponse.arrayBuffer()
             const imageId = uuidv4()
             const filename = `${imageId}.png`
             const filepath = path.join(generatedDir, filename)
 
-            await writeFile(filepath, Buffer.from(imageBuffer))
+            await writeFile(filepath, Buffer.from(imageBufferArray))
 
             images.push({
               id: imageId,
@@ -354,7 +358,6 @@ export async function POST(request: NextRequest) {
               prompt: finalPrompt,
               size,
               n: n,
-              response_format: "url",
             }
             // Avoid embedding internal IDs in prompts; base-image cases go via edit path
 
@@ -391,8 +394,8 @@ export async function POST(request: NextRequest) {
 
             // Process each generated image
             for (let i = 0; i < response.data.length; i++) {
-              const imageData = response.data[i]
-              console.log("[v0] Processing image", i, "URL present:", !!imageData?.url)
+              const imageData = response.data[i] as any
+              console.log("[v0] Processing image", i, "URL present:", !!imageData?.url, "b64 present:", !!imageData?.b64_json)
 
               const currentProgress = 60 + (i / response.data.length) * 30
 
@@ -405,37 +408,41 @@ export async function POST(request: NextRequest) {
                 totalCount: n,
               })
 
-              if (!imageData?.url) {
-                console.error(`[v0] Image ${i} has no URL`)
-                continue
-              }
-
               try {
-                console.log("[v0] Downloading image", i)
-                const imageResponse = await fetch(imageData.url)
+                let imageBufferArray: ArrayBuffer
+                if (imageData?.url) {
+                  console.log("[v0] Downloading image", i)
+                  const imageResponse = await fetch(imageData.url)
 
-                if (!imageResponse.ok) {
-                  console.error(
-                    `[v0] Failed to download image ${i}: ${imageResponse.status} ${imageResponse.statusText}`,
-                  )
+                  if (!imageResponse.ok) {
+                    console.error(
+                      `[v0] Failed to download image ${i}: ${imageResponse.status} ${imageResponse.statusText}`,
+                    )
+                    continue
+                  }
+
+                  const contentType = imageResponse.headers.get("content-type")
+                  if (!contentType?.startsWith("image/")) {
+                    console.error(`[v0] Invalid content type for image ${i}: ${contentType}`)
+                    continue
+                  }
+
+                  console.log("[v0] Converting image", i, "to buffer")
+                  imageBufferArray = await imageResponse.arrayBuffer()
+                } else if (imageData?.b64_json) {
+                  console.log("[v0] Decoding base64 image", i)
+                  imageBufferArray = Buffer.from(imageData.b64_json, "base64").buffer
+                } else {
+                  console.error(`[v0] Image ${i} has neither URL nor base64 data`)
                   continue
                 }
-
-                const contentType = imageResponse.headers.get("content-type")
-                if (!contentType?.startsWith("image/")) {
-                  console.error(`[v0] Invalid content type for image ${i}: ${contentType}`)
-                  continue
-                }
-
-                console.log("[v0] Converting image", i, "to buffer")
-                const imageBuffer = await imageResponse.arrayBuffer()
 
                 const imageId = uuidv4()
                 const filename = `${imageId}.png`
                 const filepath = path.join(generatedDir, filename)
 
                 console.log("[v0] Saving image", i, "to", filepath)
-                await writeFile(filepath, Buffer.from(imageBuffer))
+                await writeFile(filepath, Buffer.from(imageBufferArray))
 
                 images.push({
                   id: imageId,
