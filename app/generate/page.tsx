@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Camera, Mail, Sparkles, CheckCircle, ArrowLeft, Share2, Download, Copy } from "lucide-react"
+import { getDetailedStylePrompt } from "@/lib/style-prompts"
 
 interface GenerationStep {
   id: string
@@ -32,6 +33,7 @@ export default function GeneratePage() {
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
   const [copySuccess, setCopySuccess] = useState(false)
+  const [styles, setStyles] = useState<Array<{ id: string; name: string; prompt: string; preview?: string }>>([])
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -55,6 +57,9 @@ export default function GeneratePage() {
               { id: "finalize", name: "Finalizing", description: "Preparing your masterpiece", duration: 1000 },
             ],
           )
+          if (Array.isArray(data?.styles)) {
+            setStyles(data.styles)
+          }
         }
       } catch (error) {
         console.error("Failed to load generation steps:", error)
@@ -101,7 +106,7 @@ export default function GeneratePage() {
 
       if (context) {
         context.drawImage(video, 0, 0)
-        const imageData = canvas.toDataURL("image/jpeg", 0.8)
+  const imageData = canvas.toDataURL("image/png")
         setCapturedImage(imageData)
         setCurrentStep("generating")
         startGeneration(imageData)
@@ -119,19 +124,60 @@ export default function GeneratePage() {
     }
 
     try {
-      const response = await fetch("/api/photo", {
+      // 1) Upload captured image to obtain a baseImageId
+      const blob = await (await fetch(imageData)).blob()
+      const form = new FormData()
+      form.append("file", blob, "snapshot.png")
+
+      const uploadResp = await fetch("/api/images/upload", { method: "POST", body: form })
+      if (!uploadResp.ok) throw new Error("Failed to upload snapshot")
+      const { baseImageId } = await uploadResp.json()
+
+      // 2) Build a prompt from the selected style
+  const selected = styles.find((s) => s.id === styleId)
+  const detail = getDetailedStylePrompt(styleId)
+  const base = selected?.prompt || "cartoon style, bold lines, vibrant colors"
+  const prompt = `${detail} ${base}`
+
+      // 3) Create a fully-transparent mask so the whole image can be edited
+      const imgEl = new Image()
+      imgEl.src = imageData
+      await new Promise((res) => (imgEl.onload = () => res(null)))
+      const maskCanvas = document.createElement("canvas")
+      maskCanvas.width = imgEl.width
+      maskCanvas.height = imgEl.height
+      const mctx = maskCanvas.getContext("2d")!
+      mctx.clearRect(0, 0, maskCanvas.width, maskCanvas.height) // transparent = editable
+      const maskData = maskCanvas.toDataURL("image/png")
+
+      // 4) Request generation (image edit path)
+      const genResp = await fetch("/api/images/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: imageData,
-          style: styleId,
-          steps: generationSteps,
-        }),
+        // Use 512x512 to reduce cost while keeping quality reasonable for previews
+        body: JSON.stringify({ prompt, size: "512x512", n: 1, baseImageId, maskData }),
       })
+      if (!genResp.ok) {
+        const err = await genResp.json().catch(() => ({ error: "Generation failed" }))
+        throw new Error(err.error || "Generation failed")
+      }
+      const gen = await genResp.json()
+      const first = Array.isArray(gen?.images) && gen.images[0]
+      if (first?.url) {
+        setGeneratedImageUrl(first.url)
+      }
 
-      if (response.ok) {
-        const result = await response.json()
-        setGeneratedImageUrl(result.imageUrl)
+      // 5) Save to gallery (best-effort)
+      try {
+        if (Array.isArray(gen?.images) && gen.images.length > 0) {
+          await fetch("/api/gallery", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ images: gen.images }),
+          })
+        }
+      } catch (e) {
+        console.warn("Failed to add to gallery:", e)
       }
     } catch (error) {
       console.error("Generation failed:", error)

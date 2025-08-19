@@ -5,6 +5,7 @@ import { existsSync, createReadStream } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
 import { sanitizePromptForImage } from "../../../../../lib/prompt-sanitizer"
+import { checkPromptSafety } from "../../../../../lib/prompt-moderator"
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -170,6 +171,21 @@ export async function POST(request: NextRequest) {
           return
         }
 
+        // Local content safety check
+        const safety = checkPromptSafety(expandedPrompt?.trim() ? expandedPrompt! : prompt)
+        if (!safety.allowed) {
+          sendProgressEvent(encoder, controller, {
+            type: "error",
+            status: "error",
+            progress: 0,
+            message:
+              "Your request contains disallowed content and cannot be processed. Please adjust the wording and try again.",
+            error: safety.reason || "Content policy violation",
+          })
+          controller.close()
+          return
+        }
+
         // Send processing progress
         sendProgressEvent(encoder, controller, {
           type: "progress",
@@ -199,7 +215,8 @@ export async function POST(request: NextRequest) {
         const images: GeneratedImage[] = []
 
         try {
-          const finalPrompt = sanitizePromptForImage(expandedPrompt?.trim() ? expandedPrompt! : prompt)
+          const sourcePrompt = safety.cleaned ?? (expandedPrompt?.trim() ? expandedPrompt! : prompt)
+          const finalPrompt = sanitizePromptForImage(sourcePrompt)
 
           // Map unsupported 768 to 1024 for provider call
           const providerSize: "256x256" | "512x512" | "1024x1024" =

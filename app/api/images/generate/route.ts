@@ -5,6 +5,7 @@ import { existsSync, createReadStream } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
 import { sanitizePromptForImage } from "../../../../lib/prompt-sanitizer"
+import { checkPromptSafety } from "../../../../lib/prompt-moderator"
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -94,6 +95,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Mask editing only supports generating 1 image at a time" }, { status: 400 })
     }
 
+    // Local content safety check
+    const safety = checkPromptSafety(expandedPrompt?.trim() ? expandedPrompt! : prompt)
+    if (!safety.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Your request contains disallowed content and cannot be processed. Please adjust the wording and try again.",
+          reason: safety.reason,
+        },
+        { status: 400 },
+      )
+    }
+
     // Ensure directories exist
     const generatedDir = path.join(process.cwd(), "public", "generated")
     const dataDir = path.join(process.cwd(), "data")
@@ -114,8 +128,9 @@ export async function POST(request: NextRequest) {
     const images: GeneratedImage[] = []
 
     try {
-      // Build final prompt sent to provider
-      const finalPrompt = sanitizePromptForImage(expandedPrompt?.trim() ? expandedPrompt! : prompt)
+  // Build final prompt sent to provider (use cleaned variant when present)
+  const sourcePrompt = safety.cleaned ?? (expandedPrompt?.trim() ? expandedPrompt! : prompt)
+  const finalPrompt = sanitizePromptForImage(sourcePrompt)
       // Map unsupported provider size to nearest supported for OpenAI
       const providerSize: "256x256" | "512x512" | "1024x1024" =
         size === "768x768" ? "1024x1024" : (size as "256x256" | "512x512" | "1024x1024")

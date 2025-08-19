@@ -382,5 +382,61 @@
     "size": "1024x1024",
     "baseImageId": "80e0172a-4604-472a-a1c8-49748330c109",
     "createdAt": "2025-08-19T18:22:44.918Z"
+  },
+  {
+    "id": "3921aa8b-7592-4083-89de-f0092b652d27",
+    "url": "/uploads/base/3921aa8b-7592-4083-89de-f0092b652d27.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "3921aa8b-7592-4083-89de-f0092b652d27",
+    "createdAt": "2025-08-19T20:25:23.557Z"
+  },
+  {
+    "id": "2470180e-8a36-42b3-9997-486c1eb7123a",
+    "url": "/uploads/base/2470180e-8a36-42b3-9997-486c1eb7123a.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "2470180e-8a36-42b3-9997-486c1eb7123a",
+    "createdAt": "2025-08-19T20:27:37.689Z"
+  },
+  {
+    "id": "24b3fd85-0b67-4e6f-9399-3bb57f5cfa03",
+    "url": "/uploads/base/24b3fd85-0b67-4e6f-9399-3bb57f5cfa03.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "24b3fd85-0b67-4e6f-9399-3bb57f5cfa03",
+    "createdAt": "2025-08-19T20:35:41.382Z"
+  },
+  {
+    "id": "818dee2c-1c7e-4622-b20b-872075d216da",
+    "url": "/uploads/base/818dee2c-1c7e-4622-b20b-872075d216da.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "818dee2c-1c7e-4622-b20b-872075d216da",
+    "createdAt": "2025-08-19T20:41:24.923Z"
+  },
+  {
+    "id": "95b3d4c9-10e6-474d-9337-a4bb2cd7bdb4",
+    "url": "/uploads/base/95b3d4c9-10e6-474d-9337-a4bb2cd7bdb4.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "95b3d4c9-10e6-474d-9337-a4bb2cd7bdb4",
+    "createdAt": "2025-08-19T20:41:24.959Z"
+  },
+  {
+    "id": "428ee010-93c4-4793-931b-5144d3e1de76",
+    "url": "/uploads/base/428ee010-93c4-4793-931b-5144d3e1de76.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "428ee010-93c4-4793-931b-5144d3e1de76",
+    "createdAt": "2025-08-19T20:43:06.986Z"
+  },
+  {
+    "id": "5ee8f434-1e86-4dcd-86aa-7d1d5964b4fa",
+    "url": "/uploads/base/5ee8f434-1e86-4dcd-86aa-7d1d5964b4fa.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "5ee8f434-1e86-4dcd-86aa-7d1d5964b4fa",
+    "createdAt": "2025-08-19T20:43:07.010Z"
   }
 ]
