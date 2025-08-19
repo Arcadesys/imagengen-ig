@@ -77,10 +77,12 @@ export default function PhotoBoothPage() {
   const handleStyleSelect = (style: StyleOption) => {
     setSelectedStyle(style)
     setLoading(true)
-    const params = new URLSearchParams({ style: style.id })
+
     if (uploadedPhoto) {
-      params.append("photo", uploadedPhoto)
+      sessionStorage.setItem("photoBoothImage", uploadedPhoto)
     }
+
+    const params = new URLSearchParams({ style: style.id })
     setTimeout(() => {
       window.location.href = `/generate?${params.toString()}`
     }, 500)
