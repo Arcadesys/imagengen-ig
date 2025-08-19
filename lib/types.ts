@@ -38,18 +38,60 @@ export interface GenerateRequest {
   baseImageId?: string | null
 }
 
-export type TraitCategory =
-  | "Color"
-  | "Style"
-  | "Lighting"
-  | "Mood"
-  | "Composition"
-  | "Camera"
-  | "Details"
+export type TraitCategory = "Color" | "Style" | "Lighting" | "Mood" | "Composition" | "Camera" | "Details"
 
 export interface Trait {
   id: string
   name: string
   category: TraitCategory
   aliases?: string[]
+}
+
+export interface PhotoBoothStyle {
+  id: string
+  name: string
+  description: string
+  prompt: string
+  preview?: string
+}
+
+export interface GenerationStep {
+  id: string
+  name: string
+  description: string
+  duration: number
+}
+
+export interface PhotoBoothEvent {
+  id: string
+  name: string
+  active: boolean
+  startTime: string
+  endTime: string
+  photoCount: number
+  settings: {
+    allowedStyles: string[]
+    maxPhotosPerUser: number
+    requireEmail: boolean
+    enableWall: boolean
+    wallRefreshInterval: number
+  }
+}
+
+export interface WallPhoto {
+  id: string
+  imageUrl: string
+  style: string
+  timestamp: string
+  email?: string
+}
+
+export interface PhotoRecord {
+  id: string
+  email: string
+  imageUrl: string
+  style: string
+  timestamp: string
+  shared: boolean
+  eventId: string
 }
