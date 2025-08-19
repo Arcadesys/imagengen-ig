@@ -71,7 +71,7 @@ export function AltTextInput({ imageUrl, currentAltText = "", onSave, disabled }
                 aria-describedby="alt-text-help"
               />
               <p className="text-xs text-muted-foreground" id="alt-text-help">
-                Good alt text is concise but descriptive. Avoid starting with "Image of" or "Picture of".
+                Good alt text is concise but descriptive. Avoid starting with &quot;Image of&quot; or &quot;Picture of&quot;.
                 {altText.length > 0 && ` (${altText.length}/250 characters)`}
               </p>
             </div>

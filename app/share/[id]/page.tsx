@@ -86,7 +86,7 @@ export default function SharePhotoPage() {
           <CardContent className="p-8 text-center">
             <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Photo Not Found</h1>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              The photo you're looking for doesn't exist or has been removed.
+              The photo you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
             <Button
               onClick={() => (window.location.href = "/")}

@@ -80,6 +80,22 @@
     "createdAt": "2025-08-19T00:16:21.509Z"
   },
   {
+
+    "id": "27469578-10a8-4a62-b845-49afc7eada84",
+    "url": "/uploads/base/27469578-10a8-4a62-b845-49afc7eada84.webp",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "27469578-10a8-4a62-b845-49afc7eada84",
+    "createdAt": "2025-08-19T19:28:55.756Z"
+  },
+  {
+    "id": "d42e8f01-fdc4-4ca0-b7a0-759b39f68ca0",
+    "url": "/uploads/base/d42e8f01-fdc4-4ca0-b7a0-759b39f68ca0.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "d42e8f01-fdc4-4ca0-b7a0-759b39f68ca0",
+    "createdAt": "2025-08-19T19:28:55.774Z"
+=======
     "id": "97676f0e-28b6-47d0-9956-02f6c900fb13",
     "url": "/generated/97676f0e-28b6-47d0-9956-02f6c900fb13.png",
     "prompt": "Paint over the subject to transform them into a Cat-themed cartoon character while preserving the original pose, camera, and composition. Target blend 40% toon vs real. Preserve identity and wardrobe, converting materials to ink-and-paint equivalents. Add clean black line art with varied line weight, 2D cel shading with two-tone shadows and gentle rimlight, and subtle halftone in shadows. Style: modern cartoon. World: hybrid world. Lighting: cel-shaded glow. Effects:ink splatter, toon pop impact stars. Props:magic paintbrush. Include motion-line smears. Safe-for-work, family-friendly, non-violent.",

@@ -1,14 +1,11 @@
 import type { NextRequest } from "next/server"
 import OpenAI from "openai"
-import { writeFile, mkdir } from "fs/promises"
+import { writeFile, mkdir, readFile } from "fs/promises"
+
 import { existsSync, createReadStream } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
 import { sanitizePromptForImage } from "../../../../../lib/prompt-sanitizer"
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 interface GenerateRequest {
   prompt: string
@@ -93,6 +90,11 @@ export async function POST(request: NextRequest) {
           controller.close()
           return
         }
+
+        // Initialize OpenAI client with the API key
+        const openai = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY,
+        })
 
         console.log("[v0] OpenAI API key is present")
 
@@ -246,10 +248,10 @@ export async function POST(request: NextRequest) {
 
             console.log("[v0] Calling OpenAI image edit API...")
             const response = await openai.images.edit({
-              image: createReadStream(baseImagePath),
-              mask: createReadStream(maskPath),
-              prompt: finalPrompt,
-              size: providerSize,
+              image: createReadStream(baseImagePath) as any,
+              mask: createReadStream(maskPath) as any,
+              prompt,
+              size: size as "256x256" | "512x512" | "1024x1024",
               n: 1,
             })
 

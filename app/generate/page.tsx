@@ -384,7 +384,7 @@ export default function GeneratePage() {
               </form>
 
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                We'll send you a link to download your photo and share it with friends!
+                We&apos;ll send you a link to download your photo and share it with friends!
               </p>
             </CardContent>
           </Card>
