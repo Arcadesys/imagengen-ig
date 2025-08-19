@@ -110,7 +110,7 @@ export default function TurnToonPage() {
   const [baseImageId, setBaseImageId] = useState<string | null>(null)
   const [maskData, setMaskData] = useState<string | null>(null)
   // Advanced output dials
-  const [outputSize, setOutputSize] = useState<"512x512" | "768x768" | "1024x1024">("1024x1024")
+  const [outputSize, setOutputSize] = useState<"512x512" | "768x768" | "1024x1024">("512x512")
   const [imageCount, setImageCount] = useState<number>(1)
   const [seed, setSeed] = useState<string>("")
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false)

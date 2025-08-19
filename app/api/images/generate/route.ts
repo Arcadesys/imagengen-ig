@@ -5,6 +5,7 @@ import { existsSync, createReadStream } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
 import { sanitizePromptForImage } from "../../../../lib/prompt-sanitizer"
+import { isAdminRequest } from "../../../../lib/admin"
 import { checkPromptSafety } from "../../../../lib/prompt-moderator"
 import { saveImage } from "../../../../lib/images"
 import { prisma } from "../../../../lib/db"
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       hasMask: !!maskData,
     })
 
-    // Validate input
+  // Validate input
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ error: "Prompt is required and must be a string" }, { status: 400 })
     }
@@ -114,7 +115,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Mask editing only supports generating 1 image at a time" }, { status: 400 })
     }
 
-    // Local content safety check
+  // Enforce 512x512 for non-admins (effective request size)
+  const allowRequestedSize = isAdminRequest(request)
+  const effectiveSize: "512x512" | "768x768" | "1024x1024" = allowRequestedSize ? size : "512x512"
+
+  // Local content safety check
     const safety = checkPromptSafety(expandedPrompt?.trim() ? expandedPrompt! : prompt)
     if (!safety.allowed) {
       return NextResponse.json(
@@ -131,7 +136,7 @@ export async function POST(request: NextRequest) {
   const tempDir = path.join(process.cwd(), "temp")
   if (!existsSync(tempDir)) await mkdir(tempDir, { recursive: true })
 
-    console.log("[v0] Directories ensured, making OpenAI request")
+  console.log("[v0] Directories ensured, making OpenAI request")
 
     const images: GeneratedImage[] = []
 
@@ -139,10 +144,10 @@ export async function POST(request: NextRequest) {
   // Build final prompt sent to provider (use cleaned variant when present)
   const sourcePrompt = safety.cleaned ?? (expandedPrompt?.trim() ? expandedPrompt! : prompt)
   const finalPrompt = sanitizePromptForImage(sourcePrompt)
-      // Map unsupported provider size to nearest supported for OpenAI
+      // Map unsupported provider size to nearest supported for OpenAI (use effective size)
       const providerSize: "256x256" | "512x512" | "1024x1024" =
-        size === "768x768" ? "1024x1024" : (size as "256x256" | "512x512" | "1024x1024")
-      if (maskData && baseImageId) {
+        effectiveSize === "768x768" ? "1024x1024" : (effectiveSize as "256x256" | "512x512" | "1024x1024")
+  if (maskData && baseImageId) {
         console.log("[v0] Processing mask-based image editing")
 
         // Verify base image exists
@@ -200,7 +205,7 @@ export async function POST(request: NextRequest) {
           buffer: Buffer.from(imageBufferArray),
           prompt: finalPrompt,
           expandedPrompt: expandedPrompt || undefined,
-          size,
+          size: effectiveSize,
           seed: seed ?? undefined,
           baseImageId,
           hasMask: true,
@@ -212,7 +217,7 @@ export async function POST(request: NextRequest) {
           metadata: {
             prompt: saved.prompt || finalPrompt,
             expandedPrompt: saved.expandedPrompt || undefined,
-            size,
+            size: effectiveSize,
             seed: seed ?? undefined,
             baseImageId,
             hasMask: true,
@@ -226,6 +231,79 @@ export async function POST(request: NextRequest) {
         } catch (cleanupError) {
           console.warn("[v0] Failed to clean up temporary mask file:", cleanupError)
         }
+      } else if (baseImageId && !maskData) {
+        // Image editing without an explicit mask -> allow model to modify entire image
+        console.log("[v0] Processing full-image edit (no mask provided)")
+
+        // Verify base image exists
+        const baseImagePath = await getBaseImagePath(baseImageId)
+        if (!baseImagePath) {
+          return NextResponse.json({ error: "Base image not found" }, { status: 400 })
+        }
+
+        // OpenAI image edit supports n=1 only
+        if (n > 1) {
+          console.log("[v0] Coercing n to 1 for edit mode (no mask)")
+        }
+
+        console.log("[v0] Calling OpenAI image edit API (no mask)...")
+        const response = await openai.images.edit({
+          image: createReadStream(baseImagePath),
+          prompt: finalPrompt,
+          size: providerSize,
+          n: 1,
+        })
+
+        console.log("[v0] OpenAI image edit response received (no mask)")
+
+        if (!response.data || response.data.length === 0) {
+          console.log("[v0] No images in OpenAI response (no mask)")
+          return NextResponse.json({ error: "No images were generated" }, { status: 500 })
+        }
+
+        const imageData = response.data[0] as any
+        let imageBufferArray: ArrayBuffer
+        if (imageData?.url) {
+          console.log("[v0] Downloading edited image (no mask)")
+          const imageResponse = await fetch(imageData.url)
+          if (!imageResponse.ok) {
+            console.error(`[v0] Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`)
+            return NextResponse.json({ error: "Failed to download generated image" }, { status: 500 })
+          }
+          imageBufferArray = await imageResponse.arrayBuffer()
+        } else if (imageData?.b64_json) {
+          console.log("[v0] Decoding base64 edited image (no mask)")
+          imageBufferArray = Buffer.from(imageData.b64_json, "base64").buffer
+        } else {
+          console.error("[v0] Image has neither URL nor base64 data (no mask)")
+          return NextResponse.json({ error: "Generated image missing URL and base64 data" }, { status: 500 })
+        }
+
+        const saved = await saveImage({
+          kind: "GENERATED",
+          mimeType: "image/png",
+          buffer: Buffer.from(imageBufferArray),
+          prompt: finalPrompt,
+          expandedPrompt: expandedPrompt || undefined,
+          size: effectiveSize,
+          seed: seed ?? undefined,
+          baseImageId,
+          hasMask: false,
+          provider: "openai",
+        })
+        images.push({
+          id: saved.id,
+          url: saved.url,
+          metadata: {
+            prompt: saved.prompt || finalPrompt,
+            expandedPrompt: saved.expandedPrompt || undefined,
+            size: effectiveSize,
+            seed: seed ?? undefined,
+            baseImageId,
+            hasMask: false,
+            provider: "openai",
+          },
+        })
       } else {
   const openaiRequest: any = {
           model: "gpt-image-1",
@@ -291,7 +369,7 @@ export async function POST(request: NextRequest) {
               buffer: Buffer.from(imageBufferArray),
               prompt: finalPrompt,
               expandedPrompt: expandedPrompt || undefined,
-              size,
+              size: effectiveSize,
               seed: seed ?? undefined,
               baseImageId,
               hasMask: false,
@@ -303,7 +381,7 @@ export async function POST(request: NextRequest) {
               metadata: {
                 prompt: saved.prompt || finalPrompt,
                 expandedPrompt: saved.expandedPrompt || undefined,
-                size,
+                size: effectiveSize,
                 seed: seed ?? undefined,
                 baseImageId,
                 hasMask: false,

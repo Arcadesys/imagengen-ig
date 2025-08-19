@@ -8,6 +8,7 @@ import { sanitizePromptForImage } from "../../../../../lib/prompt-sanitizer"
 import { checkPromptSafety } from "../../../../../lib/prompt-moderator"
 import { prisma } from "../../../../../lib/db"
 import { saveImage } from "../../../../../lib/images"
+import { isAdminRequest } from "../../../../../lib/admin"
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
           hasMask: !!maskData,
         })
 
-        // Validate input
+  // Validate input
         if (!prompt || typeof prompt !== "string") {
           sendProgressEvent(encoder, controller, {
             type: "error",
@@ -188,7 +189,11 @@ export async function POST(request: NextRequest) {
           return
         }
 
-        // Local content safety check
+  // Enforce 512x512 for non-admins
+  const allowRequestedSize = isAdminRequest(request)
+  const effectiveSize: "512x512" | "768x768" | "1024x1024" = allowRequestedSize ? size : "512x512"
+
+  // Local content safety check
         const safety = checkPromptSafety(expandedPrompt?.trim() ? expandedPrompt! : prompt)
         if (!safety.allowed) {
           sendProgressEvent(encoder, controller, {
@@ -235,9 +240,9 @@ export async function POST(request: NextRequest) {
           const sourcePrompt = safety.cleaned ?? (expandedPrompt?.trim() ? expandedPrompt! : prompt)
           const finalPrompt = sanitizePromptForImage(sourcePrompt)
 
-          // Map unsupported 768 to 1024 for provider call
+          // Map unsupported 768 to 1024 for provider call using effective size
           const providerSize: "256x256" | "512x512" | "1024x1024" =
-            size === "768x768" ? "1024x1024" : (size as "256x256" | "512x512" | "1024x1024")
+            effectiveSize === "768x768" ? "1024x1024" : (effectiveSize as "256x256" | "512x512" | "1024x1024")
 
           if (maskData && baseImageId) {
             console.log("[v0] Processing mask-based image editing")
@@ -353,7 +358,7 @@ export async function POST(request: NextRequest) {
               buffer: Buffer.from(imageBufferArray),
               prompt: finalPrompt,
               expandedPrompt: expandedPrompt || undefined,
-              size,
+              size: effectiveSize,
               seed: seed ?? undefined,
               baseImageId,
               hasMask: true,
@@ -365,7 +370,7 @@ export async function POST(request: NextRequest) {
               metadata: {
                 prompt: saved.prompt || finalPrompt,
                 expandedPrompt: saved.expandedPrompt || undefined,
-                size,
+                size: effectiveSize,
                 seed: seed ?? undefined,
                 baseImageId,
                 hasMask: true,
@@ -487,7 +492,7 @@ export async function POST(request: NextRequest) {
                   buffer: Buffer.from(imageBufferArray),
                   prompt: finalPrompt,
                   expandedPrompt: expandedPrompt || undefined,
-                  size,
+                  size: effectiveSize,
                   seed: seed ?? undefined,
                   baseImageId,
                   hasMask: false,
@@ -499,7 +504,7 @@ export async function POST(request: NextRequest) {
                   metadata: {
                     prompt: finalPrompt,
                     expandedPrompt: expandedPrompt || undefined,
-                    size,
+                    size: effectiveSize,
                     seed: seed ?? undefined,
                     baseImageId,
                     hasMask: false,

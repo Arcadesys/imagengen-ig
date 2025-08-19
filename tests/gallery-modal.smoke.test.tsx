@@ -69,7 +69,8 @@ describe("Gallery modal smoke test", () => {
     // Should show prompt (may appear in title and description)
     const prompts = screen.getAllByText(/A test image expanded/)
     expect(prompts.length).toBeGreaterThan(0)
-    // Should show size badge
-    expect(screen.getByText(/1024x1024/)).toBeInTheDocument()
+  // Should show size badge (may appear in multiple places)
+  const sizeBadges = screen.getAllByText(/1024x1024/)
+  expect(sizeBadges.length).toBeGreaterThan(0)
   })
 })

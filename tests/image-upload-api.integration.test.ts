@@ -153,10 +153,7 @@ describe("[API] /api/images/upload", () => {
 
       const { baseImageId, url } = res.body as { baseImageId: string; url: string }
 
-      // Verify file exists on disk
-      const expectedRel = url.replace(/^\//, "") // strip leading slash
-      const filePath = path.join(process.cwd(), "public", expectedRel.replace(/^public\//, ""))
-      expect(await fileExists(filePath)).toBe(true)
+  // File content is stored in DB; URL is a virtual route. We only assert URL shape and registry record.
 
       // Verify registry contains the upload record
       const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
@@ -166,7 +163,7 @@ describe("[API] /api/images/upload", () => {
       expect(rec).toBeTruthy()
       expect(rec.filename).toBe("sample.png")
 
-      // Cleanup registry entry (file is stored in DB now)
+  // Cleanup registry entry (file bytes are stored in DB)
       try {
         if (await fileExists(uploadsPath)) {
           const updated = (json as any[]).filter((x) => x.id !== baseImageId)
