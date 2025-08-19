@@ -1,13 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import { writeFile, mkdir, readFile } from "fs/promises"
-import { existsSync } from "fs"
+import { existsSync, createReadStream } from "fs"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 interface GenerateRequest {
   prompt: string
@@ -52,6 +48,11 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] OpenAI API key is present")
+
+    // Initialize OpenAI client with the API key
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
 
     const body: GenerateRequest = await request.json()
     const { prompt, expandedPrompt, size, n, seed, baseImageId, maskData } = body
@@ -124,8 +125,8 @@ export async function POST(request: NextRequest) {
 
         console.log("[v0] Calling OpenAI image edit API...")
         const response = await openai.images.edit({
-          image: await readFile(baseImagePath),
-          mask: await readFile(maskPath),
+          image: createReadStream(baseImagePath) as any,
+          mask: createReadStream(maskPath) as any,
           prompt,
           size: size as "256x256" | "512x512" | "1024x1024",
           n: 1, // Image editing only supports n=1
