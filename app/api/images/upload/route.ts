@@ -217,7 +217,9 @@ export async function POST(request: NextRequest) {
         createdAt: new Date().toISOString(),
       })
       await writeFile(galleryFile, JSON.stringify(gallery, null, 2))
-    } catch {}
+    } catch (e) {
+      console.warn("[v0] Failed to add uploaded image to gallery.json:", e);
+    }
 
     return NextResponse.json({ baseImageId: uploadRecord.id, url: uploadRecord.url })
   } catch (error) {
