@@ -1,4 +1,2 @@
-# This repository is a single-package workspace. No workspace packages to declare.
-# pnpm configuration has been moved to .npmrc where it is honored by pnpm/CI.
 packages:
-  - "!**"
+  - "!**" # single-package workspace; no sub-packages
