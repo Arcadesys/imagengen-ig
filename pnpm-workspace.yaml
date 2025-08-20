@@ -1,2 +1,0 @@
-packages:
-  - "!**" # single-package workspace; no sub-packages

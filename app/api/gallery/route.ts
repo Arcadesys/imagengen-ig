@@ -24,7 +24,14 @@ export async function GET() {
     }
 
     const galleryData = await readFile(galleryFile, "utf-8")
-    const gallery: GalleryImage[] = JSON.parse(galleryData)
+    let gallery: GalleryImage[] = []
+    try {
+      gallery = JSON.parse(galleryData)
+      if (!Array.isArray(gallery)) gallery = []
+    } catch (e) {
+      console.warn("[gallery] Invalid JSON in gallery.json, returning empty list:", e)
+      gallery = []
+    }
 
     // Sort by creation date, newest first
     gallery.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -52,7 +59,13 @@ export async function POST(request: NextRequest) {
     let gallery: GalleryImage[] = []
     if (existsSync(galleryFile)) {
       const galleryData = await readFile(galleryFile, "utf-8")
-      gallery = JSON.parse(galleryData)
+      try {
+        gallery = JSON.parse(galleryData)
+        if (!Array.isArray(gallery)) gallery = []
+      } catch (e) {
+        console.warn("[gallery] Invalid JSON in gallery.json, starting fresh:", e)
+        gallery = []
+      }
     }
 
     // Support two payload shapes:

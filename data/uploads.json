@@ -34,5 +34,17 @@
     "url": "/uploads/base/e38f95a0-37ed-47c5-b830-d6754f5c2876.jpg",
     "filename": "2013 Jul.jpg",
     "createdAt": "2025-08-19T23:47:07.225Z"
+  },
+  {
+    "id": "bcc35c4f-ae76-48bd-b3a1-27be8011ee77",
+    "url": "/uploads/base/bcc35c4f-ae76-48bd-b3a1-27be8011ee77.png",
+    "filename": "webcam.png",
+    "createdAt": "2025-08-20T18:03:53.410Z"
+  },
+  {
+    "id": "c959e149-3341-43bc-8956-4ac907c685e9",
+    "url": "/uploads/base/c959e149-3341-43bc-8956-4ac907c685e9.png",
+    "filename": "gallery-add.png",
+    "createdAt": "2025-08-20T18:06:18.251Z"
   }
 ]
