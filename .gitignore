@@ -25,3 +25,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# prisma local db and artifacts
+prisma/dev.db
+prisma/dev.db-journal
+prisma/migrations/**/steps.json
+
+# generated and temp image assets
+public/generated/
+public/uploads/
+temp/

@@ -22,7 +22,7 @@ model Image {
   // generation metadata
   prompt          String?
   expandedPrompt  String?
-  size            String? // "512x512" | "768x768" | "1024x1024"
+  size            ImageSize?
   seed            String?
   baseImageId     String?
   hasMask         Boolean? @default(false)
@@ -32,11 +32,21 @@ model Image {
   updatedAt    DateTime @updatedAt
 
   blob         ImageBlob?
+
+  @@index([createdAt])
+  @@index([kind, createdAt])
+  @@index([baseImageId])
 }
 
 enum ImageKind {
   UPLOAD_BASE
   GENERATED
+}
+
+enum ImageSize {
+  _512x512
+  _768x768
+  _1024x1024
 }
 
 // Store binary data separately to keep Image table lean

@@ -27,37 +27,16 @@ vi.mock("../lib/db", () => ({
   },
 }))
 
-vi.mock("../lib/image-generation-utils", () => ({
-  dataURLToBuffer: vi.fn(() => Buffer.from("test")),
-  getBaseImagePath: vi.fn(() => null),
-  ensureDirectories: vi.fn(),
-  validateGenerateRequest: vi.fn((body) => {
-    // Use actual validation logic for testing
-    const { prompt, size, n, maskData, baseImageId } = body
-    
-    if (!prompt || typeof prompt !== "string") {
-      return { isValid: false, error: "Prompt is required and must be a string" }
-    }
-    
-    if (!["512x512", "768x768", "1024x1024"].includes(size)) {
-      return { isValid: false, error: "Invalid size. Must be 512x512, 768x768, or 1024x1024" }
-    }
-    
-    if (!n || n < 1 || n > 4) {
-      return { isValid: false, error: "Number of images must be between 1 and 4" }
-    }
-    
-    if (maskData && !baseImageId) {
-      return { isValid: false, error: "Base image is required when using mask" }
-    }
-    
-    if (maskData && n > 1) {
-      return { isValid: false, error: "Mask editing only supports generating 1 image at a time" }
-    }
-    
-    return { isValid: true }
-  }),
-}))
+vi.mock("../lib/image-generation-utils", async (orig) => {
+  const actual = await (orig as any).importActual("../lib/image-generation-utils")
+  return {
+    ...actual,
+    dataURLToBuffer: vi.fn(() => Buffer.from("test")),
+    getBaseImagePath: vi.fn(() => null),
+    ensureDirectories: vi.fn(),
+    // use actual validateGenerateRequest from the module to avoid drift
+  }
+})
 
 vi.mock("fs/promises", () => ({
   mkdir: vi.fn(),
