@@ -107,9 +107,11 @@ export class ImageGenerationService {
       const sourcePrompt = safety.cleaned ?? (expandedPrompt?.trim() ? expandedPrompt! : prompt)
       const finalPrompt = sanitizePromptForImage(sourcePrompt)
 
-      // Map size for OpenAI
-      const providerSize: "256x256" | "512x512" | "1024x1024" =
-        effectiveSize === "768x768" ? "1024x1024" : (effectiveSize as "256x256" | "512x512" | "1024x1024")
+  // Map requested square sizes to OpenAI-supported sizes.
+  // As of current OpenAI API, supported values include '1024x1024', '1024x1536', '1536x1024', and 'auto'.
+  // We only request square images in this app, so normalize to 1024x1024 for provider while preserving
+  // the user's effectiveSize in metadata.
+  const providerSize: "1024x1024" | "1024x1536" | "1536x1024" | "auto" = "1024x1024"
 
       const images: GeneratedImage[] = []
 
@@ -188,7 +190,7 @@ export class ImageGenerationService {
     finalPrompt: string,
     baseImageId: string,
     maskData: string,
-    providerSize: "256x256" | "512x512" | "1024x1024",
+  providerSize: "1024x1024" | "1024x1536" | "1536x1024" | "auto",
     effectiveSize: "512x512" | "768x768" | "1024x1024",
     expandedPrompt?: string | null,
     seed?: string | number | null,
@@ -286,7 +288,7 @@ export class ImageGenerationService {
   private async generateImageEdit(
     finalPrompt: string,
     baseImageId: string,
-    providerSize: "256x256" | "512x512" | "1024x1024",
+  providerSize: "1024x1024" | "1024x1536" | "1536x1024" | "auto",
     effectiveSize: "512x512" | "768x768" | "1024x1024",
     expandedPrompt?: string | null,
     seed?: string | number | null,
@@ -366,7 +368,7 @@ export class ImageGenerationService {
 
   private async generateStandard(
     finalPrompt: string,
-    providerSize: "256x256" | "512x512" | "1024x1024",
+  providerSize: "1024x1024" | "1024x1536" | "1536x1024" | "auto",
     n: number,
     effectiveSize: "512x512" | "768x768" | "1024x1024",
     expandedPrompt?: string | null,

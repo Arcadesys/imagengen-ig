@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { sanitizePromptForImage } from "../../../lib/prompt-sanitizer"
 import { checkPromptSafety } from "../../../lib/prompt-moderator"
+import { ImageGenerationService } from "../../../lib/image-generation-service"
 
 type Size = "512x512" | "768x768" | "1024x1024"
 
@@ -84,35 +85,22 @@ export async function POST(req: NextRequest) {
     }
     const finalPrompt = sanitizePromptForImage(safety.cleaned ?? combined)
 
-    // Hand off to existing generator (non-stream) for simplicity
-  const genRes = await fetch(new URL("/api/images/generate", req.nextUrl).toString(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    // Call the image generation service directly to avoid internal fetch/network issues
+    const imageService = new ImageGenerationService()
+    const result = await imageService.generateImages(
+      {
         prompt: finalPrompt,
         expandedPrompt: combined,
         size,
-    n,
+        n,
         seed,
         baseImageId,
         maskData,
-      }),
-    })
+      } as any,
+      req,
+    )
 
-    if (!genRes.ok) {
-      const errText = await genRes.text().catch(() => "")
-      let errMsg = "Generation failed"
-      try {
-        const j = JSON.parse(errText)
-        errMsg = j.error || errMsg
-      } catch {
-        if (errText) errMsg = `${errMsg}: ${errText.slice(0, 200)}`
-      }
-      return NextResponse.json({ error: errMsg }, { status: genRes.status })
-    }
-
-    const data = await genRes.json()
-    return NextResponse.json(data)
+    return NextResponse.json(result)
   } catch (e: any) {
     console.error("[puppetray] Error:", e)
     return NextResponse.json({ error: e?.message || "Failed to process puppetray request" }, { status: 500 })

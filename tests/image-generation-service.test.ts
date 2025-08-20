@@ -97,7 +97,7 @@ describe("ImageGenerationService", () => {
       expect.objectContaining({
         model: "gpt-image-1",
         prompt: "test prompt",
-        size: "512x512",
+        size: "1024x1024",
         n: 1,
       })
     )
