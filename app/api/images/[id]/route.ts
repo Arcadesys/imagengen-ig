@@ -20,8 +20,16 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-  await prisma.image.delete({ where: { id } })
-  return NextResponse.json({ success: true })
+  const id = params.id;
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  try {
+    await prisma.image.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    if (error.code === 'P2025') {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    }
+    console.error("Error deleting image:", error);
+    return NextResponse.json({ error: "Failed to delete image" }, { status: 500 });
+  }
 }
