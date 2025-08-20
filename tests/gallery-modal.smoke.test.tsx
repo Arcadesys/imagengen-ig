@@ -1,10 +1,34 @@
-import { describe, it, expect } from "vitest"
+import React from "react"
+import { describe, it, expect, beforeAll, vi } from "vitest"
+import "@testing-library/jest-dom"
 import { render, screen, fireEvent } from "@testing-library/react"
+
+// Mock Next.js app router hooks
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}))
+
+vi.mock("next/link", () => ({
+  __esModule: true,
+  default: ({ children, href, ...props }: any) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+}))
+
 import GalleryPage from "../app/gallery/page"
 
 // Mock fetch for gallery images
 beforeAll(() => {
-  global.fetch = vi.fn().mockImplementation((url) => {
+  global.fetch = vi.fn().mockImplementation((url: string) => {
     if (url === "/api/gallery") {
       return Promise.resolve({
         ok: true,
@@ -30,20 +54,23 @@ beforeAll(() => {
 describe("Gallery modal smoke test", () => {
   it("opens modal on image click and renders full size", async () => {
     render(<GalleryPage />)
-    // Wait for gallery to load
-    expect(await screen.findByText(/Gallery/)).toBeInTheDocument()
-    // Find the image card
-    const imgCard = await screen.findByRole("gridcell")
+  // Wait for gallery grid to load
+  await screen.findByRole("grid")
+  // Find the first image card
+  const imgCard = await screen.findByRole("gridcell")
     expect(imgCard).toBeInTheDocument()
     // Click the image
     fireEvent.click(imgCard.querySelector(".aspect-square")!)
     // Modal should open
     expect(await screen.findByRole("dialog")).toBeInTheDocument()
-    // Should show full size image
-    expect(screen.getByAltText(/A test image/)).toBeInTheDocument()
-    // Should show prompt
-    expect(screen.getByText(/A test image expanded/)).toBeInTheDocument()
-    // Should show size badge
-    expect(screen.getByText(/1024x1024/)).toBeInTheDocument()
+  // Should show full size image (one or more img elements)
+  const imgs = screen.getAllByAltText(/A test image/)
+  expect(imgs.length).toBeGreaterThan(0)
+    // Should show prompt (may appear in title and description)
+    const prompts = screen.getAllByText(/A test image expanded/)
+    expect(prompts.length).toBeGreaterThan(0)
+  // Should show size badge (may appear in multiple places)
+  const sizeBadges = screen.getAllByText(/1024x1024/)
+  expect(sizeBadges.length).toBeGreaterThan(0)
   })
 })

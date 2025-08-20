@@ -3,6 +3,7 @@ import { writeFile, mkdir, readFile } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
 import crypto from "crypto"
+import { saveImage } from "../../../../lib/images"
 
 let sharp: any = null
 try {
@@ -56,8 +57,8 @@ export async function POST(request: NextRequest) {
     const originalSize = file.size
 
     console.log("[v0] Creating directories...")
-    // Ensure upload directory exists
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "base")
+  // Ensure temp directory exists (for any intermediate operations)
+  const uploadDir = path.join(process.cwd(), "temp", "uploads", "base")
     const dataDir = path.join(process.cwd(), "data")
 
     if (!existsSync(uploadDir)) {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     const baseImageId = crypto.randomUUID()
     let outputExt = originalExt || ".png"
     let filename = `${baseImageId}${outputExt}`
-    let filepath = path.join(uploadDir, filename)
+  let filepath = path.join(uploadDir, filename)
 
     console.log("[v0] Preparing image buffer, original size:", originalSize)
     const bytes = await file.arrayBuffer()
@@ -158,10 +159,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log("[v0] Saving file to:", filepath)
-    await writeFile(filepath, buffer)
-
-    console.log("[v0] Updating uploads registry...")
+    console.log("[v0] Saving base image to DB")
+    const saved = await saveImage({
+      kind: "UPLOAD_BASE",
+      mimeType: file.type || "image/png",
+      buffer,
+      originalName: (file?.name as string) || null,
+    })
     // Update uploads registry
     const uploadsFile = path.join(dataDir, "uploads.json")
     let uploads: UploadedImage[] = []
@@ -172,8 +176,8 @@ export async function POST(request: NextRequest) {
     }
 
     const uploadRecord: UploadedImage = {
-      id: baseImageId,
-      url: `/uploads/base/${filename}`,
+      id: saved.id,
+      url: saved.url,
       filename: file.name,
       createdAt: new Date().toISOString(),
     }
@@ -205,17 +209,19 @@ export async function POST(request: NextRequest) {
         gallery = JSON.parse(s)
       }
       gallery.push({
-        id: baseImageId,
-        url: `/uploads/base/${filename}`,
+        id: uploadRecord.id,
+        url: uploadRecord.url,
         prompt: "Uploaded base image",
         size: "1024x1024",
-        baseImageId,
+        baseImageId: uploadRecord.id,
         createdAt: new Date().toISOString(),
       })
       await writeFile(galleryFile, JSON.stringify(gallery, null, 2))
-    } catch {}
+    } catch (e) {
+      console.warn("[v0] Failed to add uploaded image to gallery.json:", e);
+    }
 
-    return NextResponse.json({ baseImageId, url: `/uploads/base/${filename}` })
+    return NextResponse.json({ baseImageId: uploadRecord.id, url: uploadRecord.url })
   } catch (error) {
     console.error("[v0] Error uploading file:", error)
     return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
@@ -230,7 +236,24 @@ export async function GET() {
       return NextResponse.json([])
     }
     const uploadsData = await readFile(uploadsFile, "utf-8")
-    const uploads: UploadedImage[] = JSON.parse(uploadsData)
+    let uploads: UploadedImage[] = JSON.parse(uploadsData)
+
+    // Filter out entries that don't exist in DB anymore (e.g., after a DB reset)
+    try {
+      const { prisma } = await import("../../../../lib/db")
+      const ids = uploads.map((u) => u.id)
+      const existing = await prisma.image.findMany({ where: { id: { in: ids } }, select: { id: true } })
+      const existingSet = new Set(existing.map((e) => e.id))
+      const filtered = uploads.filter((u) => existingSet.has(u.id))
+      if (filtered.length !== uploads.length) {
+        // Persist filtered list back to disk to avoid future 404s
+        uploads = filtered
+        await writeFile(uploadsFile, JSON.stringify(uploads, null, 2))
+      }
+    } catch (e) {
+      console.warn("[v0] Failed to validate uploads against DB:", e)
+    }
+
     // Sort newest first
     uploads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     return NextResponse.json(uploads)

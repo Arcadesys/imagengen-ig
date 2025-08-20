@@ -107,10 +107,13 @@ describe("[API] /api/images/upload", () => {
       expect(url).toMatch(/^\/uploads\/base\//)
       expect(baseImageId).toBeTruthy()
 
-      const expectedRel = url.replace(/^\//, "")
-      const filePath = path.join(process.cwd(), "public", expectedRel.replace(/^public\//, ""))
-      const stat = await fs.promises.stat(filePath)
-      expect(stat.size).toBeLessThanOrEqual(Number(process.env.UPLOAD_MAX_SIZE_BYTES))
+      // Fetch the image URL and validate response headers
+      const imgRes = await request.get(url)
+      expect(imgRes.status).toBe(200)
+      expect(imgRes.headers["content-type"]).toMatch(/image\//)
+      expect(Number(imgRes.headers["content-length"] || 0)).toBeLessThanOrEqual(
+        Number(process.env.UPLOAD_MAX_SIZE_BYTES),
+      )
 
       // cleanup file and registry entry
       const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
@@ -150,10 +153,7 @@ describe("[API] /api/images/upload", () => {
 
       const { baseImageId, url } = res.body as { baseImageId: string; url: string }
 
-      // Verify file exists on disk
-      const expectedRel = url.replace(/^\//, "") // strip leading slash
-      const filePath = path.join(process.cwd(), "public", expectedRel.replace(/^public\//, ""))
-      expect(await fileExists(filePath)).toBe(true)
+  // File content is stored in DB; URL is a virtual route. We only assert URL shape and registry record.
 
       // Verify registry contains the upload record
       const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
@@ -163,18 +163,13 @@ describe("[API] /api/images/upload", () => {
       expect(rec).toBeTruthy()
       expect(rec.filename).toBe("sample.png")
 
-      // Cleanup: remove created artifacts
+  // Cleanup registry entry (file bytes are stored in DB)
       try {
-        if (await fileExists(filePath)) {
-          await fs.promises.unlink(filePath)
-        }
         if (await fileExists(uploadsPath)) {
           const updated = (json as any[]).filter((x) => x.id !== baseImageId)
           await fs.promises.writeFile(uploadsPath, JSON.stringify(updated, null, 2), "utf8")
         }
-      } catch (e) {
-        // Swallow cleanup errors in tests
-      }
+      } catch {}
     },
     30000,
   )
@@ -208,12 +203,7 @@ describe("[API] /api/images/upload", () => {
       const list = resGet.body as any[]
       expect(list.some((x) => x.id === baseImageId)).toBe(true)
 
-      // Cleanup artifacts: file, uploads.json entry, gallery.json entry
-      const expectedRel = url.replace(/^\//, "")
-      const filePath = path.join(process.cwd(), "public", expectedRel.replace(/^public\//, ""))
-      try {
-        await fs.promises.unlink(filePath)
-      } catch {}
+  // Cleanup artifacts: uploads.json entry, gallery.json entry (DB holds the bytes)
 
       const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
       try {

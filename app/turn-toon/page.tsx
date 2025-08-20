@@ -42,7 +42,7 @@ const ALL_VARS = [
 ]
 
 const DEFAULT_TEMPLATE = PROMPT_PRESETS.find((p) => p.id === DEFAULT_TOON_PRESET_ID)?.template ||
-  "Live-action HDR photo plate in 4K with sharp detail; insert 2D/2.5D cartoon characters into the real-world environment without altering the background set [[mask_data|if:, edit only the masked regions]]. Preserve the original camera, lens, composition, and plate continuity with realistic depth of field (f/4–f/8). Style mix across characters: rubber hose::2, anime::2, Flash::2, Saturday-morning cel::2 — each retains its native style. Characters have bold black outlines, flat saturated colors (primary palette), expressive squash-and-stretch poses, and optional rim lighting or toon-glow for emphasis; no reflections on characters. Rendering: flat cel shading with two-tone shadows. Integration: cast clean contact shadows on real ground/props with correct perspective and softness; contrast the realistic scene lighting ([[lighting]]) with the inked cartoon look. Subject: [[species|title]][[companion_summary|prefix:, with ,true]]. Primary toon style: [[body_style]]. Target blend [[blend_ratio]]% toon vs real for characters only; do not toonize the background. [[effects|prefix:Effects: ,true|join:, ]]. [[props_list|prefix:Props: ,true|join:, ]]. [[motion_lines|if:Include motion-line smears.]] Slight digital grain overlay for cohesion. [[custom_note]] Safe-for-work, family-friendly, non-violent."
+  "Live-action HDR photo plate in 4K with sharp detail; insert 2D/2.5D cartoon characters into the real-world environment without altering the background set [[mask_data|if:, edit only the masked regions]]. Preserve the original camera, lens, composition, and plate continuity with realistic depth of field (f/4–f/8). Style mix across characters: vintage rubber-limb animation::2, anime::2, Flash::2, Saturday-morning cel::2 — each retains its native style. Characters have bold black outlines, flat saturated colors (primary palette), expressive squash-and-stretch poses, and optional rim lighting or toon-glow for emphasis; no reflections on characters. Rendering: flat cel shading with two-tone shadows. Integration: cast clean contact shadows on real ground/props with correct perspective and softness; contrast the realistic scene lighting ([[lighting]]) with the inked cartoon look. Subject: [[species|title]][[companion_summary|prefix:, with ,true]]. Primary toon style: [[body_style]]. Target blend [[blend_ratio]]% toon vs real for characters only; do not toonize the background. [[effects|prefix:Effects: ,true|join:, ]]. [[props_list|prefix:Props: ,true|join:, ]]. [[motion_lines|if:Include motion-line smears.]] Slight digital grain overlay for cohesion. [[custom_note]] Safe-for-work, family-friendly, non-violent."
 
 function classNames(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ")
@@ -110,7 +110,7 @@ export default function TurnToonPage() {
   const [baseImageId, setBaseImageId] = useState<string | null>(null)
   const [maskData, setMaskData] = useState<string | null>(null)
   // Advanced output dials
-  const [outputSize, setOutputSize] = useState<"512x512" | "768x768" | "1024x1024">("1024x1024")
+  const [outputSize, setOutputSize] = useState<"512x512" | "768x768" | "1024x1024">("512x512")
   const [imageCount, setImageCount] = useState<number>(1)
   const [seed, setSeed] = useState<string>("")
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false)

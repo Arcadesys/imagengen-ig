@@ -1,0 +1,59 @@
+// SQLite Prisma schema for image storage
+// Run migrations locally: npx prisma migrate dev --name init
+// Generate client only: npx prisma generate
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Image {
+  id           String   @id @default(uuid())
+  kind         ImageKind
+  url          String   // public URL path we expose (virtual; may be /images/:id)
+  mimeType     String
+  width        Int?
+  height       Int?
+  sizeBytes    Int
+  originalName String?
+  // generation metadata
+  prompt          String?
+  expandedPrompt  String?
+  size            ImageSize?
+  seed            String?
+  baseImageId     String?
+  hasMask         Boolean? @default(false)
+  provider        String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  blob         ImageBlob?
+
+  @@index([createdAt])
+  @@index([kind, createdAt])
+  @@index([baseImageId])
+}
+
+enum ImageKind {
+  UPLOAD_BASE
+  GENERATED
+}
+
+enum ImageSize {
+  _512x512
+  _768x768
+  _1024x1024
+}
+
+// Store binary data separately to keep Image table lean
+model ImageBlob {
+  id   String @id
+  data Bytes
+
+  image Image  @relation(fields: [id], references: [id], onDelete: Cascade)
+}
