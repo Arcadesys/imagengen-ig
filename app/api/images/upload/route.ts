@@ -234,7 +234,24 @@ export async function GET() {
       return NextResponse.json([])
     }
     const uploadsData = await readFile(uploadsFile, "utf-8")
-    const uploads: UploadedImage[] = JSON.parse(uploadsData)
+    let uploads: UploadedImage[] = JSON.parse(uploadsData)
+
+    // Filter out entries that don't exist in DB anymore (e.g., after a DB reset)
+    try {
+      const { prisma } = await import("../../../../lib/db")
+      const ids = uploads.map((u) => u.id)
+      const existing = await prisma.image.findMany({ where: { id: { in: ids } }, select: { id: true } })
+      const existingSet = new Set(existing.map((e) => e.id))
+      const filtered = uploads.filter((u) => existingSet.has(u.id))
+      if (filtered.length !== uploads.length) {
+        // Persist filtered list back to disk to avoid future 404s
+        uploads = filtered
+        await writeFile(uploadsFile, JSON.stringify(uploads, null, 2))
+      }
+    } catch (e) {
+      console.warn("[v0] Failed to validate uploads against DB:", e)
+    }
+
     // Sort newest first
     uploads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     return NextResponse.json(uploads)
