@@ -27,14 +27,16 @@ vi.mock("../lib/db", () => ({
   },
 }))
 
-vi.mock("../lib/image-generation-utils", async (orig) => {
-  const actual = await (orig as any).importActual("../lib/image-generation-utils")
+vi.mock("../lib/image-generation-utils", async () => {
+  const actual = await vi.importActual<typeof import("../lib/image-generation-utils")>(
+    "../lib/image-generation-utils",
+  )
   return {
     ...actual,
     dataURLToBuffer: vi.fn(() => Buffer.from("test")),
     getBaseImagePath: vi.fn(() => null),
     ensureDirectories: vi.fn(),
-    // use actual validateGenerateRequest from the module to avoid drift
+    // keep validateGenerateRequest from actual module
   }
 })
 
