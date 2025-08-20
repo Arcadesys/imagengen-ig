@@ -7,8 +7,9 @@
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
-    "test": "vitest run",
-    "test:watch": "vitest"
+  "test": "vitest run",
+  "test:watch": "vitest",
+  "postinstall": "prisma generate"
   },
   "dependencies": {
     "@edge-runtime/vm": "latest",

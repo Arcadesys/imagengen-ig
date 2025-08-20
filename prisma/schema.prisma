@@ -23,7 +23,7 @@ model Image {
   // generation metadata
   prompt          String?
   expandedPrompt  String?
-  size            ImageSize?
+  size            String?
   seed            String?
   baseImageId     String?
   hasMask         Boolean? @default(false)
@@ -42,12 +42,6 @@ model Image {
 enum ImageKind {
   UPLOAD_BASE
   GENERATED
-}
-
-enum ImageSize {
-  _512x512
-  _768x768
-  _1024x1024
 }
 
 // Store binary data separately to keep Image table lean

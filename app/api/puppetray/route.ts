@@ -36,6 +36,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "puppetStyle is required" }, { status: 400 })
     }
 
+    // Fail fast if provider credentials are missing
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: "OpenAI API key is not configured" }, { status: 500 })
+    }
+
     // Compose puppet-specific system prompt around user's prompt
     const puppetDescriptor =
       puppetStyle === "sock"
