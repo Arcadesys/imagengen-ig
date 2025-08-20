@@ -74,7 +74,8 @@ export function validateGenerateRequest(body: any): { isValid: boolean; error?: 
     return { isValid: false, error: "Prompt is required and must be a string" }
   }
 
-  if (!["512x512", "768x768", "1024x1024"].includes(size)) {
+  // Size becomes optional for Auto. If provided, validate; if omitted, we'll choose a default later.
+  if (size != null && !["512x512", "768x768", "1024x1024"].includes(size)) {
     return { isValid: false, error: "Invalid size. Must be 512x512, 768x768, or 1024x1024" }
   }
 
