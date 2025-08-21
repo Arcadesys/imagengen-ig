@@ -41,7 +41,8 @@ export async function saveImage(opts: SaveImageOptions) {
       originalName: opts.originalName ?? null,
       prompt: opts.prompt ?? null,
       expandedPrompt: opts.expandedPrompt ?? null,
-      size: opts.size ?? null,
+  // Deprecated: we no longer persist the human-readable generation size to DB (Auto sizing)
+  size: null,
       seed: opts.seed != null ? String(opts.seed) : null,
       baseImageId: opts.baseImageId ?? null,
       hasMask: opts.hasMask ?? false,

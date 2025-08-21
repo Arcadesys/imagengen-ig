@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       model: "gpt-image-1",
       prompt: "A simple test image",
       n: 1,
-      size: "256x256",
+      size: "1024x1024",
     })
     console.log("[v0] gpt-image-1 test successful")
     tests.push({

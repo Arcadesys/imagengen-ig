@@ -1,690 +1,98 @@
 [
   {
-    "id": "db64183e-2104-47c7-90f3-531ca5b85902",
-    "url": "/uploads/base/db64183e-2104-47c7-90f3-531ca5b85902.webp",
+    "id": "b28ccadb-9756-4015-a5c3-0dfe325b7bda",
+    "url": "/uploads/base/b28ccadb-9756-4015-a5c3-0dfe325b7bda.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "db64183e-2104-47c7-90f3-531ca5b85902",
-    "createdAt": "2025-08-18T23:57:51.297Z"
+    "baseImageId": "b28ccadb-9756-4015-a5c3-0dfe325b7bda",
+    "createdAt": "2025-08-20T18:18:09.408Z"
   },
   {
-    "id": "3a35f3f4-a561-409b-a83c-ab5e2c73827d",
-    "url": "/uploads/base/3a35f3f4-a561-409b-a83c-ab5e2c73827d.png",
+    "id": "eed4c7f8-08cf-4367-9b3e-9decbbbababd",
+    "url": "/uploads/base/eed4c7f8-08cf-4367-9b3e-9decbbbababd.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "3a35f3f4-a561-409b-a83c-ab5e2c73827d",
-    "createdAt": "2025-08-18T23:57:51.325Z"
+    "baseImageId": "eed4c7f8-08cf-4367-9b3e-9decbbbababd",
+    "createdAt": "2025-08-20T18:18:10.581Z"
   },
   {
-    "id": "5fc09750-3739-4540-ac37-4c1d36eaa68c",
-    "url": "/uploads/base/5fc09750-3739-4540-ac37-4c1d36eaa68c.webp",
+    "id": "ddef4c36-d505-453d-b313-895dbeea69e8",
+    "url": "/uploads/base/ddef4c36-d505-453d-b313-895dbeea69e8.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "5fc09750-3739-4540-ac37-4c1d36eaa68c",
-    "createdAt": "2025-08-18T23:59:17.118Z"
+    "baseImageId": "ddef4c36-d505-453d-b313-895dbeea69e8",
+    "createdAt": "2025-08-20T18:20:34.860Z"
   },
   {
-    "id": "c96238d2-fda6-4940-856b-9fc8057c5873",
-    "url": "/uploads/base/c96238d2-fda6-4940-856b-9fc8057c5873.png",
+    "id": "c54d8455-9f54-4dae-904f-35cc8c853c4d",
+    "url": "/uploads/base/c54d8455-9f54-4dae-904f-35cc8c853c4d.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "c96238d2-fda6-4940-856b-9fc8057c5873",
-    "createdAt": "2025-08-18T23:59:17.158Z"
+    "baseImageId": "c54d8455-9f54-4dae-904f-35cc8c853c4d",
+    "createdAt": "2025-08-20T18:20:36.104Z"
   },
   {
-    "id": "54266267-f410-4ed8-ab59-ee40fe390be6",
-    "url": "/generated/54266267-f410-4ed8-ab59-ee40fe390be6.png",
-    "prompt": "cat with a modern cartoon body, in the hybrid world, blend 40% real. Effects:ink splatter, toon pop impact stars. Props:magic paintbrush. with motion-line smears. Companion:1 floating paintbrush. Lighting: cel-shaded glow. Safe-for-work, family-friendly, suitable for all ages, non-violent.",
-    "size": "1024x1024",
-    "baseImageId": null,
-    "createdAt": "2025-08-19T00:03:25.730Z"
-  },
-  {
-    "id": "f85cc7bf-6bed-47de-a553-b05c66a0c218",
-    "url": "/generated/f85cc7bf-6bed-47de-a553-b05c66a0c218.png",
-    "prompt": "cat with a modern cartoon body, in the hybrid world, blend 40% real. Effects:ink splatter, toon pop impact stars. Props:magic paintbrush. with motion-line smears. Companion:1 floating paintbrush. Lighting: cel-shaded glow. Safe-for-work, family-friendly, suitable for all ages, non-violent.",
-    "size": "1024x1024",
-    "baseImageId": null,
-    "createdAt": "2025-08-19T00:06:49.602Z"
-  },
-  {
-    "id": "cb2e32d5-1fbb-4baa-a61f-6bd380212343",
-    "url": "/uploads/base/cb2e32d5-1fbb-4baa-a61f-6bd380212343.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "cb2e32d5-1fbb-4baa-a61f-6bd380212343",
-    "createdAt": "2025-08-19T00:12:22.938Z"
-  },
-  {
-    "id": "cd9a9a88-1c04-4734-a17f-4d35c53f7099",
-    "url": "/uploads/base/cd9a9a88-1c04-4734-a17f-4d35c53f7099.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "cd9a9a88-1c04-4734-a17f-4d35c53f7099",
-    "createdAt": "2025-08-19T00:12:22.957Z"
-  },
-  {
-    "id": "be42f44c-1d33-4bc5-82c3-83e069533e12",
-    "url": "/uploads/base/be42f44c-1d33-4bc5-82c3-83e069533e12.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "be42f44c-1d33-4bc5-82c3-83e069533e12",
-    "createdAt": "2025-08-19T00:16:21.491Z"
-  },
-  {
-    "id": "d061df98-f58a-4d78-a429-4c080f7a50f2",
-    "url": "/uploads/base/d061df98-f58a-4d78-a429-4c080f7a50f2.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "d061df98-f58a-4d78-a429-4c080f7a50f2",
-    "createdAt": "2025-08-19T00:16:21.509Z"
-  },
-  {
-
-    "id": "27469578-10a8-4a62-b845-49afc7eada84",
-    "url": "/uploads/base/27469578-10a8-4a62-b845-49afc7eada84.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "27469578-10a8-4a62-b845-49afc7eada84",
-    "createdAt": "2025-08-19T19:28:55.756Z"
-  },
-  {
-    "id": "d42e8f01-fdc4-4ca0-b7a0-759b39f68ca0",
-    "url": "/uploads/base/d42e8f01-fdc4-4ca0-b7a0-759b39f68ca0.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "d42e8f01-fdc4-4ca0-b7a0-759b39f68ca0",
-    "createdAt": "2025-08-19T19:28:55.774Z"
-=======
-    "id": "97676f0e-28b6-47d0-9956-02f6c900fb13",
-    "url": "/generated/97676f0e-28b6-47d0-9956-02f6c900fb13.png",
-    "prompt": "Paint over the subject to transform them into a Cat-themed cartoon character while preserving the original pose, camera, and composition. Target blend 40% toon vs real. Preserve identity and wardrobe, converting materials to ink-and-paint equivalents. Add clean black line art with varied line weight, 2D cel shading with two-tone shadows and gentle rimlight, and subtle halftone in shadows. Style: modern cartoon. World: hybrid world. Lighting: cel-shaded glow. Effects:ink splatter, toon pop impact stars. Props:magic paintbrush. Include motion-line smears. Safe-for-work, family-friendly, non-violent.",
-    "size": "1024x1024",
-    "baseImageId": null,
-    "createdAt": "2025-08-19T00:25:18.317Z"
-  },
-  {
-    "id": "9d06e160-a77b-44a6-9aa4-b5eed792b000",
-    "url": "/uploads/base/9d06e160-a77b-44a6-9aa4-b5eed792b000.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "9d06e160-a77b-44a6-9aa4-b5eed792b000",
-    "createdAt": "2025-08-19T00:34:38.773Z"
-  },
-  {
-    "id": "07b21e5c-6699-4056-b5cd-94b85206e660",
-    "url": "/uploads/base/07b21e5c-6699-4056-b5cd-94b85206e660.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "07b21e5c-6699-4056-b5cd-94b85206e660",
-    "createdAt": "2025-08-19T00:34:38.807Z"
-  },
-  {
-    "id": "dc23ebf9-0548-486e-b1d5-8ea5b80c6e57",
-    "url": "/uploads/base/dc23ebf9-0548-486e-b1d5-8ea5b80c6e57.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "dc23ebf9-0548-486e-b1d5-8ea5b80c6e57",
-    "createdAt": "2025-08-19T00:36:56.079Z"
-  },
-  {
-    "id": "ecde954b-0228-4236-8863-b2c77f6fe49f",
-    "url": "/uploads/base/ecde954b-0228-4236-8863-b2c77f6fe49f.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "ecde954b-0228-4236-8863-b2c77f6fe49f",
-    "createdAt": "2025-08-19T00:36:56.097Z"
-  },
-  {
-    "id": "a0b8fb00-a249-4f8b-82d0-bc6a4b659d17",
-    "url": "/uploads/base/a0b8fb00-a249-4f8b-82d0-bc6a4b659d17.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "a0b8fb00-a249-4f8b-82d0-bc6a4b659d17",
-    "createdAt": "2025-08-19T00:38:05.714Z"
-  },
-  {
-    "id": "dfe3521b-5d97-4c7d-bca5-885e4fc1eaed",
-    "url": "/uploads/base/dfe3521b-5d97-4c7d-bca5-885e4fc1eaed.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "dfe3521b-5d97-4c7d-bca5-885e4fc1eaed",
-    "createdAt": "2025-08-19T00:38:05.733Z"
-  },
-  {
-    "id": "7bfb3b8b-496b-4926-85eb-dca4d4ba146d",
-    "url": "/uploads/base/7bfb3b8b-496b-4926-85eb-dca4d4ba146d.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "7bfb3b8b-496b-4926-85eb-dca4d4ba146d",
-    "createdAt": "2025-08-19T00:43:09.080Z"
-  },
-  {
-    "id": "ad5733ca-3748-4666-9b14-4a48be9b5961",
-    "url": "/uploads/base/ad5733ca-3748-4666-9b14-4a48be9b5961.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "ad5733ca-3748-4666-9b14-4a48be9b5961",
-    "createdAt": "2025-08-19T00:43:09.110Z"
-  },
-  {
-    "id": "d5aaa16b-35d6-49a0-85e4-646346ec9d8b",
-    "url": "/uploads/base/d5aaa16b-35d6-49a0-85e4-646346ec9d8b.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "d5aaa16b-35d6-49a0-85e4-646346ec9d8b",
-    "createdAt": "2025-08-19T01:10:42.890Z"
-  },
-  {
-    "id": "84986d4a-3c37-45ca-b6b7-250854086f72",
-    "url": "/uploads/base/84986d4a-3c37-45ca-b6b7-250854086f72.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "84986d4a-3c37-45ca-b6b7-250854086f72",
-    "createdAt": "2025-08-19T01:10:42.977Z"
-  },
-  {
-    "id": "bf889287-8c5e-4a68-bdc2-6eff1e8f5ea1",
-    "url": "/uploads/base/bf889287-8c5e-4a68-bdc2-6eff1e8f5ea1.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "bf889287-8c5e-4a68-bdc2-6eff1e8f5ea1",
-    "createdAt": "2025-08-19T01:16:03.443Z"
-  },
-  {
-    "id": "46ea41d7-a656-46cf-b85b-085e059d044c",
-    "url": "/uploads/base/46ea41d7-a656-46cf-b85b-085e059d044c.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "46ea41d7-a656-46cf-b85b-085e059d044c",
-    "createdAt": "2025-08-19T03:32:01.659Z"
-  },
-  {
-    "id": "cb6e1a13-22f7-4168-83c0-b69e88703289",
-    "url": "/uploads/base/cb6e1a13-22f7-4168-83c0-b69e88703289.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "cb6e1a13-22f7-4168-83c0-b69e88703289",
-    "createdAt": "2025-08-19T03:37:40.275Z"
-  },
-  {
-    "id": "ae4f08c2-6c18-44aa-89b0-8364a1134864",
-    "url": "/uploads/base/ae4f08c2-6c18-44aa-89b0-8364a1134864.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "ae4f08c2-6c18-44aa-89b0-8364a1134864",
-    "createdAt": "2025-08-19T03:37:40.296Z"
-  },
-  {
-    "id": "a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6",
-    "url": "/uploads/base/a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6",
-    "createdAt": "2025-08-19T03:39:27.669Z"
-  },
-  {
-    "id": "7e5344ea-13bb-49e3-bd21-5fd7c0c62d66",
-    "url": "/generated/7e5344ea-13bb-49e3-bd21-5fd7c0c62d66.png",
-    "prompt": "Paint over the subject to transform them into a Cat-themed cartoon character while preserving the original pose, camera, and composition. Preserve identity and wardrobe, converting materials to ink-and-paint equivalents. Add clean black line art with varied line weight, 2D cel shading with two-tone shadows and gentle rimlight, and subtle halftone in shadows. mid-century cartoon. real world. cel-shaded glow.... No text, captions, labels, logos, or watermarks.",
-    "size": "1024x1024",
-    "baseImageId": "a9423c18-bd3d-4ed8-bc39-51d0fb0eb7c6",
-    "createdAt": "2025-08-19T03:39:51.922Z"
-  },
-  {
-    "id": "4dfb09a1-2ccc-46ed-aa2b-4210f49dfdc8",
-    "url": "/uploads/base/4dfb09a1-2ccc-46ed-aa2b-4210f49dfdc8.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "4dfb09a1-2ccc-46ed-aa2b-4210f49dfdc8",
-    "createdAt": "2025-08-19T03:45:33.269Z"
-  },
-  {
-    "id": "d3f3900c-a147-485f-a528-3e12582b2323",
-    "url": "/uploads/base/d3f3900c-a147-485f-a528-3e12582b2323.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "d3f3900c-a147-485f-a528-3e12582b2323",
-    "createdAt": "2025-08-19T03:45:33.306Z"
-  },
-  {
-    "id": "380490d4-c342-40e0-9aa7-6e286571183b",
-    "url": "/uploads/base/380490d4-c342-40e0-9aa7-6e286571183b.jpg",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "380490d4-c342-40e0-9aa7-6e286571183b",
-    "createdAt": "2025-08-19T03:46:53.688Z"
-  },
-  {
-    "id": "5a3cb641-ff6d-4fc1-a552-a072089328a2",
-    "url": "/uploads/base/5a3cb641-ff6d-4fc1-a552-a072089328a2.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "5a3cb641-ff6d-4fc1-a552-a072089328a2",
-    "createdAt": "2025-08-19T03:47:26.823Z"
-  },
-  {
-    "id": "001c2f99-e0f6-4451-a470-2d7b73f88dae",
-    "url": "/generated/001c2f99-e0f6-4451-a470-2d7b73f88dae.png",
-    "prompt": "Paint over the subject to transform them into a Dog-themed cartoon character while preserving the original pose, camera, and composition. Preserve identity and wardrobe, converting materials to ink-and-paint equivalents. Add clean black line art with varied line weight, 2D cel shading with two-tone shadows and gentle rimlight, and subtle halftone in shadows. mid-century cartoon. real world. cel-shaded glow. ink splatter, toon pop impact stars... No text, captions, labels, logos, or watermarks.",
-    "size": "1024x1024",
-    "baseImageId": "5a3cb641-ff6d-4fc1-a552-a072089328a2",
-    "createdAt": "2025-08-19T03:47:53.198Z"
-  },
-  {
-    "id": "1a70e581-8fcd-4410-81e2-3fb9287a55ce",
-    "url": "/uploads/base/1a70e581-8fcd-4410-81e2-3fb9287a55ce.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "1a70e581-8fcd-4410-81e2-3fb9287a55ce",
-    "createdAt": "2025-08-19T15:15:54.212Z"
-  },
-  {
-    "id": "c4b55634-7a9c-41c1-ac77-af5e455a474b",
-    "url": "/generated/c4b55634-7a9c-41c1-ac77-af5e455a474b.png",
-    "prompt": "Paint over the subject to transform them into a Cat-themed cartoon character while preserving the original pose, camera, and composition. Preserve identity and wardrobe, converting materials to ink-and-paint equivalents. Add clean black line art with varied line weight, 2D cel shading with two-tone shadows and gentle rimlight, and subtle halftone in shadows. modern cartoon. hybrid world. cel-shaded glow. ink splatter, toon pop impact stars. magic paintbrush.. No text, captions, labels, logos, or watermarks.",
-    "size": "1024x1024",
-    "baseImageId": "1a70e581-8fcd-4410-81e2-3fb9287a55ce",
-    "createdAt": "2025-08-19T15:16:53.641Z"
-  },
-  {
-    "id": "b9f93b32-3b56-406e-9af8-7e312182034b",
-    "url": "/uploads/base/b9f93b32-3b56-406e-9af8-7e312182034b.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "b9f93b32-3b56-406e-9af8-7e312182034b",
-    "createdAt": "2025-08-19T15:18:51.174Z"
-  },
-  {
-    "id": "78a163e1-8efd-41b5-84cc-67bc2f4612b5",
-    "url": "/generated/78a163e1-8efd-41b5-84cc-67bc2f4612b5.png",
-    "prompt": "Paint over the subject to transform them into a Rabbit-themed cartoon character while preserving the original pose, camera, and composition. Preserve identity and wardrobe, converting materials to ink-and-paint equivalents. Add clean black line art with varied line weight, 2D cel shading with two-tone shadows and gentle rimlight, and subtle halftone in shadows. semi-realistic. real world. cel-shaded glow... 🎥 Real-World Integration Film Stock: Digital HDR with full tonal separation. Push contrast and sharpness slightly so cartoons pop against reality. Camera: Locked-off tripod or deliberate dolly/crane (no handheld). Aperture f/4–f/8 to mimic depth of field without flattening. Resolution: 4K+ required. Grain optional—add a faint digital grain layer if you want cartoons to feel “printed” on the footage. 💡 Lighting Rules Match synthetic light direction with real-world sources. Ground shadows: always drop a clean, contact shadow on real ground/objects. Allow rim lighting or toon-outline glows for gag emphasis. Cartoons never inherit reflections, bloom, or ambient occlusion—they stay “inked.” 🎨 Character Design Style Clash: Keep animation styles distinct—rubber hose, anime, Flash, Saturday-morning cel—like a crossover special. Rendering: 2D or 2.5D, with bold outlines and squash-and-stretch. Hold onto the “flatness” as a feature. Color Palette: Primary colors + heavy black and white. Push saturation so characters look “printed” onto reality. ✨ Collision Cues (new layer) To sell the “worlds colliding” idea, add a few cross-plane tricks: Contact Mischief – Characters can kick dust, knock over cups, or cast shadows that interact with props, but never gain real-world textures. Style Shock – When two styles touch (e.g. anime girl hugs a rubber hose dog), exaggerate frame mismatch: anime = 24fps, hose = 12fps. Let them drift out of sync with reality. Edge Bleed – On close-up shots, allow outlines to “shiver” or break slightly against live-action edges (like Roger Rabbit’s matte lines). Temporal Clash – Consider letting cartoons smear, pop, or loop on 2s while the real footage stays buttery 60fps HDR. 🔧 Suggested Prompt Add-On “Live-action HDR footage of a real environment with cartoon characters from mixed animation styles (rubber hose, anime, Flash, Saturday-morning). Locked camera, realistic depth-of-field, 4K. Characters have bold outlines, saturated c. No text, captions, labels, logos, or watermarks.",
-    "size": "1024x1024",
-    "baseImageId": "b9f93b32-3b56-406e-9af8-7e312182034b",
-    "createdAt": "2025-08-19T15:19:42.802Z"
-  },
-  {
-    "id": "6f32199f-b1f6-45e1-8203-6d725003244c",
-    "url": "/uploads/base/6f32199f-b1f6-45e1-8203-6d725003244c.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "6f32199f-b1f6-45e1-8203-6d725003244c",
-    "createdAt": "2025-08-19T15:28:50.269Z"
-  },
-  {
-    "id": "7a390b4c-3e54-439b-8f86-d3dbc689fd15",
-    "url": "/uploads/base/7a390b4c-3e54-439b-8f86-d3dbc689fd15.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "7a390b4c-3e54-439b-8f86-d3dbc689fd15",
-    "createdAt": "2025-08-19T15:32:38.545Z"
-  },
-  {
-    "id": "767c3e9b-8d89-41c3-bbc9-d5f0b0d1db74",
-    "url": "/uploads/base/767c3e9b-8d89-41c3-bbc9-d5f0b0d1db74.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "767c3e9b-8d89-41c3-bbc9-d5f0b0d1db74",
-    "createdAt": "2025-08-19T15:32:38.569Z"
-  },
-  {
-    "id": "e7d6eb7c-fb02-4b1e-98ba-fefb6c07969d",
-    "url": "/uploads/base/e7d6eb7c-fb02-4b1e-98ba-fefb6c07969d.jpeg",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "e7d6eb7c-fb02-4b1e-98ba-fefb6c07969d",
-    "createdAt": "2025-08-19T15:46:49.786Z"
-  },
-  {
-    "id": "b9679e45-c97e-4771-85fb-9ced4f4b9da7",
-    "url": "/uploads/base/b9679e45-c97e-4771-85fb-9ced4f4b9da7.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "b9679e45-c97e-4771-85fb-9ced4f4b9da7",
-    "createdAt": "2025-08-19T15:47:30.974Z"
-  },
-  {
-    "id": "2faa7804-29b3-4c14-81ce-bbcf561fa4ea",
-    "url": "/generated/2faa7804-29b3-4c14-81ce-bbcf561fa4ea.png",
-    "prompt": "Live-action HDR photo plate in 4K with sharp detail; insert 2D/2.5D cartoon characters into the real-world environment without altering the background set. Preserve the original camera, lens, composition, and plate continuity with realistic depth of field (f/4–f/8). Style mix across characters: rubber hose::2, anime::2, Flash::2, Saturday-morning cel::2 — each retains its native style. Characters have bold black outlines, flat saturated colors (primary palette), expressive squash-and-stretch poses, and optional rim lighting or toon-glow for emphasis; no reflections on characters. Rendering: flat cel shading with two-tone shadows. Integration: cast clean contact shadows on real ground/props with correct perspective and softness; contrast the realistic scene lighting (cel-shaded glow) with the inked cartoon look. Subject: Raccoon1 floating paintbrush. Primary toon super-deformed (SD). for characters only; do not toonize the background... Slight digital grain overlay for cohesion.. No text, captions, labels, logos, or watermarks.",
-    "size": "1024x1024",
-    "baseImageId": "b9679e45-c97e-4771-85fb-9ced4f4b9da7",
-    "createdAt": "2025-08-19T15:48:22.262Z"
-  },
-  {
-    "id": "31c5fbb7-95a3-43b4-b5a9-46519bd58740",
-    "url": "/uploads/base/31c5fbb7-95a3-43b4-b5a9-46519bd58740.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "31c5fbb7-95a3-43b4-b5a9-46519bd58740",
-    "createdAt": "2025-08-19T17:38:13.302Z"
-  },
-  {
-    "id": "ea29ac29-32d0-4338-acfd-9bc0a5d5ccfa",
-    "url": "/uploads/base/ea29ac29-32d0-4338-acfd-9bc0a5d5ccfa.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "ea29ac29-32d0-4338-acfd-9bc0a5d5ccfa",
-    "createdAt": "2025-08-19T17:38:13.323Z"
-  },
-  {
-    "id": "3b105959-0f42-45dd-976e-02799a1600f0",
-    "url": "/uploads/base/3b105959-0f42-45dd-976e-02799a1600f0.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "3b105959-0f42-45dd-976e-02799a1600f0",
-    "createdAt": "2025-08-19T17:44:55.546Z"
-  },
-  {
-    "id": "1fc23b1b-d38b-4233-bb59-8effa7d7362e",
-    "url": "/uploads/base/1fc23b1b-d38b-4233-bb59-8effa7d7362e.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "1fc23b1b-d38b-4233-bb59-8effa7d7362e",
-    "createdAt": "2025-08-19T17:44:55.564Z"
-  },
-  {
-    "id": "f374bb30-93a3-4a92-9d88-e1fc0e6c8412",
-    "url": "/generated/f374bb30-93a3-4a92-9d88-e1fc0e6c8412.png",
-    "prompt": "Apply a subtle cel-shaded pass over the subject to suggest a dragon character while preserving photoreal facial features and identity. Use thin ink lines, soft two-tone shading, and a gentle matte paint texture; avoid over-smoothing or plasticity. Do not alter the background. Keep composition, pose, and wardrobe. cel-shaded glow... No text, captions, labels, logos, or watermarks.",
-    "size": "1024x1024",
-    "baseImageId": "e7d6eb7c-fb02-4b1e-98ba-fefb6c07969d",
-    "createdAt": "2025-08-19T17:55:26.010Z"
-  },
-  {
-    "id": "80e0172a-4604-472a-a1c8-49748330c109",
-    "url": "/uploads/base/80e0172a-4604-472a-a1c8-49748330c109.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "80e0172a-4604-472a-a1c8-49748330c109",
-    "createdAt": "2025-08-19T18:22:44.918Z"
-  },
-  {
-    "id": "3921aa8b-7592-4083-89de-f0092b652d27",
-    "url": "/uploads/base/3921aa8b-7592-4083-89de-f0092b652d27.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "3921aa8b-7592-4083-89de-f0092b652d27",
-    "createdAt": "2025-08-19T20:25:23.557Z"
-  },
-  {
-    "id": "2470180e-8a36-42b3-9997-486c1eb7123a",
-    "url": "/uploads/base/2470180e-8a36-42b3-9997-486c1eb7123a.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "2470180e-8a36-42b3-9997-486c1eb7123a",
-    "createdAt": "2025-08-19T20:27:37.689Z"
-  },
-  {
-    "id": "24b3fd85-0b67-4e6f-9399-3bb57f5cfa03",
-    "url": "/uploads/base/24b3fd85-0b67-4e6f-9399-3bb57f5cfa03.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "24b3fd85-0b67-4e6f-9399-3bb57f5cfa03",
-    "createdAt": "2025-08-19T20:35:41.382Z"
-  },
-  {
-    "id": "818dee2c-1c7e-4622-b20b-872075d216da",
-    "url": "/uploads/base/818dee2c-1c7e-4622-b20b-872075d216da.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "818dee2c-1c7e-4622-b20b-872075d216da",
-    "createdAt": "2025-08-19T20:41:24.923Z"
-  },
-  {
-    "id": "95b3d4c9-10e6-474d-9337-a4bb2cd7bdb4",
-    "url": "/uploads/base/95b3d4c9-10e6-474d-9337-a4bb2cd7bdb4.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "95b3d4c9-10e6-474d-9337-a4bb2cd7bdb4",
-    "createdAt": "2025-08-19T20:41:24.959Z"
-  },
-  {
-    "id": "428ee010-93c4-4793-931b-5144d3e1de76",
-    "url": "/uploads/base/428ee010-93c4-4793-931b-5144d3e1de76.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "428ee010-93c4-4793-931b-5144d3e1de76",
-    "createdAt": "2025-08-19T20:43:06.986Z"
-  },
-  {
-    "id": "5ee8f434-1e86-4dcd-86aa-7d1d5964b4fa",
-    "url": "/uploads/base/5ee8f434-1e86-4dcd-86aa-7d1d5964b4fa.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "5ee8f434-1e86-4dcd-86aa-7d1d5964b4fa",
-    "createdAt": "2025-08-19T20:43:07.010Z"
-  },
-  {
-    "id": "9d95fef0-8fd4-4a5e-a990-8a81fd77dd70",
-    "url": "/uploads/base/9d95fef0-8fd4-4a5e-a990-8a81fd77dd70.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "9d95fef0-8fd4-4a5e-a990-8a81fd77dd70",
-    "createdAt": "2025-08-19T21:36:40.254Z"
-  },
-  {
-    "id": "13981770-d0d0-4dc6-88cc-159a835351c1",
-    "url": "/uploads/base/13981770-d0d0-4dc6-88cc-159a835351c1.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "13981770-d0d0-4dc6-88cc-159a835351c1",
-    "createdAt": "2025-08-19T21:42:51.165Z"
-  },
-  {
-    "id": "82a65ce4-c4e2-4460-a3ab-4883486990fb",
-    "url": "/uploads/base/82a65ce4-c4e2-4460-a3ab-4883486990fb.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "82a65ce4-c4e2-4460-a3ab-4883486990fb",
-    "createdAt": "2025-08-19T21:42:51.196Z"
-  },
-  {
-    "id": "0185342a-6aac-4a42-887f-95fa22f614f6",
-    "url": "/uploads/base/0185342a-6aac-4a42-887f-95fa22f614f6.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "0185342a-6aac-4a42-887f-95fa22f614f6",
-    "createdAt": "2025-08-19T21:44:38.198Z"
-  },
-  {
-    "id": "93f439b9-a8dc-4dc5-8057-b0985e901e41",
-    "url": "/uploads/base/93f439b9-a8dc-4dc5-8057-b0985e901e41.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "93f439b9-a8dc-4dc5-8057-b0985e901e41",
-    "createdAt": "2025-08-19T21:44:38.217Z"
-  },
-  {
-    "id": "1c4aa5bd-17cd-4bd1-aebd-42bdcc591663",
-    "url": "/uploads/base/1c4aa5bd-17cd-4bd1-aebd-42bdcc591663.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "1c4aa5bd-17cd-4bd1-aebd-42bdcc591663",
-    "createdAt": "2025-08-19T21:47:04.684Z"
-  },
-  {
-    "id": "c6dd56d1-56d5-49ed-8a48-95fd93230c05",
-    "url": "/uploads/base/c6dd56d1-56d5-49ed-8a48-95fd93230c05.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "c6dd56d1-56d5-49ed-8a48-95fd93230c05",
-    "createdAt": "2025-08-19T21:47:04.714Z"
-  },
-  {
-    "id": "e85307ea-2eb5-4765-9641-49be696edbac",
-    "url": "/uploads/base/e85307ea-2eb5-4765-9641-49be696edbac.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "e85307ea-2eb5-4765-9641-49be696edbac",
-    "createdAt": "2025-08-19T21:48:40.760Z"
-  },
-  {
-    "id": "d2d8a81e-0ae2-478b-b0b6-a4d6bf48201f",
-    "url": "/uploads/base/d2d8a81e-0ae2-478b-b0b6-a4d6bf48201f.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "d2d8a81e-0ae2-478b-b0b6-a4d6bf48201f",
-    "createdAt": "2025-08-19T21:48:40.828Z"
-  },
-  {
-    "id": "29fe37e1-49a1-4fd2-9f63-a04154d137fb",
-    "url": "/uploads/base/29fe37e1-49a1-4fd2-9f63-a04154d137fb.webp",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "29fe37e1-49a1-4fd2-9f63-a04154d137fb",
-    "createdAt": "2025-08-19T21:49:56.011Z"
-  },
-  {
-    "id": "49fb959b-8b59-4dbb-867e-694bd7303296",
-    "url": "/uploads/base/49fb959b-8b59-4dbb-867e-694bd7303296.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "49fb959b-8b59-4dbb-867e-694bd7303296",
-    "createdAt": "2025-08-19T21:49:56.035Z"
-  },
-  {
-    "id": "7647f617-3fea-4456-bf70-6e78cc35c89f",
-    "url": "/uploads/base/7647f617-3fea-4456-bf70-6e78cc35c89f.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "7647f617-3fea-4456-bf70-6e78cc35c89f",
-    "createdAt": "2025-08-19T22:14:10.563Z"
-  },
-  {
-    "id": "14d0e3cd-8735-45bd-9b1f-7508137c8619",
-    "url": "/uploads/base/14d0e3cd-8735-45bd-9b1f-7508137c8619.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "14d0e3cd-8735-45bd-9b1f-7508137c8619",
-    "createdAt": "2025-08-19T22:14:10.620Z"
-  },
-  {
-    "id": "fb246351-cb6b-40a6-ab2c-9eb185b563b1",
-    "url": "/uploads/base/fb246351-cb6b-40a6-ab2c-9eb185b563b1.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "fb246351-cb6b-40a6-ab2c-9eb185b563b1",
-    "createdAt": "2025-08-19T22:20:55.481Z"
-  },
-  {
-    "id": "8ce6d214-d91c-4011-8fd5-c70f28dd74c5",
-    "url": "/uploads/base/8ce6d214-d91c-4011-8fd5-c70f28dd74c5.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "8ce6d214-d91c-4011-8fd5-c70f28dd74c5",
-    "createdAt": "2025-08-19T22:20:56.855Z"
-  },
-  {
-    "id": "656c7f08-5593-4cd1-8e92-ef3520487470",
-    "url": "/uploads/base/656c7f08-5593-4cd1-8e92-ef3520487470.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "656c7f08-5593-4cd1-8e92-ef3520487470",
-    "createdAt": "2025-08-19T22:38:19.012Z"
-  },
-  {
-    "id": "82c805ba-45d6-41ee-8b47-ce4784515c99",
-    "url": "/uploads/base/82c805ba-45d6-41ee-8b47-ce4784515c99.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "82c805ba-45d6-41ee-8b47-ce4784515c99",
-    "createdAt": "2025-08-19T22:38:20.468Z"
-  },
-  {
-    "id": "6a8dfa80-5a1d-4ca8-99dd-b67ff9e4d90b",
-    "url": "/uploads/base/6a8dfa80-5a1d-4ca8-99dd-b67ff9e4d90b.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "6a8dfa80-5a1d-4ca8-99dd-b67ff9e4d90b",
-    "createdAt": "2025-08-19T22:45:11.068Z"
-  },
-  {
-    "id": "ae8a6832-6b94-4166-bbba-040804842f39",
-    "url": "/uploads/base/ae8a6832-6b94-4166-bbba-040804842f39.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "ae8a6832-6b94-4166-bbba-040804842f39",
-    "createdAt": "2025-08-19T22:45:12.244Z"
-  },
-  {
-    "id": "e64b6f79-9a50-4a80-8293-51ddd4fcc795",
-    "url": "/uploads/base/e64b6f79-9a50-4a80-8293-51ddd4fcc795.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "e64b6f79-9a50-4a80-8293-51ddd4fcc795",
-    "createdAt": "2025-08-19T22:58:17.937Z"
-  },
-  {
-    "id": "a600d974-a7b5-442e-b350-64e4910f55c0",
-    "url": "/uploads/base/a600d974-a7b5-442e-b350-64e4910f55c0.png",
-    "prompt": "Uploaded base image",
-    "size": "1024x1024",
-    "baseImageId": "a600d974-a7b5-442e-b350-64e4910f55c0",
-    "createdAt": "2025-08-19T22:58:19.036Z"
-  },
-  {
-    "id": "a2085cf5-b261-4c9e-a6c3-ee566a6e734b",
-    "url": "/uploads/base/a2085cf5-b261-4c9e-a6c3-ee566a6e734b.jpg",
+    "id": "cf4a57f3-e14a-4cb3-8745-1bb6c60a1ce9",
+    "url": "/uploads/base/cf4a57f3-e14a-4cb3-8745-1bb6c60a1ce9.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "a2085cf5-b261-4c9e-a6c3-ee566a6e734b",
-    "createdAt": "2025-08-19T23:08:27.356Z"
+    "baseImageId": "cf4a57f3-e14a-4cb3-8745-1bb6c60a1ce9",
+    "createdAt": "2025-08-20T19:51:16.252Z"
   },
   {
-    "id": "72894178-5c66-4d5a-b0d2-fc233e446611",
-    "url": "/uploads/base/72894178-5c66-4d5a-b0d2-fc233e446611.png",
+    "id": "f7103e86-7113-4647-aa93-d6b5ee651a13",
+    "url": "/uploads/base/f7103e86-7113-4647-aa93-d6b5ee651a13.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "72894178-5c66-4d5a-b0d2-fc233e446611",
-    "createdAt": "2025-08-19T23:14:54.571Z"
+    "baseImageId": "f7103e86-7113-4647-aa93-d6b5ee651a13",
+    "createdAt": "2025-08-20T20:01:03.758Z"
   },
   {
-    "id": "12007838-0686-4c10-b323-7e903703b22e",
-    "url": "/uploads/base/12007838-0686-4c10-b323-7e903703b22e.png",
+    "id": "39911c3b-64c4-4438-aea7-cc63bfbc6736",
+    "url": "/uploads/base/39911c3b-64c4-4438-aea7-cc63bfbc6736.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "12007838-0686-4c10-b323-7e903703b22e",
-    "createdAt": "2025-08-19T23:14:55.774Z"
+    "baseImageId": "39911c3b-64c4-4438-aea7-cc63bfbc6736",
+    "createdAt": "2025-08-20T20:01:04.929Z"
   },
   {
-    "id": "e38f95a0-37ed-47c5-b830-d6754f5c2876",
-    "url": "/uploads/base/e38f95a0-37ed-47c5-b830-d6754f5c2876.jpg",
+    "id": "9da0da03-8d6f-439b-87e2-b7d6ac53a4ff",
+    "url": "/uploads/base/9da0da03-8d6f-439b-87e2-b7d6ac53a4ff.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "e38f95a0-37ed-47c5-b830-d6754f5c2876",
-    "createdAt": "2025-08-19T23:47:07.226Z"
+    "baseImageId": "9da0da03-8d6f-439b-87e2-b7d6ac53a4ff",
+    "createdAt": "2025-08-20T20:04:37.153Z"
   },
   {
-    "id": "15bfe934-f039-40ce-83c9-f6fdf5b4d7f4",
-    "url": "/uploads/base/15bfe934-f039-40ce-83c9-f6fdf5b4d7f4.png",
+    "id": "ff61a171-e457-4e53-a82e-ba9166eeb450",
+    "url": "/uploads/base/ff61a171-e457-4e53-a82e-ba9166eeb450.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "15bfe934-f039-40ce-83c9-f6fdf5b4d7f4",
-    "createdAt": "2025-08-20T17:52:14.694Z"
+    "baseImageId": "ff61a171-e457-4e53-a82e-ba9166eeb450",
+    "createdAt": "2025-08-20T20:04:38.434Z"
   },
   {
-    "id": "5b746ad2-f47d-497f-8050-05f48a7b256b",
-    "url": "/uploads/base/5b746ad2-f47d-497f-8050-05f48a7b256b.png",
+    "id": "e769cf28-6258-4420-893d-df68a7f76768",
+    "url": "/uploads/base/e769cf28-6258-4420-893d-df68a7f76768.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "5b746ad2-f47d-497f-8050-05f48a7b256b",
-    "createdAt": "2025-08-20T17:52:15.880Z"
+    "baseImageId": "e769cf28-6258-4420-893d-df68a7f76768",
+    "createdAt": "2025-08-20T20:10:43.559Z"
   },
   {
-    "id": "16d29734-fcb8-483c-9fd9-dea50aaf9f2f",
-    "url": "/uploads/base/16d29734-fcb8-483c-9fd9-dea50aaf9f2f.png",
+    "id": "e71de3d0-21e4-4a4d-a770-02f92d9de485",
+    "url": "/uploads/base/e71de3d0-21e4-4a4d-a770-02f92d9de485.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "16d29734-fcb8-483c-9fd9-dea50aaf9f2f",
-    "createdAt": "2025-08-20T17:57:20.767Z"
+    "baseImageId": "e71de3d0-21e4-4a4d-a770-02f92d9de485",
+    "createdAt": "2025-08-20T20:10:44.631Z"
   },
   {
-    "id": "25899aaa-8f66-4daf-a2a5-c3bdb21a63a7",
-    "url": "/uploads/base/25899aaa-8f66-4daf-a2a5-c3bdb21a63a7.png",
+    "id": "23af010b-508e-41bd-ae2b-00e97fc04878",
+    "url": "/uploads/base/23af010b-508e-41bd-ae2b-00e97fc04878.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "25899aaa-8f66-4daf-a2a5-c3bdb21a63a7",
-    "createdAt": "2025-08-20T17:57:21.861Z"
+    "baseImageId": "23af010b-508e-41bd-ae2b-00e97fc04878",
+    "createdAt": "2025-08-20T20:27:42.569Z"
   }
 ]

@@ -70,11 +70,7 @@ npm run dev
 
 ### Testing OpenAI Integration
 
-Visit `/test-openai` to verify your OpenAI API configuration. This page will test:
-- API key presence and format
-- OpenAI client initialization
-- API connectivity
-- DALL-E model availability
+You can verify OpenAI integration by running the test suite which includes API checks.
 
 ## Accessibility Features
 

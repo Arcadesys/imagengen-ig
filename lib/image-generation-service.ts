@@ -81,8 +81,10 @@ export class ImageGenerationService {
       })
 
       // Enforce 512x512 for non-admins
-      const allowRequestedSize = nextRequest ? isAdminRequest(nextRequest) : true
-      const effectiveSize: "512x512" | "768x768" | "1024x1024" = allowRequestedSize ? size : "512x512"
+  const allowRequestedSize = nextRequest ? isAdminRequest(nextRequest) : true
+  // Default to 512x512 when size is omitted (Auto). Non-admins are pinned to 512x512.
+  const requestedSize = size ?? "512x512"
+  const effectiveSize: "512x512" | "768x768" | "1024x1024" = allowRequestedSize ? requestedSize : "512x512"
 
       // Content safety check
       const safety = checkPromptSafety(expandedPrompt?.trim() ? expandedPrompt! : prompt)
@@ -105,9 +107,11 @@ export class ImageGenerationService {
       const sourcePrompt = safety.cleaned ?? (expandedPrompt?.trim() ? expandedPrompt! : prompt)
       const finalPrompt = sanitizePromptForImage(sourcePrompt)
 
-      // Map size for OpenAI
-      const providerSize: "256x256" | "512x512" | "1024x1024" =
-        effectiveSize === "768x768" ? "1024x1024" : (effectiveSize as "256x256" | "512x512" | "1024x1024")
+  // Map requested square sizes to OpenAI-supported sizes.
+  // As of current OpenAI API, supported values include '1024x1024', '1024x1536', '1536x1024', and 'auto'.
+  // We only request square images in this app, so normalize to 1024x1024 for provider while preserving
+  // the user's effectiveSize in metadata.
+  const providerSize: "1024x1024" | "1024x1536" | "1536x1024" | "auto" = "1024x1024"
 
       const images: GeneratedImage[] = []
 
@@ -186,7 +190,7 @@ export class ImageGenerationService {
     finalPrompt: string,
     baseImageId: string,
     maskData: string,
-    providerSize: "256x256" | "512x512" | "1024x1024",
+  providerSize: "1024x1024" | "1024x1536" | "1536x1024" | "auto",
     effectiveSize: "512x512" | "768x768" | "1024x1024",
     expandedPrompt?: string | null,
     seed?: string | number | null,
@@ -244,13 +248,14 @@ export class ImageGenerationService {
     const imageData = response.data[0] as any
     const imageBufferArray = await this.downloadOrDecodeImage(imageData)
 
-    const saved = await saveImage({
+      const saved = await saveImage({
       kind: "GENERATED",
       mimeType: "image/png",
       buffer: Buffer.from(imageBufferArray),
       prompt: finalPrompt,
       expandedPrompt: expandedPrompt || undefined,
-      size: effectiveSize,
+        // Do not persist size; DB "size" is deprecated in Auto mode
+        size: undefined,
       seed: seed ?? undefined,
       baseImageId,
       hasMask: true,
@@ -270,7 +275,8 @@ export class ImageGenerationService {
       metadata: {
         prompt: saved.prompt || finalPrompt,
         expandedPrompt: saved.expandedPrompt || undefined,
-        size: effectiveSize,
+  // size omitted in metadata by default (Auto)
+  size: effectiveSize,
         seed: seed ?? undefined,
         baseImageId,
         hasMask: true,
@@ -282,7 +288,7 @@ export class ImageGenerationService {
   private async generateImageEdit(
     finalPrompt: string,
     baseImageId: string,
-    providerSize: "256x256" | "512x512" | "1024x1024",
+  providerSize: "1024x1024" | "1024x1536" | "1536x1024" | "auto",
     effectiveSize: "512x512" | "768x768" | "1024x1024",
     expandedPrompt?: string | null,
     seed?: string | number | null,
@@ -332,13 +338,13 @@ export class ImageGenerationService {
     const imageData = response.data[0] as any
     const imageBufferArray = await this.downloadOrDecodeImage(imageData)
 
-    const saved = await saveImage({
+      const saved = await saveImage({
       kind: "GENERATED",
       mimeType: "image/png",
       buffer: Buffer.from(imageBufferArray),
       prompt: finalPrompt,
       expandedPrompt: expandedPrompt || undefined,
-      size: effectiveSize,
+        size: undefined,
       seed: seed ?? undefined,
       baseImageId,
       hasMask: false,
@@ -351,7 +357,7 @@ export class ImageGenerationService {
       metadata: {
         prompt: saved.prompt || finalPrompt,
         expandedPrompt: saved.expandedPrompt || undefined,
-        size: effectiveSize,
+  size: effectiveSize,
         seed: seed ?? undefined,
         baseImageId,
         hasMask: false,
@@ -362,7 +368,7 @@ export class ImageGenerationService {
 
   private async generateStandard(
     finalPrompt: string,
-    providerSize: "256x256" | "512x512" | "1024x1024",
+  providerSize: "1024x1024" | "1024x1536" | "1536x1024" | "auto",
     n: number,
     effectiveSize: "512x512" | "768x768" | "1024x1024",
     expandedPrompt?: string | null,
@@ -423,20 +429,20 @@ export class ImageGenerationService {
           buffer: Buffer.from(imageBufferArray),
           prompt: finalPrompt,
           expandedPrompt: expandedPrompt || undefined,
-          size: effectiveSize,
+          size: undefined,
           seed: seed ?? undefined,
           baseImageId,
           hasMask: false,
           provider: "openai",
         })
 
-        images.push({
+    images.push({
           id: saved.id,
           url: saved.url,
           metadata: {
             prompt: saved.prompt || finalPrompt,
             expandedPrompt: saved.expandedPrompt || undefined,
-            size: effectiveSize,
+      size: effectiveSize,
             seed: seed ?? undefined,
             baseImageId,
             hasMask: false,
