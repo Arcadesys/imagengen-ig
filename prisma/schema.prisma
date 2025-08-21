@@ -74,7 +74,6 @@ model EmailSignup {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([email])
   @@index([createdAt])
   @@index([source])
 }

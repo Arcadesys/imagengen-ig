@@ -13,7 +13,8 @@ interface UseEmailSignupReturn {
   isOpen: boolean
   open: () => void
   close: () => void
-  submit: (email: string, preferences: EmailPreferences) => Promise<void>
+  // Returns true on success; throws on error. `source` must be non-null.
+  submit: (email: string, preferences: EmailPreferences, source: string) => Promise<boolean>
   isSubmitting: boolean
   hasShownForSession: boolean
 }
@@ -32,7 +33,11 @@ export function useEmailSignup(): UseEmailSignupReturn {
     setIsOpen(false)
   }
 
-  const submit = async (email: string, preferences: EmailPreferences) => {
+  const submit = async (
+    email: string,
+    preferences: EmailPreferences,
+    source: string,
+  ): Promise<boolean> => {
     setIsSubmitting(true)
     try {
       const response = await fetch('/api/email-signup', {
@@ -42,21 +47,20 @@ export function useEmailSignup(): UseEmailSignupReturn {
         },
         body: JSON.stringify({
           email,
-          preferences
+          preferences,
+          source,
         })
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({} as any))
         throw new Error(errorData.error || 'Failed to sign up')
       }
 
-      const data = await response.json()
-      console.log('Email signup successful:', data)
-      
-      // Store that they've signed up in session storage to avoid showing again
+      // On success, mark the session so we don't re-show, and close the modal
       sessionStorage.setItem('email_signup_completed', 'true')
-      
+      close()
+      return true
     } finally {
       setIsSubmitting(false)
     }

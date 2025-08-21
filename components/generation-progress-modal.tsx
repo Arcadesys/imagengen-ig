@@ -253,6 +253,7 @@ export function GenerationProgressModal({
         isOpen={emailSignup.isOpen}
         onClose={emailSignup.close}
         onSubmit={emailSignup.submit}
+        source="generation_modal"
         title="Stay updated while we generate your image!"
         description="Get notified about new features, tips, and when your images are ready. Your email will never be shared."
       />
