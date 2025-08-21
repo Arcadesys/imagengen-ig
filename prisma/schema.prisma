@@ -59,3 +59,22 @@ model ImageBlob {
 
   image Image @relation(fields: [id], references: [id], onDelete: Cascade)
 }
+
+// Email signup for marketing and updates
+model EmailSignup {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  preferences Json     // Store email preferences as JSON
+  source      String   // Track where the signup came from (e.g., 'generation_modal', 'footer', etc.)
+  ipAddress   String?
+  userAgent   String?
+  verified    Boolean  @default(false)
+  active      Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([email])
+  @@index([createdAt])
+  @@index([source])
+}

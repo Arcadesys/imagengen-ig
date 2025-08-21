@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, XCircle, Loader2, Sparkles, Palette, Wand2, X } from "lucide-react"
+import { EmailSignupModal } from "@/components/email-signup-modal"
+import { useEmailSignup } from "@/hooks/use-email-signup"
 
 interface GenerationProgressModalProps {
   isOpen: boolean
@@ -84,6 +86,9 @@ export function GenerationProgressModal({
   const isError = status === "error"
   const isGenerating = status === "generating"
 
+  // Email signup hook
+  const emailSignup = useEmailSignup()
+
   // Animated dots for loading states
   useEffect(() => {
     if (status === "idle" || status === "uploading" || status === "processing" || status === "generating") {
@@ -95,6 +100,24 @@ export function GenerationProgressModal({
       setDots("")
     }
   }, [status])
+
+  // Show email signup during generation if they haven't seen it this session
+  useEffect(() => {
+    if (isGenerating && !emailSignup.hasShownForSession) {
+      // Check if they've already signed up in a previous session
+      const hasSignedUp = sessionStorage.getItem('email_signup_completed')
+      if (!hasSignedUp) {
+        // Wait a moment before showing the email signup to let generation start
+        const timer = setTimeout(() => {
+          if (status === "generating") { // Double check we're still generating
+            emailSignup.open()
+          }
+        }, 2000) // Show after 2 seconds of generation
+        
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [isGenerating, emailSignup, status])
 
   // Auto-close on complete after delay
   useEffect(() => {
@@ -216,6 +239,15 @@ export function GenerationProgressModal({
           </div>
         </div>
       </DialogContent>
+
+      {/* Email Signup Modal */}
+      <EmailSignupModal
+        isOpen={emailSignup.isOpen}
+        onClose={emailSignup.close}
+        onSubmit={emailSignup.submit}
+        title="Stay updated while we generate your image!"
+        description="Get notified about new features, tips, and when your images are ready. Your email will never be shared."
+      />
     </Dialog>
   )
 }

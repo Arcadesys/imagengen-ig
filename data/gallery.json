@@ -14,5 +14,13 @@
     "size": "1024x1024",
     "baseImageId": "f0bc66ce-18a0-4307-8a54-670ce3edd738",
     "createdAt": "2025-08-21T18:14:20.075Z"
+  },
+  {
+    "id": "293bac9e-e883-4bf4-8d70-824cad1ee3a1",
+    "url": "/uploads/base/293bac9e-e883-4bf4-8d70-824cad1ee3a1.jpg",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "293bac9e-e883-4bf4-8d70-824cad1ee3a1",
+    "createdAt": "2025-08-21T20:23:46.685Z"
   }
 ]
