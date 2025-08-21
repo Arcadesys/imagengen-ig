@@ -1,8 +1,9 @@
 import OpenAI from "openai"
-import { createReadStream } from "fs"
+import { createReadStream, readFileSync } from "fs"
 import { writeFile } from "fs/promises"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
+import sharp from "sharp"
 import { sanitizePromptForImage } from "./prompt-sanitizer"
 import { checkPromptSafety } from "./prompt-moderator"
 import { isAdminRequest } from "./admin"
@@ -29,6 +30,65 @@ export class ImageGenerationService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
+  }
+
+  /**
+   * Determine MIME type from file extension
+   */
+  private getImageMimeType(filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase()
+    switch (ext) {
+      case '.png': return 'image/png'
+      case '.jpg':
+      case '.jpeg': return 'image/jpeg'
+      case '.webp': return 'image/webp'
+      default: return 'image/png'
+    }
+  }
+
+  /**
+   * Convert any image to PNG format for OpenAI API compatibility
+   * Resize if too large to meet 4MB limit
+   */
+  private async convertToPng(imagePath: string): Promise<Buffer> {
+    console.log("[ImageGenerationService] Converting image to PNG:", imagePath)
+    
+    let pngBuffer: Buffer | undefined
+    let width = 1024 // Start with reasonable size
+    
+    // Try different sizes until we get under 4MB
+    while (width >= 512) {
+      // Simple approach: directly convert with ensureAlpha
+      pngBuffer = await sharp(imagePath)
+        .resize(width, width, { fit: 'inside', withoutEnlargement: true })
+        .ensureAlpha()
+        .png({ quality: 90, compressionLevel: 6, palette: false })
+        .toBuffer()
+      
+      const sizeMB = pngBuffer.length / (1024 * 1024)
+      console.log(`[ImageGenerationService] PNG size at ${width}px: ${sizeMB.toFixed(2)}MB`)
+      
+      // Verify it's RGBA by checking metadata
+      const metadata = await sharp(pngBuffer).metadata()
+      console.log(`[ImageGenerationService] PNG metadata:`, {
+        channels: metadata.channels,
+        hasAlpha: metadata.hasAlpha,
+        space: metadata.space
+      })
+      
+      if (pngBuffer.length < 4 * 1024 * 1024) { // Under 4MB
+        break
+      }
+      
+      width -= 128 // Reduce size and try again
+    }
+    
+    if (!pngBuffer) {
+      throw new Error("Failed to create PNG buffer")
+    }
+    
+    console.log("[ImageGenerationService] PNG conversion complete, final size:", pngBuffer.length)
+    return pngBuffer
   }
 
   /**
@@ -215,8 +275,8 @@ export class ImageGenerationService {
     const maskId = uuidv4()
     const tempDir = path.join(process.cwd(), "temp")
     const maskPath = path.join(tempDir, `${maskId}.png`)
-    const maskBuffer = dataURLToBuffer(maskData)
-    await writeFile(maskPath, maskBuffer)
+    const maskDataBuffer = dataURLToBuffer(maskData)
+    await writeFile(maskPath, maskDataBuffer)
 
     sendProgress?.({
       type: "progress",
@@ -226,9 +286,28 @@ export class ImageGenerationService {
     })
 
     console.log("[ImageGenerationService] Calling OpenAI image edit API...")
+    console.log("[ImageGenerationService] Base image path:", baseImagePath)
+    console.log("[ImageGenerationService] Mask path:", maskPath)
+    
+    // Convert images to PNG format for OpenAI API compatibility
+    const baseImagePngBuffer = await this.convertToPng(baseImagePath)
+    const maskPngBuffer = await this.convertToPng(maskPath)
+    
+    const baseImageFile = new File([baseImagePngBuffer], `base-${baseImageId}.png`, { 
+      type: 'image/png' 
+    })
+    
+    const maskFile = new File([maskPngBuffer], `mask-${maskId}.png`, { 
+      type: 'image/png' 
+    })
+    
+    console.log("[ImageGenerationService] Created PNG file objects:", 
+      baseImageFile.name, baseImageFile.type, baseImageFile.size,
+      maskFile.name, maskFile.type, maskFile.size)
+    
     const response = await this.openai.images.edit({
-      image: createReadStream(baseImagePath) as any,
-      mask: createReadStream(maskPath) as any,
+      image: baseImageFile as any,
+      mask: maskFile as any,
       prompt: finalPrompt,
       size: providerSize,
       n: 1,
@@ -317,8 +396,19 @@ export class ImageGenerationService {
     })
 
     console.log("[ImageGenerationService] Calling OpenAI image edit API (no mask)...")
+    console.log("[ImageGenerationService] Base image path:", baseImagePath)
+    
+    // Convert image to PNG format for OpenAI API compatibility
+    const baseImagePngBuffer = await this.convertToPng(baseImagePath)
+    
+    const baseImageFile = new File([baseImagePngBuffer], `base-${baseImageId}.png`, { 
+      type: 'image/png' 
+    })
+    
+    console.log("[ImageGenerationService] Created PNG file object:", baseImageFile.name, baseImageFile.type, baseImageFile.size)
+    
     const response = await this.openai.images.edit({
-      image: createReadStream(baseImagePath) as any,
+      image: baseImageFile as any,
       prompt: finalPrompt,
       size: providerSize,
       n: 1,

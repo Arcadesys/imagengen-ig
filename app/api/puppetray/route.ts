@@ -45,32 +45,26 @@ export async function POST(req: NextRequest) {
     // Compose puppet-specific system prompt around user's prompt
     const puppetDescriptor =
       puppetStyle === "sock"
-        ? "sock puppet with knitted texture, button-like eyes, stitched mouth"
+        ? "sock puppet: knitted texture, button eyes, stitched mouth, stretchy fabric"
         : puppetStyle === "muppet"
-          ? "hand-operated foam-and-felt puppet with expressive mouth plate, felt skin, yarn or felt hair"
+          ? "Muppet-style: foam head, felt skin, moveable mouth, ping-pong ball eyes, yarn hair"
           : puppetStyle === "mascot"
-            ? "large foam mascot costume with oversized head, fabric surface, visible stitching"
+            ? "mascot costume: oversized foam head, bright fabric, visible stitching, sports team style"
             : puppetStyle === "felt"
-              ? "felt-and-foam puppet, visible seams, matte fibers, simple plastic eyes"
+              ? "felt puppet: wool felt texture, blanket-stitch seams, button eyes, embroidered mouth"
               : puppetStyle === "paper"
-                ? "flat paper puppet with cut-edge outlines, slight paper texture"
-                : "plush toy puppet with soft pile fabric and embroidered features"
-
-    const baseInstruction =
-      "Convert the subject into a puppet version while preserving pose, camera, composition, and background. Maintain subject identity features (face structure, hair style, glasses, facial hair, clothing patterns/logo placements) translated into puppet materials."
-    const integrationNotes =
-      "Do not change the real environment (background/scene remains real). Use scene-matched lighting and cast plausible contact shadows from the puppet onto nearby surfaces. Keep a clean digital look; avoid glossy CGI."
-    const materialNotes =
-      "Materials: fabric, felt, foam, thread, embroidery. Avoid human skin texture; replace with fabric surface and stitched seams."
+                ? "paper puppet: flat construction, cut edges, drawn features, craft project look"
+                : "plush puppet: soft fleece fabric, embroidered features, toy store quality"
 
     const combined = [
-      baseInstruction,
-      `Puppet style: ${puppetStyle} (${puppetDescriptor}).`,
-      integrationNotes,
-      materialNotes,
-      prompt?.trim() ? `Subject detail: ${prompt.trim()}.` : "",
-      maskData ? "Apply only within the provided mask; do not alter outside the mask." : "",
-      "Safe-for-work, family-friendly, non-violent.",
+      `Transform subject into ${puppetStyle} puppet (${puppetDescriptor}).`,
+      "Replace all skin with fabric textures. Convert eyes to buttons/felt, hair to yarn/fabric.",
+      "Keep exact pose, camera angle, background unchanged. Maintain identity but as puppet materials.",
+      "Show realistic puppet construction: seams, stitching, fabric textures.",
+      "Lighting matches original scene, puppet casts appropriate shadows.",
+      prompt?.trim() ? `Subject details: ${prompt.trim()}.` : "",
+      maskData ? "Apply only within mask area." : "",
+      "Family-friendly content only.",
     ]
       .filter(Boolean)
       .join(" ")
