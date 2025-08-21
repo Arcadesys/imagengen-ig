@@ -12,7 +12,10 @@ import { useToast } from "@/hooks/use-toast"
 interface EmailSignupModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (email: string, preferences: EmailPreferences) => Promise<void>
+  // `onSubmit` returns true on success; throws on error
+  onSubmit: (email: string, preferences: EmailPreferences, source: string) => Promise<boolean>
+  // Identifies where the signup was initiated from (e.g., 'generation_modal')
+  source: string
   title?: string
   description?: string
 }
@@ -28,6 +31,7 @@ export function EmailSignupModal({
   isOpen,
   onClose,
   onSubmit,
+  source,
   title = "Stay updated while we generate your image!",
   description = "Get notified about new features, tips, and product updates. Your email will never be shared."
 }: EmailSignupModalProps) {
@@ -66,11 +70,12 @@ export function EmailSignupModal({
 
     setIsSubmitting(true)
     try {
-      await onSubmit(email, preferences)
+      const ok = await onSubmit(email, preferences, source)
       toast({
         title: "Thanks for signing up!",
         description: "You'll receive updates about your generated images and new features.",
       })
+      // The hook will close itself on success; also close here for non-hook callers
       onClose()
     } catch (error) {
       console.error("Email signup error:", error)

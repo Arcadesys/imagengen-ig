@@ -7,7 +7,7 @@ import { useState } from "react"
 export default function EmailSignupTestPage() {
   const [isOpen, setIsOpen] = useState(false)
 
-  const handleSubmit = async (email: string, preferences: any) => {
+  const handleSubmit = async (email: string, preferences: any, source: string): Promise<boolean> => {
     try {
       const response = await fetch('/api/email-signup', {
         method: 'POST',
@@ -16,7 +16,8 @@ export default function EmailSignupTestPage() {
         },
         body: JSON.stringify({
           email,
-          preferences
+          preferences,
+          source,
         })
       })
 
@@ -25,9 +26,7 @@ export default function EmailSignupTestPage() {
         throw new Error(errorData.error || 'Failed to sign up')
       }
 
-      const data = await response.json()
-      console.log('Email signup successful:', data)
-      
+      return true
     } catch (error) {
       console.error('Email signup error:', error)
       throw error
@@ -50,6 +49,7 @@ export default function EmailSignupTestPage() {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         onSubmit={handleSubmit}
+        source="test_page"
       />
     </div>
   )
