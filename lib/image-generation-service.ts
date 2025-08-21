@@ -68,7 +68,7 @@ export class ImageGenerationService {
         throw new Error(validation.error || "Invalid request")
       }
 
-  const { prompt, expandedPrompt, size, n, seed, baseImageId, maskData } = request
+      const { prompt, expandedPrompt, size, n, seed, baseImageId, maskData } = request
 
       console.log("[ImageGenerationService] Request:", {
         prompt: prompt?.substring(0, 50) + "...",
