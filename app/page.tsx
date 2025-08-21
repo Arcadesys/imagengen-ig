@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Camera, Sparkles, Palette, ArrowRight, Upload, ImageIcon } from "lucide-react"
+import { Header } from "@/components/header"
 
 interface StyleOption {
   id: string
@@ -91,6 +92,7 @@ export default function PhotoBoothPage() {
   if (currentStep === "entry") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-cyan-100 dark:from-pink-950 dark:via-purple-950 dark:to-cyan-950">
+        <Header />
         <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-screen">
           {currentEvent && (
             <div className="mb-8 text-center">
@@ -182,6 +184,7 @@ export default function PhotoBoothPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-cyan-100 dark:from-pink-950 dark:via-purple-950 dark:to-cyan-950">
+      <Header />
       <div className="container mx-auto px-4 py-8">
         {uploadedPhoto && (
           <div className="mb-6">

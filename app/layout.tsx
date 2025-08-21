@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { SkipNav } from "@/components/accessibility/skip-nav"
+import { Providers } from "@/components/providers"
 
 export const metadata: Metadata = {
   title: "AI Image Generator",
@@ -39,9 +40,11 @@ html {
         `}</style>
       </head>
       <body>
-        <SkipNav />
-        {children}
-        <Toaster />
+        <Providers>
+          <SkipNav />
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   )
