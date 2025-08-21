@@ -212,7 +212,7 @@ export class ImageGenerationService {
           url: saved.url,
           metadata: {
             prompt: saved.prompt || finalPrompt,
-            expandedPrompt: saved.expandedPrompt || undefined,
+            expandedPrompt: finalPrompt, // Show the actual prompt sent to OpenAI
             size: effectiveSize,
             seed: seed ?? undefined,
             baseImageId,

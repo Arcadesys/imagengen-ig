@@ -65,7 +65,9 @@ export class ImageGenerationService {
       const allowRequestedSize = nextRequest ? isAdminRequest(nextRequest) : true
       // Default to 512x512 when size is omitted (Auto). Non-admins are pinned to 512x512.
       const requestedSize = size ?? "512x512"
-      const effectiveSize: "512x512" | "768x768" | "1024x1024" = allowRequestedSize ? requestedSize : "512x512"
+      const effectiveSize: "512x512" | "768x768" | "1024x1024" = allowRequestedSize ? 
+        (["512x512", "768x768", "1024x1024"].includes(requestedSize) ? requestedSize as "512x512" | "768x768" | "1024x1024" : "512x512") : 
+        "512x512"
 
       // Content safety check
       const safety = checkPromptSafety(expandedPrompt?.trim() ? expandedPrompt! : prompt)
@@ -212,7 +214,7 @@ export class ImageGenerationService {
           url: saved.url,
           metadata: {
             prompt: saved.prompt || finalPrompt,
-            expandedPrompt: saved.expandedPrompt || undefined,
+            expandedPrompt: finalPrompt, // Show the actual prompt sent to OpenAI
             size: effectiveSize,
             seed: seed ?? undefined,
             baseImageId,
