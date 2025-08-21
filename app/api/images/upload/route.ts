@@ -12,6 +12,10 @@ try {
   console.log("[v0] Sharp not available, using fallback image processing")
 }
 
+// Ensure this route runs on Node.js runtime (required for Prisma/Sharp)
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
 interface UploadedImage {
   id: string
   url: string

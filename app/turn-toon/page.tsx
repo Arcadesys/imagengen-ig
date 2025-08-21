@@ -1050,22 +1050,10 @@ function GenerateWithProgressButton({
         } else {
           progressModal.updateProgress("uploading", 10, "Uploading base image...")
 
-          const formData = new FormData()
           const response = await fetch(baseImage)
           const blob = await response.blob()
-          // API expects the field name "file"
-          formData.append("file", blob, "base-image.png")
-
-          const uploadResponse = await fetch("/api/images/upload", {
-            method: "POST",
-            body: formData,
-          })
-
-          if (!uploadResponse.ok) {
-            throw new Error("Failed to upload base image")
-          }
-
-          const uploadResult = await uploadResponse.json()
+          const { uploadImageViaApi } = await import("@/lib/client-upload")
+          const uploadResult = await uploadImageViaApi(blob, "base-image.png")
           baseImageId = uploadResult.baseImageId
         }
       }
