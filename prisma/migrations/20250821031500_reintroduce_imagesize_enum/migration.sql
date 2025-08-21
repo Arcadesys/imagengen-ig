@@ -49,4 +49,9 @@ FROM "Image";
 DROP TABLE "Image";
 ALTER TABLE "new_Image" RENAME TO "Image";
 
+-- Recreate indexes to match Prisma schema
+CREATE INDEX IF NOT EXISTS "Image_createdAt_idx" ON "Image" ("createdAt");
+CREATE INDEX IF NOT EXISTS "Image_kind_createdAt_idx" ON "Image" ("kind", "createdAt");
+CREATE INDEX IF NOT EXISTS "Image_baseImageId_idx" ON "Image" ("baseImageId");
+
 PRAGMA foreign_keys=ON;
