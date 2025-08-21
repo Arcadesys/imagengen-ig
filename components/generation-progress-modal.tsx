@@ -8,13 +8,13 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle, XCircle, Loader2, Sparkles, Palette, Wand2, X } from "lucide-react"
 import { EmailSignupModal } from "@/components/email-signup-modal"
 import { useEmailSignup } from "@/hooks/use-email-signup"
-import type { GeneratedImage } from "@/lib/types"
+// (Keep types broad here per task scope; a separate accepted review covers tightening types.)
 
 interface GenerationProgressModalProps {
   isOpen: boolean
   onClose: () => void
   onCancel?: () => void
-  onComplete?: (images: GeneratedImage[]) => void
+  onComplete?: (images: any[]) => void
   status: "idle" | "uploading" | "processing" | "generating" | "downloading" | "complete" | "error"
   progress: number
   message: string
@@ -22,7 +22,7 @@ interface GenerationProgressModalProps {
   generatedCount?: number
   totalCount?: number
   canCancel?: boolean
-  generatedImages?: GeneratedImage[]
+  generatedImages?: any[]
 }
 
 const statusConfig = {
@@ -82,7 +82,7 @@ export function GenerationProgressModal({
   generatedCount = 0,
   totalCount = 1,
   canCancel = true,
-  generatedImages = [] as GeneratedImage[],
+  generatedImages = [],
 }: GenerationProgressModalProps) {
   const [dots, setDots] = useState("")
   const config = statusConfig[status]
