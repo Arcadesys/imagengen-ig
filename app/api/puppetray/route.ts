@@ -96,7 +96,9 @@ export async function POST(req: NextRequest) {
         seed,
         baseImageId,
         maskData,
-      } as any,
+      },
+      req,
+    )
       req,
     )
 
