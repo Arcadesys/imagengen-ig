@@ -86,7 +86,7 @@ describe("ImageGenerationService", () => {
   it("should generate images successfully", async () => {
     const request: GenerateRequest = {
       prompt: "test prompt",
-      size: "512x512",
+      size: "1024x1024",
       n: 1,
     }
 
@@ -97,7 +97,7 @@ describe("ImageGenerationService", () => {
       expect.objectContaining({
         model: "gpt-image-1",
         prompt: "test prompt",
-        size: "512x512",
+        size: "1024x1024",
         n: 1,
       })
     )
@@ -106,7 +106,7 @@ describe("ImageGenerationService", () => {
   it("should call progress callback when enabled", async () => {
     const request: GenerateRequest = {
       prompt: "test prompt",
-      size: "512x512",
+      size: "1024x1024",
       n: 1,
     }
 
@@ -127,7 +127,7 @@ describe("ImageGenerationService", () => {
   it("should handle validation errors", async () => {
     const request: GenerateRequest = {
       prompt: "",
-      size: "512x512",
+      size: "1024x1024",
       n: 1,
     }
 

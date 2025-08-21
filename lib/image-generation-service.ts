@@ -61,11 +61,11 @@ export class ImageGenerationService {
         baseImageId,
       })
 
-      // Enforce 512x512 for non-admins
+      // Enforce 1024x1024 for non-admins
       const allowRequestedSize = nextRequest ? isAdminRequest(nextRequest) : true
-      // Default to 512x512 when size is omitted (Auto). Non-admins are pinned to 512x512.
-      const requestedSize = size ?? "512x512"
-      const effectiveSize: "512x512" | "768x768" | "1024x1024" = allowRequestedSize ? requestedSize : "512x512"
+      // Default to 1024x1024 when size is omitted (Auto). Non-admins are pinned to 1024x1024.
+      const requestedSize = size ?? "1024x1024"
+      const effectiveSize: "1024x1024" | "1024x1536" | "1536x1024" = allowRequestedSize ? requestedSize : "1024x1024"
 
       // Content safety check
       const safety = checkPromptSafety(expandedPrompt?.trim() ? expandedPrompt! : prompt)

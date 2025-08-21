@@ -2,7 +2,7 @@ export interface GenerateRequest {
   prompt: string
   expandedPrompt?: string | null
   // Optional for Auto sizing; when omitted, service will choose a default
-  size?: "512x512" | "768x768" | "1024x1024"
+  size?: "1024x1024" | "1024x1536" | "1536x1024"
   n: number
   seed?: string | number | null
   baseImageId?: string | null
