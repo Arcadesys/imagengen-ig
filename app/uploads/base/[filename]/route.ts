@@ -14,3 +14,6 @@ export async function GET(_: NextRequest, context: { params: Promise<{ filename:
     headers: { "Content-Type": image.mimeType, "Cache-Control": "public, max-age=31536000, immutable" },
   })
 }
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"

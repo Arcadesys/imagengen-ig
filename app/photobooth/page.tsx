@@ -94,12 +94,9 @@ export default function PhotoboothPage() {
     try {
       // upload snapshot to get baseImageId
       progress.updateProgress("uploading", 10, "Uploading snapshot...")
-      const blob = await (await fetch(snapshotUrl)).blob()
-      const fd = new FormData()
-      fd.append("file", blob, "snapshot.png")
-      const up = await fetch("/api/images/upload", { method: "POST", body: fd })
-      if (!up.ok) throw new Error("Failed to upload snapshot")
-      const { baseImageId } = await up.json()
+  const blob = await (await fetch(snapshotUrl)).blob()
+  const { uploadImageViaApi } = await import("@/lib/client-upload")
+  const { baseImageId } = await uploadImageViaApi(blob, "snapshot.png")
 
       // Create a full transparent mask to allow AI to stylize entire portrait (edit whole image)
       const maskCanvas = document.createElement("canvas")

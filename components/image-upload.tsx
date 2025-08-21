@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { X, Upload, ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
+import { uploadImageViaApi } from "@/lib/client-upload"
 
 interface ImageUploadProps {
   onUpload: (baseImageId: string, url: string) => void
@@ -59,41 +60,7 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
       setIsUploading(true)
 
       try {
-        const formData = new FormData()
-        formData.append("file", file)
-
-        const response = await fetch("/api/images/upload", {
-          method: "POST",
-          body: formData,
-        })
-
-        if (!response.ok) {
-          const contentType = response.headers.get("content-type")
-          let errorMessage = "Upload failed"
-
-          if (contentType && contentType.includes("application/json")) {
-            try {
-              const error = await response.json()
-              errorMessage = error.error || errorMessage
-            } catch {
-              errorMessage = "Server error occurred"
-            }
-          } else {
-            // Handle HTML error responses
-            const text = await response.text()
-            if (response.status === 500) {
-              errorMessage = "Server error. Please try again later."
-            } else if (response.status === 413) {
-              errorMessage = "File too large for server"
-            } else {
-              errorMessage = `Server error (${response.status})`
-            }
-          }
-
-          throw new Error(errorMessage)
-        }
-
-        const result = await response.json()
+        const result = await uploadImageViaApi(file, file.name || "upload.png")
         onUpload(result.baseImageId, result.url)
 
         toast({

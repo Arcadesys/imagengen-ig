@@ -113,13 +113,8 @@ export default function GeneratePage() {
     setCurrentStepIndex(0)
     try {
       // 1) Upload captured image to obtain a baseImageId
-      const blob = await (await fetch(imageData)).blob()
-      const form = new FormData()
-      form.append("file", blob, "snapshot.png")
-
-      const uploadResp = await fetch("/api/images/upload", { method: "POST", body: form })
-      if (!uploadResp.ok) throw new Error("Failed to upload snapshot")
-      const { baseImageId } = await uploadResp.json()
+  const blob = await (await fetch(imageData)).blob()
+  const { baseImageId } = await (await import("@/lib/client-upload")).uploadImageViaApi(blob, "snapshot.png")
 
       // 2) Build a prompt from the selected style
   const selected = styles.find((s) => s.id === styleId)

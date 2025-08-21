@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
+import { uploadImageViaApi } from "@/lib/client-upload"
 
 interface WebcamCaptureProps {
   onUpload: (baseImageId: string, url: string) => void
@@ -64,14 +65,8 @@ export function WebcamCapture({ onUpload, onCancel, disabled }: WebcamCapturePro
       const blob: Blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b as Blob), "image/png", 0.92))
       const file = new File([blob], "webcam.png", { type: "image/png" })
 
-      const formData = new FormData()
-      formData.append("file", file)
-      const res = await fetch("/api/images/upload", { method: "POST", body: formData })
-      if (!res.ok) {
-        throw new Error(`Upload failed (${res.status})`)
-      }
-      const data = await res.json()
-      onUpload(data.baseImageId, data.url)
+  const data = await uploadImageViaApi(file, file.name)
+  onUpload(data.baseImageId, data.url)
       toast({ title: "Photo captured", description: "Webcam photo uploaded." })
     } catch (e) {
       console.error(e)
