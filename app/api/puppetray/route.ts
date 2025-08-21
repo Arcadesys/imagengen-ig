@@ -99,8 +99,6 @@ export async function POST(req: NextRequest) {
       },
       req,
     )
-      req,
-    )
 
     return NextResponse.json(result)
   } catch (e: any) {

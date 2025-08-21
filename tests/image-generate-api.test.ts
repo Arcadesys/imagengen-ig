@@ -63,7 +63,8 @@ describe("Image Generation API", () => {
   const res = await POST(req)
   expect(mockGenerate).toHaveBeenCalled()
   const call = mockGenerate.mock.calls[0][0]
-  expect(call).toEqual(expect.objectContaining({ size: "512x512", n: 1 }))
+  // Service normalizes provider size to 1024x1024 while preserving effective size in metadata
+  expect(call).toEqual(expect.objectContaining({ size: "1024x1024", n: 1 }))
   expect(call.prompt).toEqual(expect.stringContaining("cat"))
   expect(res.status).toBe(200)
   const data = await res.json()
