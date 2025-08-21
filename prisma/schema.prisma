@@ -12,14 +12,14 @@ datasource db {
 }
 
 model Image {
-  id           String   @id @default(uuid())
-  kind         ImageKind
-  url          String   // public URL path we expose (virtual; may be /images/:id)
-  mimeType     String
-  width        Int?
-  height       Int?
-  sizeBytes    Int
-  originalName String?
+  id             String     @id @default(uuid())
+  kind           ImageKind
+  url            String // public URL path we expose (virtual; may be /images/:id)
+  mimeType       String
+  width          Int?
+  height         Int?
+  sizeBytes      Int
+  originalName   String?
   // generation metadata
   prompt          String?
   expandedPrompt  String?
@@ -30,10 +30,10 @@ model Image {
   hasMask         Boolean? @default(false)
   provider        String?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  blob         ImageBlob?
+  blob ImageBlob?
 
   @@index([createdAt])
   @@index([kind, createdAt])
@@ -57,5 +57,5 @@ model ImageBlob {
   id   String @id
   data Bytes
 
-  image Image  @relation(fields: [id], references: [id], onDelete: Cascade)
+  image Image @relation(fields: [id], references: [id], onDelete: Cascade)
 }
