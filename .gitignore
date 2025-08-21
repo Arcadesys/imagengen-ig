@@ -36,3 +36,6 @@ prisma/migrations/**/steps.json
 public/generated/
 public/uploads/
 temp/
+
+# Ignore backup files
+data/gallery.json.bak

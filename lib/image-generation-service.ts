@@ -227,7 +227,6 @@ export class ImageGenerationService {
 
     console.log("[ImageGenerationService] Calling OpenAI image edit API...")
     const response = await this.openai.images.edit({
-      model: "gpt-image-1",
       image: createReadStream(baseImagePath) as any,
       mask: createReadStream(maskPath) as any,
       prompt: finalPrompt,
@@ -310,15 +309,6 @@ export class ImageGenerationService {
       throw new Error("Base image not found")
     }
 
-    // Convert to PNG if not already PNG
-    let pngImagePath = baseImagePath
-    if (!baseImagePath.toLowerCase().endsWith(".png")) {
-      const sharp = require("sharp")
-      const pngPath = baseImagePath.replace(/\.[^/.]+$/, "") + "-converted.png"
-      await sharp(baseImagePath).png().toFile(pngPath)
-      pngImagePath = pngPath
-    }
-
     sendProgress?.({
       type: "progress",
       status: "generating",
@@ -327,10 +317,8 @@ export class ImageGenerationService {
     })
 
     console.log("[ImageGenerationService] Calling OpenAI image edit API (no mask)...")
-    // Use official SDK for reliability and to include model
     const response = await this.openai.images.edit({
-      model: "gpt-image-1",
-      image: createReadStream(pngImagePath) as any,
+      image: createReadStream(baseImagePath) as any,
       prompt: finalPrompt,
       size: providerSize,
       n: 1,
@@ -347,7 +335,7 @@ export class ImageGenerationService {
       message: "Processing edited image...",
     })
 
-  const imageData = response.data[0] as any
+    const imageData = response.data[0] as any
     const imageBufferArray = await this.downloadOrDecodeImage(imageData)
 
       const saved = await saveImage({
@@ -410,9 +398,7 @@ export class ImageGenerationService {
     })
 
     console.log("[ImageGenerationService] Calling OpenAI API...")
-    const response = await this.openai.images.generate({
-      ...openaiRequest,
-    })
+    const response = await this.openai.images.generate(openaiRequest)
     console.log("[ImageGenerationService] OpenAI API response received, data length:", response.data?.length)
 
     if (!response.data || response.data.length === 0) {
@@ -484,11 +470,6 @@ export class ImageGenerationService {
   }
 
   private async downloadOrDecodeImage(imageData: any): Promise<ArrayBuffer> {
-    // Prefer base64 if present to avoid network flakiness when URLs are short-lived
-    if (imageData?.b64_json) {
-      console.log("[ImageGenerationService] Decoding base64 image")
-      return Buffer.from(imageData.b64_json, "base64").buffer
-    }
     if (imageData?.url) {
       console.log("[ImageGenerationService] Downloading image via URL")
       const imageResponse = await fetch(imageData.url)
@@ -503,7 +484,11 @@ export class ImageGenerationService {
       }
 
       return await imageResponse.arrayBuffer()
+    } else if (imageData?.b64_json) {
+      console.log("[ImageGenerationService] Decoding base64 image")
+      return Buffer.from(imageData.b64_json, "base64").buffer
+    } else {
+      throw new Error("Image has neither URL nor base64 data")
     }
-    throw new Error("Image has neither URL nor base64 data")
   }
 }

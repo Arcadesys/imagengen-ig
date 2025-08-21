@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-  const { id: photoId } = await context.params
+    const photoId = params.id
     console.log("[v0] Fetching photo:", photoId)
 
     // In a real implementation, this would fetch from database

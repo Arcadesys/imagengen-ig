@@ -1,4 +1,5 @@
 import { prisma } from "./db"
+import type { ImageSize } from "@prisma/client"
 
 function extFromMime(mime: string): string {
   if (!mime) return ".png"
@@ -21,7 +22,7 @@ export interface SaveImageOptions {
   // generation metadata
   prompt?: string | null
   expandedPrompt?: string | null
-  size?: string | null
+  size?: ImageSize | null
   seed?: string | number | null
   baseImageId?: string | null
   hasMask?: boolean | null

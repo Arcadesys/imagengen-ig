@@ -87,18 +87,18 @@ export async function POST(req: NextRequest) {
 
     // Call the image generation service directly to avoid internal fetch/network issues
     const imageService = new ImageGenerationService()
-    const result = await imageService.generateImages(
-      {
-        prompt: finalPrompt,
-        expandedPrompt: combined,
-        size,
-        n,
-        seed,
-        baseImageId,
-        maskData,
-      },
-      req,
-    )
+      const result = await imageService.generateImages(
+        {
+          prompt: finalPrompt,
+          expandedPrompt: combined,
+          size,
+          n,
+          seed,
+          baseImageId,
+          maskData,
+        },
+        req,
+      )
 
     return NextResponse.json(result)
   } catch (e: any) {

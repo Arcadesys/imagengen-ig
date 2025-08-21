@@ -12,27 +12,28 @@ datasource db {
 }
 
 model Image {
-  id           String   @id @default(uuid())
-  kind         ImageKind
-  url          String   // public URL path we expose (virtual; may be /images/:id)
-  mimeType     String
-  width        Int?
-  height       Int?
-  sizeBytes    Int
-  originalName String?
+  id             String     @id @default(uuid())
+  kind           ImageKind
+  url            String // public URL path we expose (virtual; may be /images/:id)
+  mimeType       String
+  width          Int?
+  height         Int?
+  sizeBytes      Int
+  originalName   String?
   // generation metadata
   prompt          String?
   expandedPrompt  String?
-  size            String?
+  // Keep canonical buckets via enum; DB stores mapped string values
+  size            ImageSize?
   seed            String?
   baseImageId     String?
   hasMask         Boolean? @default(false)
   provider        String?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  blob         ImageBlob?
+  blob ImageBlob?
 
   @@index([createdAt])
   @@index([kind, createdAt])
@@ -44,10 +45,17 @@ enum ImageKind {
   GENERATED
 }
 
+// Mapped enum so DB stores human-friendly labels while Prisma exposes TS-safe members
+enum ImageSize {
+  S512x512   @map("512x512")
+  S768x768   @map("768x768")
+  S1024x1024 @map("1024x1024")
+}
+
 // Store binary data separately to keep Image table lean
 model ImageBlob {
   id   String @id
   data Bytes
 
-  image Image  @relation(fields: [id], references: [id], onDelete: Cascade)
+  image Image @relation(fields: [id], references: [id], onDelete: Cascade)
 }

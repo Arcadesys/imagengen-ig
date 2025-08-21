@@ -104,8 +104,7 @@ describe("API Integration Test", () => {
       expect.objectContaining({
         model: "gpt-image-1",
         prompt: "test prompt",
-        // Provider receives normalized square size
-        size: "1024x1024",
+        size: "512x512",
         n: 1,
       })
     )

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../lib/db"
 
-export async function GET(_: NextRequest, context: { params: Promise<{ filename: string }> }) {
-  const { filename } = await context.params
+export async function GET(_: NextRequest, { params }: { params: { filename: string } }) {
+  const { filename } = params
   const id = filename.split(".")[0]
   const image = await prisma.image.findUnique({ where: { id }, include: { blob: true } })
   if (!image || !image.blob?.data) return NextResponse.json({ error: "Not found" }, { status: 404 })

@@ -82,17 +82,10 @@ export async function GET(request: NextRequest) {
       size: "1024x1024",
     })
     console.log("[v0] gpt-image-1 test successful")
-    const first = imageResponse.data?.[0] as any
-    const hasUrl = !!first?.url
-    const hasB64 = !!first?.b64_json
     tests.push({
       test: "Image Generation (gpt-image-1)",
       status: "PASS",
-      details: hasUrl
-        ? "Generated image via URL"
-        : hasB64
-        ? `Generated image via base64 (${Math.round((first.b64_json.length * 3) / 4 / 1024)}KB)`
-        : "No image payload returned",
+      details: `Generated image URL: ${imageResponse.data?.[0]?.url ? "Success" : "No URL returned"}`,
     })
   } catch (error) {
     console.log("[v0] gpt-image-1 test failed:", error)

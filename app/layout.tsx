@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
-// Removed Geist font imports for accessibility
+import { GeistSans } from "geist/font/sans"
+import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { SkipNav } from "@/components/accessibility/skip-nav"
@@ -31,13 +32,12 @@ export default function RootLayout({
       <head>
         <style>{`
 html {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-sans: system-ui, sans-serif;
-  --font-mono: monospace;
+  font-family: ${GeistSans.style.fontFamily};
+  --font-sans: ${GeistSans.variable};
+  --font-mono: ${GeistMono.variable};
 }
         `}</style>
       </head>
-// ...existing code...
       <body>
         <SkipNav />
         {children}
