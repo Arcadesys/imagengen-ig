@@ -17,7 +17,7 @@ CREATE TABLE "new_Image" (
     "originalName" TEXT,
     "prompt"       TEXT,
     "expandedPrompt" TEXT,
-    "size"         TEXT CHECK ("size" IN ('512x512','768x768','1024x1024')),
+    "size"         TEXT CHECK ("size" IN ('512x512','768x768','1024x1024') OR "size" IS NULL),
     "seed"         TEXT,
     "baseImageId"  TEXT,
     "hasMask"      BOOLEAN DEFAULT false,
@@ -45,13 +45,12 @@ SELECT
     "createdAt","updatedAt"
 FROM "Image";
 
--- Replace old table
 DROP TABLE "Image";
 ALTER TABLE "new_Image" RENAME TO "Image";
-
--- Recreate indexes to match Prisma schema
-CREATE INDEX IF NOT EXISTS "Image_createdAt_idx" ON "Image" ("createdAt");
-CREATE INDEX IF NOT EXISTS "Image_kind_createdAt_idx" ON "Image" ("kind", "createdAt");
-CREATE INDEX IF NOT EXISTS "Image_baseImageId_idx" ON "Image" ("baseImageId");
+ 
+-- Recreate indexes as defined in Prisma schema
+CREATE INDEX "Image_createdAt_idx" ON "Image" ("createdAt");
+CREATE INDEX "Image_kind_createdAt_idx" ON "Image" ("kind", "createdAt");
+CREATE INDEX "Image_baseImageId_idx" ON "Image" ("baseImageId");
 
 PRAGMA foreign_keys=ON;
