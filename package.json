@@ -2,11 +2,11 @@
   "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "npm@9.8.1",
   "scripts": {
     "build": "next build",
     "dev": "next dev",
-    "lint": "next lint",
+    "lint": "next lin",d
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest"
