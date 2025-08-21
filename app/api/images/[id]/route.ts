@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../../lib/db"
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id
+export async function GET(_: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
   const image = await prisma.image.findUnique({ where: { id }, include: { blob: true } })
@@ -19,8 +19,8 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   })
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id;
+export async function DELETE(_: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   try {
     await prisma.image.delete({ where: { id } });

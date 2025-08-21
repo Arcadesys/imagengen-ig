@@ -46,5 +46,21 @@
     "size": "1024x1024",
     "baseImageId": "7de1bcb2-a6a2-4d74-befc-0f4929d68d4d",
     "createdAt": "2025-08-21T04:24:38.285Z"
+  },
+  {
+    "id": "a21b7932-f67d-44a9-8723-59281006f6d1",
+    "url": "/uploads/base/a21b7932-f67d-44a9-8723-59281006f6d1.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "a21b7932-f67d-44a9-8723-59281006f6d1",
+    "createdAt": "2025-08-21T04:31:04.365Z"
+  },
+  {
+    "id": "240bed39-6f20-4e8a-8e4c-0d9502f08fed",
+    "url": "/uploads/base/240bed39-6f20-4e8a-8e4c-0d9502f08fed.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "240bed39-6f20-4e8a-8e4c-0d9502f08fed",
+    "createdAt": "2025-08-21T04:31:05.515Z"
   }
 ]
