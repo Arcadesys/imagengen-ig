@@ -23,7 +23,8 @@ model Image {
   // generation metadata
   prompt          String?
   expandedPrompt  String?
-  size            String?
+  // Keep canonical buckets via enum; DB stores mapped string values
+  size            ImageSize?
   seed            String?
   baseImageId     String?
   hasMask         Boolean? @default(false)
@@ -42,6 +43,13 @@ model Image {
 enum ImageKind {
   UPLOAD_BASE
   GENERATED
+}
+
+// Mapped enum so DB stores human-friendly labels while Prisma exposes TS-safe members
+enum ImageSize {
+  S512x512   @map("512x512")
+  S768x768   @map("768x768")
+  S1024x1024 @map("1024x1024")
 }
 
 // Store binary data separately to keep Image table lean
