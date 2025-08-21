@@ -27,6 +27,7 @@ export interface SaveImageOptions {
   baseImageId?: string | null
   hasMask?: boolean | null
   provider?: string | null
+  sessionId?: string | null // Added for session grouping
 }
 
 export async function saveImage(opts: SaveImageOptions) {
@@ -48,6 +49,7 @@ export async function saveImage(opts: SaveImageOptions) {
       baseImageId: opts.baseImageId ?? null,
       hasMask: opts.hasMask ?? false,
       provider: opts.provider ?? null,
+      sessionId: opts.sessionId ?? null, // Added for session grouping
     },
   })
   const ext = extFromMime(opts.mimeType)

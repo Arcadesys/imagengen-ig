@@ -33,6 +33,12 @@ export function Header() {
                   Gallery
                 </Link>
                 <Link 
+                  href="/sessions" 
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  Sessions
+                </Link>
+                <Link 
                   href="/admin" 
                   className="text-sm font-medium transition-colors hover:text-primary"
                 >

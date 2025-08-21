@@ -1,16 +1,36 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     console.log("[Wall API] Fetching before/after transformations")
 
+    const url = new URL(request.url)
+    const sessionId = url.searchParams.get("session")
+
+    let whereClause: any = {
+      kind: "GENERATED",
+      baseImageId: {
+        not: null
+      }
+    }
+
+    // Filter by session if provided
+    if (sessionId) {
+      whereClause.sessionId = sessionId
+    }
+
     // Get all generated images that have base images (before/after pairs)
     const generatedImages = await prisma.image.findMany({
-      where: {
-        kind: "GENERATED",
-        baseImageId: {
-          not: null
+      where: whereClause,
+      include: {
+        session: {
+          select: {
+            id: true,
+            name: true,
+            generator: true,
+            createdAt: true
+          }
         }
       },
       orderBy: {
@@ -53,6 +73,12 @@ export async function GET() {
           style: style,
           prompt: generated.prompt,
           timestamp: generated.createdAt.toISOString(),
+          session: generated.session ? {
+            id: generated.session.id,
+            name: generated.session.name,
+            generator: generated.session.generator,
+            createdAt: generated.session.createdAt.toISOString()
+          } : null
         }
       })
 

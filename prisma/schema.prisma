@@ -29,6 +29,9 @@ model Image {
   baseImageId     String?
   hasMask         Boolean? @default(false)
   provider        String?
+  // Session grouping
+  sessionId       String?   // Links images to a session for grouping
+  session         GenerationSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -38,6 +41,7 @@ model Image {
   @@index([createdAt])
   @@index([kind, createdAt])
   @@index([baseImageId])
+  @@index([sessionId])
 }
 
 enum ImageKind {
@@ -50,6 +54,28 @@ enum ImageSize {
   S512x512   @map("512x512")
   S768x768   @map("768x768")
   S1024x1024 @map("1024x1024")
+}
+
+// Image generation sessions for grouping related images
+model GenerationSession {
+  id          String   @id @default(uuid())
+  name        String   // User-friendly name for the session
+  description String?  // Optional description
+  generator   String   // Which generator was used (turn-toon, puppetray, etc.)
+  
+  // Auth relationship
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  
+  // Related images
+  images      Image[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([generator])
+  @@index([createdAt])
 }
 
 // Store binary data separately to keep Image table lean
@@ -128,14 +154,15 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  sessionCodes  SessionCode[] // Session codes created by this admin
+  id               String    @id @default(cuid())
+  name             String?
+  email            String?   @unique
+  emailVerified    DateTime?
+  image            String?
+  accounts         Account[]
+  sessions         Session[]
+  sessionCodes     SessionCode[] // Session codes created by this admin
+  generationSessions GenerationSession[] // Generation sessions created by this user
 }
 
 model VerificationToken {

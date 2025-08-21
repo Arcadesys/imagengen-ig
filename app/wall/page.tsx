@@ -1,8 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
-import { Sparkles } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Sparkles, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 interface WallTransformation {
   id: string
@@ -11,15 +14,28 @@ interface WallTransformation {
   style: string
   prompt?: string
   timestamp: string
+  session?: {
+    id: string
+    name: string
+    generator: string
+    createdAt: string
+  } | null
 }
 
 export default function LiveWallPage() {
+  const searchParams = useSearchParams()
+  const sessionId = searchParams.get("session")
+  
   const [transformations, setTransformations] = useState<WallTransformation[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showAfter, setShowAfter] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showInstructions, setShowInstructions] = useState(true)
+  const [sessionInfo, setSessionInfo] = useState<{
+    name: string
+    generator: string
+  } | null>(null)
 
   // Auto-advance settings
   const DISPLAY_DURATION = 8000 // 8 seconds per transformation
@@ -28,10 +44,22 @@ export default function LiveWallPage() {
   // Load transformations from API
   const loadTransformations = async () => {
     try {
-      const response = await fetch("/api/wall")
+      const url = sessionId ? `/api/wall?session=${sessionId}` : "/api/wall"
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
-        setTransformations(data.transformations || [])
+        const transformations = data.transformations || []
+        setTransformations(transformations)
+        
+        // Set session info if filtering by session
+        if (sessionId && transformations.length > 0 && transformations[0].session) {
+          setSessionInfo({
+            name: transformations[0].session.name,
+            generator: transformations[0].session.generator
+          })
+        } else {
+          setSessionInfo(null)
+        }
       }
     } catch (error) {
       console.error("Failed to load transformations:", error)
@@ -201,13 +229,35 @@ export default function LiveWallPage() {
       </div>
 
       {/* Status Indicators */}
-      <div className="absolute top-8 left-8 z-20">
+      <div className="absolute top-8 left-8 z-20 flex items-center gap-4">
+        {sessionId && (
+          <Button
+            asChild
+            variant="secondary"
+            className="bg-black/70 text-white border-0 backdrop-blur-sm hover:bg-black/80"
+          >
+            <Link href="/sessions">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Sessions
+            </Link>
+          </Button>
+        )}
+        
         <Badge 
           variant="secondary" 
           className="text-2xl px-6 py-3 bg-black/70 text-white border-0 backdrop-blur-sm"
         >
           {showAfter ? "AFTER" : "BEFORE"}
         </Badge>
+        
+        {sessionInfo && (
+          <Badge 
+            variant="outline" 
+            className="text-lg px-4 py-2 bg-black/70 text-white border-white/20 backdrop-blur-sm"
+          >
+            {sessionInfo.name}
+          </Badge>
+        )}
       </div>
 
       <div className="absolute top-8 right-8 z-20">

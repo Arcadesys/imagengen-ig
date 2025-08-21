@@ -50,7 +50,7 @@ export class ImageGenerationService {
         throw new Error(validation.error || "Invalid request")
       }
 
-      const { prompt, expandedPrompt, size, n, seed, baseImageId } = request
+      const { prompt, expandedPrompt, size, n, seed, baseImageId, sessionId } = request
 
       console.log("[ImageGenerationService] Request:", {
         prompt: prompt?.substring(0, 50) + "...",
@@ -205,6 +205,7 @@ export class ImageGenerationService {
           baseImageId,
           hasMask: false,
           provider: "openai",
+          sessionId: sessionId ?? undefined, // Pass sessionId for grouping
         })
 
         images.push({
