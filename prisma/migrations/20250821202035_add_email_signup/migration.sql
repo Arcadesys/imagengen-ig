@@ -16,7 +16,6 @@ CREATE TABLE "EmailSignup" (
 CREATE UNIQUE INDEX "EmailSignup_email_key" ON "EmailSignup"("email");
 
 -- CreateIndex
-CREATE INDEX "EmailSignup_email_idx" ON "EmailSignup"("email");
 
 -- CreateIndex
 CREATE INDEX "EmailSignup_createdAt_idx" ON "EmailSignup"("createdAt");
