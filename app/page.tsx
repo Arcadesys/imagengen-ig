@@ -6,8 +6,10 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Camera, Sparkles, Palette, ArrowRight, Upload, ImageIcon } from "lucide-react"
+import { Camera, Sparkles, Palette, ArrowRight, Upload, ImageIcon, Settings } from "lucide-react"
 import { Header } from "@/components/header"
+import { useSession } from "next-auth/react"
+import Link from "next/link"
 
 interface StyleOption {
   id: string
@@ -24,6 +26,7 @@ interface Event {
 }
 
 export default function PhotoBoothPage() {
+  const { data: session } = useSession()
   const [currentStep, setCurrentStep] = useState<"entry" | "styles">("entry")
   const [styles, setStyles] = useState<StyleOption[]>([])
   const [selectedStyle, setSelectedStyle] = useState<StyleOption | null>(null)
@@ -146,37 +149,26 @@ export default function PhotoBoothPage() {
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
           </div>
 
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardContent className="p-6 text-center">
-                <Palette className="w-12 h-12 text-pink-500 mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">Choose Your Style</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Pick from amazing artistic styles to transform your photo
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardContent className="p-6 text-center">
-                <Sparkles className="w-12 h-12 text-purple-500 mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">AI Magic</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Watch as AI transforms your photo into a work of art
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardContent className="p-6 text-center">
-                <Camera className="w-12 h-12 text-cyan-500 mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">Share & Save</h3>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Get your photo via QR code or email to share with friends
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Admin Section for Logged-in Users */}
+          {session && (
+            <div className="mt-12 w-full max-w-md">
+              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+                <CardContent className="p-6 text-center">
+                  <Settings className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                  <h3 className="font-semibold text-lg mb-2 text-blue-900 dark:text-blue-100">Admin Panel</h3>
+                  <p className="text-blue-700 dark:text-blue-300 text-sm mb-4">
+                    Manage session codes and moderate content
+                  </p>
+                  <Link href="/admin">
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Open Admin Panel
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     )

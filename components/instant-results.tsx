@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, Save, Share2, Eye, X } from "lucide-react"
+import { Download, Save, Share2, Eye, X, Camera, RefreshCw, Palette, Upload } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { GeneratedImage } from "@/lib/types"
 
@@ -13,6 +13,9 @@ interface InstantResultsProps {
   onSave?: (image: GeneratedImage) => void
   onDiscard?: (imageId: string) => void
   onClose?: () => void
+  onRetakePhoto?: () => void
+  onRemixPrompt?: () => void
+  onSubmitToWall?: (image: GeneratedImage) => void
 }
 
 export function InstantResults({ 
@@ -20,7 +23,10 @@ export function InstantResults({
   prompt, 
   onSave, 
   onDiscard, 
-  onClose 
+  onClose,
+  onRetakePhoto,
+  onRemixPrompt,
+  onSubmitToWall
 }: InstantResultsProps) {
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null)
   const [savedImages, setSavedImages] = useState<Set<string>>(new Set())
@@ -53,6 +59,15 @@ export function InstantResults({
       document.body.removeChild(a)
     } catch (error) {
       console.error("Download failed:", error)
+    }
+  }
+
+  const handleSubmitToWall = async (image: GeneratedImage) => {
+    try {
+      onSubmitToWall?.(image)
+      // Could show a toast here if useToast was imported
+    } catch (error) {
+      console.error("Failed to submit to wall:", error)
     }
   }
 
@@ -154,6 +169,20 @@ export function InstantResults({
                       <Share2 className="h-4 w-4" />
                     </Button>
                   </div>
+                  
+                  {/* Submit to Wall button */}
+                  {onSubmitToWall && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleSubmitToWall(image)}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Submit to Wall
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )
@@ -167,6 +196,24 @@ export function InstantResults({
             <p className="text-sm text-muted-foreground">{prompt}</p>
           </CardContent>
         </Card>
+
+        {/* Action Footer */}
+        {(onRetakePhoto || onRemixPrompt) && (
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+            {onRetakePhoto && (
+              <Button onClick={onRetakePhoto} variant="outline" size="lg">
+                <Camera className="w-4 h-4 mr-2" />
+                Retake Photo
+              </Button>
+            )}
+            {onRemixPrompt && (
+              <Button onClick={onRemixPrompt} variant="outline" size="lg">
+                <Palette className="w-4 h-4 mr-2" />
+                Remix Prompt
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Full size view dialog */}

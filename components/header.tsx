@@ -32,6 +32,12 @@ export function Header() {
                 >
                   Gallery
                 </Link>
+                <Link 
+                  href="/admin" 
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  Admin
+                </Link>
               </>
             )}
           </nav>

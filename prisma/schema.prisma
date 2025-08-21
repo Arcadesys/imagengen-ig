@@ -79,6 +79,27 @@ model EmailSignup {
   @@index([source])
 }
 
+// Session codes created by admins for users to access generation features
+model SessionCode {
+  id              String   @id @default(uuid())
+  code            String   @unique // 6-9 letter code
+  name            String?  // Optional name/description for the session
+  maxGenerations  Int      @default(10) // Number of generations allowed
+  usedGenerations Int      @default(0)  // Number of generations used
+  isActive        Boolean  @default(true)
+  expiresAt       DateTime? // Optional expiration date
+  
+  createdById     String?  // User ID of admin who created it
+  createdBy       User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
 // Auth.js required models
 model Account {
   id                String  @id @default(cuid())
@@ -115,6 +136,7 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  sessionCodes  SessionCode[] // Session codes created by this admin
 }
 
 model VerificationToken {
