@@ -24,22 +24,41 @@ describe("[Puppetray] Functionality via /api/images/generate", () => {
   })
 
   it("should generate proper puppet prompts", () => {
-    const prompt = generatePuppetPrompt("muppet", "human waving", false)
+    const config = {
+      style: "muppet" as const,
+      gender: "Male",
+      species: "human",
+      personality: "goofy"
+    }
+    const prompt = generatePuppetPrompt(config, false)
     expect(prompt).toContain("Transform subject into muppet puppet")
+    expect(prompt).toContain("CARICATURE")
     expect(prompt).toContain("Muppet-style: foam head, felt skin")
-    expect(prompt).toContain("Subject details: human waving")
+    expect(prompt).toContain("Species: human")
     expect(prompt).toContain("Family-friendly content only")
   })
 
   it("should generate masked puppet prompts", () => {
-    const prompt = generatePuppetPrompt("sock", "cat sitting", true)
+    const config = {
+      style: "sock" as const,
+      gender: "Female",
+      species: "cat",
+      personality: "cute"
+    }
+    const prompt = generatePuppetPrompt(config, true)
     expect(prompt).toContain("Transform subject into sock puppet")
     expect(prompt).toContain("Apply only within mask area")
-    expect(prompt).toContain("Subject details: cat sitting")
+    expect(prompt).toContain("Species: cat")
   })
 
   it("should work via /api/images/generate endpoint with puppet prompt", async () => {
-    const puppetPrompt = generatePuppetPrompt("felt", "dog playing", false)
+    const config = {
+      style: "felt" as const,
+      gender: "",
+      species: "dog",
+      personality: "funny"
+    }
+    const puppetPrompt = generatePuppetPrompt(config, false)
     
     const res = await request
       .post("/api/images/generate")
