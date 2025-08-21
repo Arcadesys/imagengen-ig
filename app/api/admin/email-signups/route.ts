@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { isAdminRequest } from "@/lib/admin"
 
 export async function GET(request: NextRequest) {
   try {
-    // Add basic authentication or admin check here in production
+    // Admin-only endpoint
+    if (!isAdminRequest(request)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -51,14 +56,14 @@ export async function GET(request: NextRequest) {
         total,
         pages: Math.ceil(total / limit)
       },
-      stats: stats.map(stat => ({
+      stats: stats.map((stat: any) => ({
         source: stat.source,
         count: stat._count.source
       })),
       summary: {
         total,
-        active: signups.filter(s => s.active).length,
-        verified: signups.filter(s => s.verified).length
+        active: signups.filter((s: any) => s.active).length,
+        verified: signups.filter((s: any) => s.verified).length
       }
     })
 
@@ -74,6 +79,11 @@ export async function GET(request: NextRequest) {
 // DELETE endpoint to remove a signup (unsubscribe)
 export async function DELETE(request: NextRequest) {
   try {
+    // Admin-only endpoint
+    if (!isAdminRequest(request)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
     const id = searchParams.get('id')
