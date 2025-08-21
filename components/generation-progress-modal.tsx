@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle, XCircle, Loader2, Sparkles, Palette, Wand2, X } from "lucide-react"
 import { EmailSignupModal } from "@/components/email-signup-modal"
 import { useEmailSignup } from "@/hooks/use-email-signup"
-// (Keep types broad here per task scope; a separate accepted review covers tightening types.)
 
 interface GenerationProgressModalProps {
   isOpen: boolean
