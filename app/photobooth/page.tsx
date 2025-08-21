@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useGenerationProgress } from "@/hooks/use-generation-progress"
 import { GenerationProgressModal } from "@/components/generation-progress-modal"
+import { InstantResults } from "@/components/instant-results"
 import Link from "next/link"
 import { Camera, RefreshCw, Sparkles, ArrowLeft } from "lucide-react"
 
@@ -29,8 +30,28 @@ export default function PhotoboothPage() {
   const [hasCamera, setHasCamera] = useState(false)
   const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [showResults, setShowResults] = useState<boolean>(false)
+  const [generatedImages, setGeneratedImages] = useState<any[]>([])
 
   const progress = useGenerationProgress()
+
+  const handleGenerationComplete = (images: any[]) => {
+    setGeneratedImages(images)
+    setShowResults(true)
+  }
+
+  const handleSaveImage = async (image: any) => {
+    // Already saved to gallery during generation
+  }
+
+  const handleDiscardImage = (imageId: string) => {
+    setGeneratedImages(prev => prev.filter(img => img.id !== imageId))
+  }
+
+  const handleCloseResults = () => {
+    setShowResults(false)
+    setGeneratedImages([])
+  }
 
   useEffect(() => {
     ;(async () => {
@@ -129,8 +150,8 @@ export default function PhotoboothPage() {
         body: JSON.stringify({ images: result.images }),
       })
 
-      progress.complete()
-      setTimeout(() => (window.location.href = "/gallery"), 1500)
+      progress.complete(result.images)
+      // Images will be displayed via the onComplete callback instead of redirecting
     } catch (e: any) {
       progress.setError(e?.message || "Failed to generate")
     } finally {
@@ -218,6 +239,19 @@ export default function PhotoboothPage() {
             <h2 className="font-medium mb-2">Step 3 — Preview Prompt</h2>
             <pre className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-lg min-h-32">{prompt}</pre>
           </Card>
+
+          {showResults && generatedImages.length > 0 && (
+            <Card className="p-4 mt-4">
+              <h2 className="font-medium mb-2">Generated Results</h2>
+              <InstantResults
+                images={generatedImages}
+                prompt={prompt}
+                onSave={handleSaveImage}
+                onDiscard={handleDiscardImage}
+                onClose={handleCloseResults}
+              />
+            </Card>
+          )}
         </section>
       </main>
 
@@ -231,6 +265,8 @@ export default function PhotoboothPage() {
         error={progress.error}
         generatedCount={progress.generatedCount}
         totalCount={progress.totalCount}
+        onComplete={handleGenerationComplete}
+        generatedImages={progress.generatedImages}
       />
     </div>
   )

@@ -120,7 +120,11 @@ export default function GeneratePage() {
   const selected = styles.find((s) => s.id === styleId)
   const detail = getDetailedStylePrompt(styleId)
   const base = selected?.prompt || "cartoon style, bold lines, vibrant colors"
-  const prompt = `${detail} ${base}`
+  
+  // Add explicit clothing preservation instructions
+  const clothingPreservation = "CRITICAL: PRESERVE ALL CLOTHING AND OUTFIT DETAILS. Maintain exact clothing items, patterns, colors, textures, logos, accessories, jewelry, and styling. Keep clothing colors, patterns, textures, logos, text, designs, cuts, and fit identical to the original photo. Do not change the person's outfit - preserve shirts, pants, dresses, jackets, shoes, hats, accessories, jewelry, watches, belts, ties, scarves, bags, etc. exactly as shown in the original image."
+  
+  const prompt = `${detail} ${base}. ${clothingPreservation}`
 
       // 3) Create a fully-transparent mask so the whole image can be edited
       const imgEl = new Image()

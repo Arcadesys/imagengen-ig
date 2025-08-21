@@ -13,6 +13,7 @@ interface GenerationProgressModalProps {
   isOpen: boolean
   onClose: () => void
   onCancel?: () => void
+  onComplete?: (images: any[]) => void
   status: "idle" | "uploading" | "processing" | "generating" | "downloading" | "complete" | "error"
   progress: number
   message: string
@@ -20,6 +21,7 @@ interface GenerationProgressModalProps {
   generatedCount?: number
   totalCount?: number
   canCancel?: boolean
+  generatedImages?: any[]
 }
 
 const statusConfig = {
@@ -71,6 +73,7 @@ export function GenerationProgressModal({
   isOpen,
   onClose,
   onCancel,
+  onComplete,
   status,
   progress,
   message,
@@ -78,6 +81,7 @@ export function GenerationProgressModal({
   generatedCount = 0,
   totalCount = 1,
   canCancel = true,
+  generatedImages = [],
 }: GenerationProgressModalProps) {
   const [dots, setDots] = useState("")
   const config = statusConfig[status]
@@ -124,10 +128,14 @@ export function GenerationProgressModal({
     if (isComplete) {
       const timer = setTimeout(() => {
         onClose()
+        // Call the completion callback with generated images when modal closes after completion
+        if (onComplete && generatedImages.length > 0) {
+          onComplete(generatedImages)
+        }
       }, 2000)
       return () => clearTimeout(timer)
     }
-  }, [isComplete, onClose])
+  }, [isComplete, onClose, onComplete, generatedImages])
 
   const handleCancel = () => {
     if (onCancel && canCancel && !isComplete && !isError) {

@@ -6,6 +6,7 @@ import { renderTemplate } from "@/lib/template"
 import { PROMPT_PRESETS, DEFAULT_TOON_PRESET_ID } from "@/lib/prompt-presets"
 import { EnhancedImageUpload } from "@/components/enhanced-image-upload"
 import { GenerationProgressModal } from "@/components/generation-progress-modal"
+import { InstantResults } from "@/components/instant-results"
 import { useGenerationProgress } from "@/hooks/use-generation-progress"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -125,6 +126,8 @@ export default function TurnToonPage() {
   const [backgroundToonization, setBackgroundToonization] = useState<number>(40)
   const [identityPreservation, setIdentityPreservation] = useState<number>(80)
   const [maskFeatherPx, setMaskFeatherPx] = useState<number>(8) // 0..50
+  const [showResults, setShowResults] = useState<boolean>(false)
+  const [generatedImages, setGeneratedImages] = useState<any[]>([])
 
   const previewRef = useRef<HTMLPreElement | null>(null) // For select-text fallback
 
@@ -194,6 +197,33 @@ export default function TurnToonPage() {
   }
 
   const progressModal = useGenerationProgress()
+
+  const handleGenerationComplete = (images: any[]) => {
+    setGeneratedImages(images)
+    setShowResults(true)
+  }
+
+  const handleSaveImage = async (image: any) => {
+    try {
+      // Save to gallery
+      await fetch("/api/gallery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: [image] }),
+      })
+    } catch (error) {
+      console.error("Failed to save image:", error)
+    }
+  }
+
+  const handleDiscardImage = (imageId: string) => {
+    setGeneratedImages(prev => prev.filter(img => img.id !== imageId))
+  }
+
+  const handleCloseResults = () => {
+    setShowResults(false)
+    setGeneratedImages([])
+  }
 
   return (
     <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white p-6">
@@ -667,13 +697,28 @@ export default function TurnToonPage() {
         isOpen={progressModal.isOpen}
         onClose={progressModal.close}
         onCancel={progressModal.cancel}
+        onComplete={handleGenerationComplete}
         status={progressModal.status}
         progress={progressModal.progress}
         message={progressModal.message}
         error={progressModal.error}
         generatedCount={progressModal.generatedCount}
         totalCount={progressModal.totalCount}
+        generatedImages={progressModal.generatedImages}
       />
+
+      {/* Show results when generation completes */}
+      {showResults && (
+        <div className="fixed inset-0 bg-background z-50 overflow-auto">
+          <InstantResults
+            images={generatedImages}
+            prompt={output}
+            onSave={handleSaveImage}
+            onDiscard={handleDiscardImage}
+            onClose={handleCloseResults}
+          />
+        </div>
+      )}
 
       {/* Local utility styles */}
       <style>{`
@@ -1107,12 +1152,9 @@ function GenerateWithProgressButton({
         console.warn("Failed to save to gallery, but generation succeeded")
       }
 
-      progressModal.complete()
+      progressModal.complete(result.images)
 
-      // Redirect to gallery after a short delay
-      setTimeout(() => {
-        window.location.href = "/gallery"
-      }, 2000)
+      // Images will be displayed via the onComplete callback instead of redirecting
     } catch (error) {
       console.error("Generation error:", error)
       progressModal.setError(error instanceof Error ? error.message : "Generation failed")

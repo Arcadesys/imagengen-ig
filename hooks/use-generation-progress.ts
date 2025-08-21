@@ -12,10 +12,11 @@ interface UseGenerationProgressReturn {
   error?: string
   generatedCount: number
   totalCount: number
+  generatedImages: any[]
   startGeneration: (totalImages: number) => void
   updateProgress: (status: GenerationStatus, progress: number, message: string, generatedCount?: number) => void
   setError: (error: string) => void
-  complete: () => void
+  complete: (images?: any[]) => void
   cancel: () => void
   close: () => void
   generateWithProgress: (requestData: any) => Promise<any>
@@ -29,6 +30,7 @@ export function useGenerationProgress(): UseGenerationProgressReturn {
   const [error, setErrorState] = useState<string>()
   const [generatedCount, setGeneratedCount] = useState(0)
   const [totalCount, setTotalCount] = useState(1)
+  const [generatedImages, setGeneratedImages] = useState<any[]>([])
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const startGeneration = useCallback((totalImages = 1) => {
@@ -39,6 +41,7 @@ export function useGenerationProgress(): UseGenerationProgressReturn {
     setErrorState(undefined)
     setGeneratedCount(0)
     setTotalCount(totalImages)
+    setGeneratedImages([])
   }, [])
 
   const updateProgress = useCallback(
@@ -60,11 +63,14 @@ export function useGenerationProgress(): UseGenerationProgressReturn {
     setErrorState(errorMessage)
   }, [])
 
-  const complete = useCallback(() => {
+  const complete = useCallback((images?: any[]) => {
     setStatus("complete")
     setProgress(100)
     setMessage("Generation complete!")
     setErrorState(undefined)
+    if (images) {
+      setGeneratedImages(images)
+    }
   }, [])
 
   const cancel = useCallback(() => {
@@ -77,6 +83,7 @@ export function useGenerationProgress(): UseGenerationProgressReturn {
     setMessage("")
     setErrorState(undefined)
     setGeneratedCount(0)
+    setGeneratedImages([])
   }, [])
 
   const close = useCallback(() => {
@@ -127,7 +134,7 @@ export function useGenerationProgress(): UseGenerationProgressReturn {
                 if (eventData.type === "progress") {
                   updateProgress(eventData.status, eventData.progress, eventData.message, eventData.generatedCount)
                 } else if (eventData.type === "complete") {
-                  complete()
+                  complete(eventData.images)
                   result = { images: eventData.images }
                 } else if (eventData.type === "error") {
                   setError(eventData.error || eventData.message)
@@ -165,6 +172,7 @@ export function useGenerationProgress(): UseGenerationProgressReturn {
     error,
     generatedCount,
     totalCount,
+    generatedImages,
     startGeneration,
     updateProgress,
     setError,
