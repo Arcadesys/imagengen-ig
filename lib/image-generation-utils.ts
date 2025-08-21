@@ -68,7 +68,7 @@ export async function ensureDirectories(): Promise<void> {
  * Validate generation request
  */
 export function validateGenerateRequest(body: any): { isValid: boolean; error?: string } {
-  const { prompt, size, n, maskData, baseImageId } = body
+  const { prompt, size, n } = body
 
   if (!prompt || typeof prompt !== "string") {
     return { isValid: false, error: "Prompt is required and must be a string" }
@@ -81,14 +81,6 @@ export function validateGenerateRequest(body: any): { isValid: boolean; error?: 
 
   if (!n || n < 1 || n > 4) {
     return { isValid: false, error: "Number of images must be between 1 and 4" }
-  }
-
-  if (maskData && !baseImageId) {
-    return { isValid: false, error: "Base image is required when using mask" }
-  }
-
-  if (maskData && n > 1) {
-    return { isValid: false, error: "Mask editing only supports generating 1 image at a time" }
   }
 
   return { isValid: true }

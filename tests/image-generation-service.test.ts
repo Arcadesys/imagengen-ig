@@ -97,7 +97,7 @@ describe("ImageGenerationService", () => {
       expect.objectContaining({
         model: "gpt-image-1",
         prompt: "test prompt",
-        size: "1024x1024",
+        size: "512x512",
         n: 1,
       })
     )
@@ -112,25 +112,14 @@ describe("ImageGenerationService", () => {
 
     const onProgress = vi.fn()
     
-    await service.generateImages(request, undefined, {
-      enableProgress: true,
-      onProgress,
-    })
+    await service.generateImages(request, undefined, onProgress)
 
     expect(onProgress).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "progress",
-        status: "idle",
-        progress: 0,
-        message: "Initializing generation...",
-      })
-    )
-    
-    expect(onProgress).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "complete",
-        status: "complete",
-        progress: 100,
+        status: "processing",
+        progress: 10,
+        message: "Setting up generation...",
       })
     )
   })

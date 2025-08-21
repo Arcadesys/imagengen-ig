@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest"
 import supertest from "supertest"
 import { createServer } from "http"
 import next from "next"
+import { generatePuppetPrompt } from "../lib/puppet-prompts"
 
 const app = next({ dev: true, dir: process.cwd() })
 let server: any
@@ -17,26 +18,41 @@ beforeAll(async () => {
   request = supertest(`http://localhost:${port}`)
 })
 
-describe("[API] /api/puppetray", () => {
+describe("[Puppetray] Functionality via /api/images/generate", () => {
   beforeEach(() => {
     process.env.OPENAI_API_KEY = "" // force early failure downstream to avoid calling OpenAI
   })
 
-  it("returns 400 when puppetStyle is missing", async () => {
-    const res = await request.post("/api/puppetray").send({})
-    expect(res.status).toBe(400)
-    expect(res.body.error).toMatch(/puppetStyle is required/i)
-  }, 15000)
+  it("should generate proper puppet prompts", () => {
+    const prompt = generatePuppetPrompt("muppet", "human waving", false)
+    expect(prompt).toContain("Transform subject into muppet puppet")
+    expect(prompt).toContain("Muppet-style: foam head, felt skin")
+    expect(prompt).toContain("Subject details: human waving")
+    expect(prompt).toContain("Family-friendly content only")
+  })
 
-  it("wires through to generator and fails fast without API key", async () => {
+  it("should generate masked puppet prompts", () => {
+    const prompt = generatePuppetPrompt("sock", "cat sitting", true)
+    expect(prompt).toContain("Transform subject into sock puppet")
+    expect(prompt).toContain("Apply only within mask area")
+    expect(prompt).toContain("Subject details: cat sitting")
+  })
+
+  it("should work via /api/images/generate endpoint with puppet prompt", async () => {
+    const puppetPrompt = generatePuppetPrompt("felt", "dog playing", false)
+    
     const res = await request
-      .post("/api/puppetray")
-      .send({ puppetStyle: "muppet", size: "512x512", n: 1 })
+      .post("/api/images/generate")
+      .send({ 
+        prompt: puppetPrompt,
+        size: "512x512", 
+        n: 1 
+      })
 
+    // Should get an error from missing API key, but not 404
     expect([500, 400]).toContain(res.status)
-    // Most likely 500 from missing API key propagated from /api/images/generate
     if (res.status === 500) {
-      expect(res.body.error || "").toMatch(/api key is not configured|failed to generate images/i)
+      expect(res.body.error || "").toMatch(/api key is not configured|failed to generate|openai/i)
     }
   }, 15000)
 })

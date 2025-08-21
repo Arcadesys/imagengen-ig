@@ -1,10 +1,18 @@
 [
   {
-    "id": "948d2753-508f-416b-a544-371353b24be6",
-    "url": "/uploads/base/948d2753-508f-416b-a544-371353b24be6.jpg",
+    "id": "af8d8c60-05d5-43f7-b90a-0af6bfdc7ba8",
+    "url": "/uploads/base/af8d8c60-05d5-43f7-b90a-0af6bfdc7ba8.png",
     "prompt": "Uploaded base image",
     "size": "1024x1024",
-    "baseImageId": "948d2753-508f-416b-a544-371353b24be6",
-    "createdAt": "2025-08-21T17:37:11.754Z"
+    "baseImageId": "af8d8c60-05d5-43f7-b90a-0af6bfdc7ba8",
+    "createdAt": "2025-08-21T18:14:19.535Z"
+  },
+  {
+    "id": "f0bc66ce-18a0-4307-8a54-670ce3edd738",
+    "url": "/uploads/base/f0bc66ce-18a0-4307-8a54-670ce3edd738.png",
+    "prompt": "Uploaded base image",
+    "size": "1024x1024",
+    "baseImageId": "f0bc66ce-18a0-4307-8a54-670ce3edd738",
+    "createdAt": "2025-08-21T18:14:20.075Z"
   }
 ]

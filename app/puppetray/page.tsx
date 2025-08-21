@@ -11,10 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { GenerationResults } from "@/components/generation-results"
 import type { GeneratedImage } from "@/lib/types"
+import { generatePuppetPrompt, type PuppetStyle } from "@/lib/puppet-prompts"
 
 const PUPPET_STYLES = ["sock", "muppet", "mascot", "felt", "paper", "plush"] as const
-
-type PuppetStyle = (typeof PUPPET_STYLES)[number]
 
 type Size = "512x512" | "768x768" | "1024x1024"
 
@@ -23,7 +22,6 @@ export default function PuppetrayPage() {
   const [activeTab, setActiveTab] = useState("upload")
   const [baseImage, setBaseImage] = useState<string | null>(null)
   const [baseImageId, setBaseImageId] = useState<string | null>(null)
-  const [maskData, setMaskData] = useState<string | null>(null)
 
   const [puppetStyle, setPuppetStyle] = useState<PuppetStyle>("muppet")
   const [species, setSpecies] = useState<string>("human")
@@ -43,9 +41,6 @@ export default function PuppetrayPage() {
     return bits.join(". ")
   }, [species, action])
 
-  // Mask-based edits only support n=1. Clamp and reflect in UI.
-  const effectiveN = maskData ? 1 : Math.max(1, Math.min(4, n))
-
   async function generate() {
     if (!baseImageId) {
       toast({ title: "Upload a photo first", description: "Upload or take a webcam shot.", variant: "destructive" })
@@ -55,17 +50,18 @@ export default function PuppetrayPage() {
     setIsGenerating(true)
     setResults([])
     try {
-    const res = await fetch("/api/puppetray", {
+      // Generate the puppet transformation prompt
+      const puppetPrompt = generatePuppetPrompt(puppetStyle, userPrompt, false)
+
+      const res = await fetch("/api/images/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: userPrompt,
-          puppetStyle,
+          prompt: puppetPrompt,
           size,
-      n: effectiveN,
+          n: n,
           seed: seed.trim() || undefined,
           baseImageId,
-          maskData: maskData || undefined,
         }),
       })
       if (!res.ok) {
@@ -92,7 +88,7 @@ export default function PuppetrayPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6 grid gap-6 lg:grid-cols-2">
-        {/* Left: Capture/Upload + Mask */}
+        {/* Left: Capture/Upload */}
         <section className="space-y-4">
           <Card className="p-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -106,7 +102,6 @@ export default function PuppetrayPage() {
                   onUpload={(id, url) => {
                     setBaseImageId(id)
                     setBaseImage(url)
-                    setActiveTab("mask")
                   }}
                   onCancel={() => setActiveTab("upload")}
                 />
@@ -117,39 +112,15 @@ export default function PuppetrayPage() {
                   onUpload={(id, url) => {
                     setBaseImageId(id)
                     setBaseImage(url)
-                    setActiveTab("mask")
                   }}
                   onRemove={() => {
                     setBaseImage(null)
                     setBaseImageId(null)
-                    setMaskData(null)
                     setActiveTab("upload")
                   }}
-                  onMaskChange={setMaskData}
+                  onMaskChange={() => {}} // No-op since we don't use masks
                   uploadedImage={baseImage ? { id: baseImageId ?? "", url: baseImage } : null}
                 />
-              </TabsContent>
-
-              <TabsContent value="mask" className="mt-4">
-                {baseImage ? (
-                  <EnhancedImageUpload
-                    onUpload={(id, url) => {
-                      setBaseImageId(id)
-                      setBaseImage(url)
-                    }}
-                    onRemove={() => {
-                      setBaseImage(null)
-                      setBaseImageId(null)
-                      setMaskData(null)
-                      setActiveTab("upload")
-                    }}
-                    onMaskChange={setMaskData}
-                    uploadedImage={baseImage ? { id: baseImageId ?? "", url: baseImage } : null}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">Capture or upload a photo first.</p>
-                )}
-                <p className="text-xs text-muted-foreground mt-2">Paint where you want the puppet transformation applied. Leave blank to transform the whole subject.</p>
               </TabsContent>
             </Tabs>
           </Card>
@@ -203,14 +174,10 @@ export default function PuppetrayPage() {
                     type="number"
                     min={1}
                     max={4}
-                    value={effectiveN}
+                    value={n}
                     onChange={(e) => setN(Number(e.target.value))}
-                    disabled={!!maskData}
                     className="h-11 text-base"
                   />
-                  {maskData && (
-                    <p className="text-xs text-muted-foreground">Mask editing supports 1 image at a time.</p>
-                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="seed" className="text-sm">Seed (optional)</Label>
