@@ -24,7 +24,10 @@ const builtinProfiles: GenerationProfile[] = [
     template:
       [
         "Convert the subject into a puppet version while preserving pose, camera, composition, and background.",
-        "Maintain subject identity features (face structure, hair style, glasses, facial hair, clothing patterns/logo placements) translated into puppet materials.",
+        "CRITICAL: PRESERVE COMPLETE OUTFIT. Maintain ALL clothing items exactly: shirts, pants, dresses, jackets, shoes, hats, accessories, jewelry, watches, belts, ties, scarves, bags, etc.",
+        "Keep clothing colors, patterns, textures, logos, text, designs, cuts, and fit identical but translated into puppet-appropriate fabric materials.",
+        "Convert clothing materials to felt, fabric, or appropriate puppet materials while maintaining every visual detail of the original outfit.",
+        "Maintain subject identity features (face structure, hair style, glasses, facial hair) translated into puppet materials.",
         "Puppet style: [[puppetStyle|title]].",
         "Do not change the real environment (background/scene remains real).",
         "Use scene-matched lighting and cast plausible contact shadows from the puppet onto nearby surfaces.",

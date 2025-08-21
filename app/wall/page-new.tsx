@@ -19,7 +19,6 @@ export default function LiveWallPage() {
   const [showAfter, setShowAfter] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [showInstructions, setShowInstructions] = useState(true)
 
   // Auto-advance settings
   const DISPLAY_DURATION = 8000 // 8 seconds per transformation
@@ -44,56 +43,8 @@ export default function LiveWallPage() {
   useEffect(() => {
     loadTransformations()
     const refreshInterval = setInterval(loadTransformations, 30000) // Refresh every 30 seconds
-    
-    // Keyboard shortcuts for TV control
-    const handleKeyDown = (event: KeyboardEvent) => {
-      switch (event.key) {
-        case 'f':
-        case 'F':
-          // Toggle fullscreen
-          if (document.fullscreenElement) {
-            document.exitFullscreen()
-          } else {
-            document.documentElement.requestFullscreen()
-          }
-          break
-        case ' ':
-          // Space bar to advance manually
-          event.preventDefault()
-          setCurrentIndex((prev) => (prev + 1) % transformations.length)
-          setShowAfter(false)
-          setIsTransitioning(false)
-          break
-        case 'ArrowRight':
-          // Right arrow to advance
-          event.preventDefault()
-          setCurrentIndex((prev) => (prev + 1) % transformations.length)
-          setShowAfter(false)
-          setIsTransitioning(false)
-          break
-        case 'ArrowLeft':
-          // Left arrow to go back
-          event.preventDefault()
-          setCurrentIndex((prev) => (prev - 1 + transformations.length) % transformations.length)
-          setShowAfter(false)
-          setIsTransitioning(false)
-          break
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    
-    // Hide instructions after 5 seconds
-    const instructionsTimer = setTimeout(() => {
-      setShowInstructions(false)
-    }, 5000)
-    
-    return () => {
-      clearInterval(refreshInterval)
-      window.removeEventListener('keydown', handleKeyDown)
-      clearTimeout(instructionsTimer)
-    }
-  }, [transformations.length])
+    return () => clearInterval(refreshInterval)
+  }, [])
 
   // Auto-advance slideshow
   useEffect(() => {
@@ -101,8 +52,7 @@ export default function LiveWallPage() {
 
     const showTransition = () => {
       setIsTransitioning(true)
-      // Start the wipe transition after a brief delay
-      setTimeout(() => setShowAfter(true), 300)
+      setShowAfter(true)
     }
 
     const advanceSlide = () => {
@@ -111,17 +61,17 @@ export default function LiveWallPage() {
       setCurrentIndex((prev) => (prev + 1) % transformations.length)
     }
 
-    // Show before image for 5 seconds, then transition to after
-    const beforeTimer = setTimeout(showTransition, 5000)
+    // Show before image for 4 seconds, then transition to after
+    const beforeTimer = setTimeout(showTransition, 4000)
     
-    // Show after image for 3 seconds, then advance to next
+    // Show after image for 4 seconds, then advance to next
     const afterTimer = setTimeout(advanceSlide, DISPLAY_DURATION)
 
     return () => {
       clearTimeout(beforeTimer)
       clearTimeout(afterTimer)
     }
-  }, [currentIndex, transformations.length, DISPLAY_DURATION])
+  }, [currentIndex, transformations.length])
 
   // Loading state
   if (loading || transformations.length === 0) {
@@ -154,27 +104,26 @@ export default function LiveWallPage() {
         {/* Before Image */}
         <div
           className={`absolute inset-0 transition-all duration-1000 ${
-            showAfter ? "opacity-0 scale-105" : "opacity-100 scale-100"
+            showAfter ? "opacity-0" : "opacity-100"
           }`}
         >
           <img
             src={currentTransformation.beforeImageUrl}
             alt="Original photo"
-            className="w-full h-full object-contain animate-fade-in"
-            key={`before-${currentIndex}`}
+            className="w-full h-full object-contain"
           />
-          
-          {/* Subtle overlay for dramatic effect */}
-          {!showAfter && (
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20" />
-          )}
         </div>
 
         {/* After Image with Wipe Effect */}
         <div
-          className={`absolute inset-0 transition-all ease-in-out ${
-            showAfter ? "animate-wipe-in" : "animate-wipe-out"
+          className={`absolute inset-0 transition-all duration-2000 ease-in-out ${
+            showAfter ? "opacity-100" : "opacity-0"
           }`}
+          style={{
+            clipPath: showAfter 
+              ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)" 
+              : "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)"
+          }}
         >
           <img
             src={currentTransformation.afterImageUrl}
@@ -183,20 +132,14 @@ export default function LiveWallPage() {
           />
         </div>
 
-        {/* Dramatic Reveal Effect */}
+        {/* Animated Wipe Overlay */}
         {isTransitioning && (
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Sparkle particles */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-pink-600/30 animate-pulse" />
-            
-            {/* Moving wipe line */}
-            <div 
-              className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-white to-transparent animate-wipe-line"
-              style={{
-                boxShadow: "0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(147, 51, 234, 0.6)"
-              }}
-            />
-          </div>
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-20 animate-pulse"
+            style={{
+              animation: "wipeRight 2s ease-in-out",
+            }}
+          />
         )}
       </div>
 
@@ -253,21 +196,6 @@ export default function LiveWallPage() {
         </div>
       )}
 
-      {/* TV Control Instructions */}
-      {showInstructions && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-          <div className="bg-black/80 backdrop-blur-sm rounded-xl p-8 text-white text-center animate-fade-in">
-            <h2 className="text-3xl font-bold mb-4 text-purple-400">TV Wall Controls</h2>
-            <div className="space-y-2 text-lg">
-              <p><kbd className="bg-gray-700 px-2 py-1 rounded">F</kbd> - Toggle Fullscreen</p>
-              <p><kbd className="bg-gray-700 px-2 py-1 rounded">Space</kbd> or <kbd className="bg-gray-700 px-2 py-1 rounded">→</kbd> - Next</p>
-              <p><kbd className="bg-gray-700 px-2 py-1 rounded">←</kbd> - Previous</p>
-            </div>
-            <p className="text-sm text-gray-400 mt-4">This message will disappear in 5 seconds</p>
-          </div>
-        </div>
-      )}
-
       {/* CSS for custom animations */}
       <style jsx>{`
         @keyframes wipeRight {
@@ -277,62 +205,6 @@ export default function LiveWallPage() {
           to {
             clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
           }
-        }
-        
-        @keyframes wipeIn {
-          from {
-            clip-path: polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%);
-            filter: brightness(1.5) saturate(1.3);
-          }
-          to {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
-            filter: brightness(1) saturate(1);
-          }
-        }
-        
-        @keyframes wipeOut {
-          from {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
-          }
-          to {
-            clip-path: polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%);
-          }
-        }
-        
-        @keyframes wipeLine {
-          from {
-            left: -2px;
-          }
-          to {
-            left: 100%;
-          }
-        }
-        
-        .animate-wipe-in {
-          animation: wipeIn 2s ease-out forwards;
-        }
-        
-        .animate-wipe-out {
-          animation: wipeOut 0.5s ease-in forwards;
-        }
-        
-        .animate-wipe-line {
-          animation: wipeLine 2s ease-out;
-        }
-        
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(1.02);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fadeIn 1s ease-out;
         }
       `}</style>
     </div>
