@@ -34,6 +34,9 @@ model Image {
   sessionId       String?   // Links images to a session for grouping
   session         GenerationSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
+  // New: likes received on this image
+  likes           ImageLike[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -101,6 +104,9 @@ model GenerationSession {
   // Related images
   images      Image[]
   
+  // New: likes received on images
+  likes       ImageLike[]
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -108,6 +114,33 @@ model GenerationSession {
   @@index([generator])
   @@index([generatorId])
   @@index([createdAt])
+}
+
+// New: Like/reaction system for images on the wall
+model ImageLike {
+  id       String @id @default(uuid())
+  imageId  String
+  image    Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  
+  // User who liked (can be null for anonymous likes)
+  userId   String?
+  user     User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Anonymous session tracking (for guest users)
+  sessionId String?
+  session   GenerationSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  
+  // IP for anonymous rate limiting
+  ipAddress String?
+  
+  createdAt DateTime @default(now())
+  
+  // Ensure one like per user per image, or one like per session per image for guests
+  @@unique([imageId, userId])
+  @@unique([imageId, sessionId])
+  @@index([imageId])
+  @@index([userId])
+  @@index([sessionId])
 }
 
 // Email signup for marketing and updates
@@ -192,6 +225,8 @@ model User {
   generationSessions GenerationSession[] // Generation sessions created by this user
   // New: generators created by this user
   generators       ImageGenerator[]
+  // New: likes given by this user
+  likes            ImageLike[]
 }
 
 model VerificationToken {

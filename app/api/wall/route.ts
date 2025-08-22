@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { auth } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,6 +8,9 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url)
     const sessionId = url.searchParams.get("session")
+    const search = url.searchParams.get("search")?.toLowerCase()
+    const limit = parseInt(url.searchParams.get("limit") || "50")
+    const offset = parseInt(url.searchParams.get("offset") || "0")
 
     let whereClause: any = {
       kind: "GENERATED",
@@ -20,8 +24,28 @@ export async function GET(request: NextRequest) {
       whereClause.sessionId = sessionId
     }
 
+    // Add search filter if provided
+    if (search) {
+      whereClause.OR = [
+        {
+          prompt: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        },
+        {
+          session: {
+            name: {
+              contains: search,
+              mode: 'insensitive'
+            }
+          }
+        }
+      ]
+    }
+
     // Get all generated images that have base images (before/after pairs)
-    const generatedImages = await prisma.image.findMany({
+    const generatedImages = await (prisma as any).image.findMany({
       where: whereClause,
       include: {
         session: {
@@ -31,13 +55,22 @@ export async function GET(request: NextRequest) {
             generator: true,
             createdAt: true
           }
+        },
+        _count: {
+          select: {
+            likes: true
+          }
         }
       },
       orderBy: {
         createdAt: "desc"
       },
-      take: 50 // Limit to most recent 50 transformations
+      take: limit,
+      skip: offset
     })
+
+    // Get total count for pagination
+    const totalCount = await prisma.image.count({ where: whereClause })
 
     // Get all the base image IDs we need to fetch
     const baseImageIds = generatedImages
@@ -73,6 +106,7 @@ export async function GET(request: NextRequest) {
           style: style,
           prompt: generated.prompt,
           timestamp: generated.createdAt.toISOString(),
+          likesCount: generated._count?.likes || 0,
           session: generated.session ? {
             id: generated.session.id,
             name: generated.session.name,
@@ -87,7 +121,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       transformations: transformations,
-      totalCount: transformations.length,
+      totalCount: totalCount,
+      currentCount: transformations.length,
+      hasMore: offset + transformations.length < totalCount,
       lastUpdated: new Date().toISOString(),
     })
   } catch (error) {

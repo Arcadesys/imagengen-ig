@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import { ImageUpload } from "./image-upload"
 import { MaskPainter } from "./mask-painter"
 import { Card } from "@/components/ui/card"
@@ -23,6 +24,7 @@ export function EnhancedImageUpload({
   disabled,
   sessionId,
 }: EnhancedImageUploadProps) {
+  const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState("upload")
   const [maskData, setMaskData] = useState<string | null>(null)
   const [previousUploads, setPreviousUploads] = useState<Array<{ id: string; url: string; filename?: string; createdAt: string }>>([])
@@ -32,6 +34,9 @@ export function EnhancedImageUpload({
 
   useEffect(() => {
     const fetchUploads = async () => {
+      // Only fetch uploads for authenticated users
+      if (!session?.user) return
+      
       try {
         setLoadingUploads(true)
         const res = await fetch("/api/images/upload", { method: "GET" })
@@ -67,7 +72,7 @@ export function EnhancedImageUpload({
     }
     fetchUploads()
     fetchGallery()
-  }, [])
+  }, [session])
 
   const handleUpload = (baseImageId: string, url: string) => {
     onUpload(baseImageId, url)
@@ -91,26 +96,31 @@ export function EnhancedImageUpload({
       <div className="space-y-4">
         <ImageUpload onUpload={handleUpload} onRemove={handleRemove} uploadedImage={uploadedImage} disabled={disabled} sessionId={sessionId} />
         <div>
-          <div className="text-sm font-medium mb-2">Previous uploads</div>
-          {loadingUploads ? (
-            <div className="text-sm text-muted-foreground">Loading…</div>
-          ) : previousUploads.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No previous uploads yet.</div>
-          ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-4">
-              {previousUploads.map((u) => (
-                <button
-                  key={u.id}
-                  className="relative rounded border overflow-hidden focus:outline-none focus:ring"
-                  title={u.filename || u.id}
-                  onClick={() => handleUpload(u.id, u.url)}
-                  type="button"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={u.url} alt={u.filename || u.id} className="w-full h-20 object-cover" />
-                </button>
-              ))}
-            </div>
+          {/* Only show previous uploads for authenticated users */}
+          {session?.user && (
+            <>
+              <div className="text-sm font-medium mb-2">Previous uploads</div>
+              {loadingUploads ? (
+                <div className="text-sm text-muted-foreground">Loading…</div>
+              ) : previousUploads.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No previous uploads yet.</div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-4">
+                  {previousUploads.map((u) => (
+                    <button
+                      key={u.id}
+                      className="relative rounded border overflow-hidden focus:outline-none focus:ring"
+                      title={u.filename || u.id}
+                      onClick={() => handleUpload(u.id, u.url)}
+                      type="button"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={u.url} alt={u.filename || u.id} className="w-full h-20 object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
           <div className="text-sm font-medium mb-2">Generated images</div>
           {loadingGallery ? (
