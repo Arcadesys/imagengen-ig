@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { createErrorResponse, validateAuth, safeDatabaseOperation } from "@/lib/error-handling"
 
 // POST - Create a new generation session (auth required)
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      )
-    }
+    const session = await validateAuth(auth, 'sessions-post')
 
     const body = await request.json()
     const { name, description, generator, generatorSlug } = body
@@ -36,7 +30,10 @@ export async function POST(request: NextRequest) {
     let generatorId: string | undefined
 
     if (generatorSlug) {
-      const gen = await (prisma as any).imageGenerator.findUnique({ where: { slug: String(generatorSlug) } })
+      const gen = await safeDatabaseOperation(async () => {
+        return await (prisma as any).imageGenerator.findUnique({ where: { slug: String(generatorSlug) } })
+      }, 'sessions-post-generator-lookup')
+      
       if (!gen) {
         return NextResponse.json(
           { error: "Invalid generator slug" },
@@ -52,32 +49,31 @@ export async function POST(request: NextRequest) {
       generatorString = "custom"
     }
 
-    const generationSession = await (prisma as any).generationSession.create({
-      data: {
-        name: name.trim(),
-        description: description?.trim() || null,
-        generator: generatorString,
-        generatorId: generatorId ?? null,
-        createdById: session.user.id,
-      },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const generationSession = await safeDatabaseOperation(async () => {
+      return await (prisma as any).generationSession.create({
+        data: {
+          name: name.trim(),
+          description: description?.trim() || null,
+          generator: generatorString,
+          generatorId: generatorId ?? null,
+          createdById: session.user.id,
+        },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
           }
         }
-      }
-    })
+      })
+    }, 'sessions-post-create')
 
     return NextResponse.json({ session: generationSession })
-  } catch (error) {
-    console.error("Error creating generation session:", error)
-    return NextResponse.json(
-      { error: "Failed to create generation session" },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    const { response, statusCode } = createErrorResponse(error, 'sessions-post')
+    return NextResponse.json(response, { status: statusCode })
   }
 }
 

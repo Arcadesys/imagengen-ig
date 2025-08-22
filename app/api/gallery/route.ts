@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../lib/db"
+import { createErrorResponse, safeDatabaseOperation } from "../../../lib/error-handling"
 
 // Ensure this route runs on Node.js runtime and never caches
 export const runtime = "nodejs"
@@ -19,22 +20,24 @@ interface GalleryImage {
 
 export async function GET() {
   try {
-    // Query all images from database, both uploaded and generated
-    const images = await prisma.image.findMany({
-      select: {
-        id: true,
-        url: true,
-        prompt: true,
-        expandedPrompt: true,
-        seed: true,
-        baseImageId: true,
-        createdAt: true,
-        kind: true,
-        width: true,
-        height: true,
-      },
-      orderBy: { createdAt: "desc" },
-    })
+    // Use safe database operation wrapper
+    const images = await safeDatabaseOperation(async () => {
+      return await prisma.image.findMany({
+        select: {
+          id: true,
+          url: true,
+          prompt: true,
+          expandedPrompt: true,
+          seed: true,
+          baseImageId: true,
+          createdAt: true,
+          kind: true,
+          width: true,
+          height: true,
+        },
+        orderBy: { createdAt: "desc" },
+      })
+    }, 'gallery-get')
 
     const gallery: GalleryImage[] = images.map(image => {
       // Determine size based on dimensions or default to 1024x1024
@@ -60,9 +63,9 @@ export async function GET() {
     })
 
     return NextResponse.json(gallery)
-  } catch (error) {
-    console.error("Error reading gallery:", error)
-    return NextResponse.json({ error: "Failed to load gallery" }, { status: 500 })
+  } catch (error: any) {
+    const { response, statusCode } = createErrorResponse(error, 'gallery-get')
+    return NextResponse.json(response, { status: statusCode })
   }
 }
 

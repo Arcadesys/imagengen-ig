@@ -16,9 +16,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# env files - be specific about what's safe to commit
 .env*
 !.env.example
+!.env.production
 
 # vercel
 .vercel
