@@ -9,11 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { PuppetStyle } from "@/lib/puppet-prompts"
+import { Textarea } from "@/components/ui/textarea"
+import { generatePuppetPrompt } from "@/lib/puppet-prompts"
 
 interface PuppetConfigurationModalProps {
   isOpen: boolean
   onClose: () => void
-  onComplete: (config: PuppetConfiguration) => void
+  onComplete: (config: PuppetConfiguration, finalPrompt?: string) => void
   initialConfig?: Partial<PuppetConfiguration>
 }
 
@@ -142,6 +144,9 @@ export function PuppetConfigurationModal({
   const [speciesSearch, setSpeciesSearch] = useState("")
   const [styleSearch, setStyleSearch] = useState("")
 
+  // New: editable final prompt preview
+  const [finalPrompt, setFinalPrompt] = useState<string>("")
+
   const filteredGenders = GENDER_OPTIONS.filter(g => 
     g.toLowerCase().includes(genderSearch.toLowerCase())
   )
@@ -156,12 +161,22 @@ export function PuppetConfigurationModal({
   )
 
   const handleNext = useCallback(() => {
-    if (step < 4) {
+    if (step < 5) {
       setStep(step + 1)
+      // When moving into the review step, compose a prompt
+      if (step === 4) {
+        const composed = generatePuppetPrompt({
+          style: config.style,
+          gender: config.gender,
+          species: config.species || "human",
+          personality: config.personality
+        }, false)
+        setFinalPrompt(composed)
+      }
     } else {
-      onComplete(config)
+      onComplete(config, finalPrompt || undefined)
     }
-  }, [step, config, onComplete])
+  }, [step, config, finalPrompt, onComplete])
 
   const handleBack = useCallback(() => {
     if (step > 1) {
@@ -171,13 +186,15 @@ export function PuppetConfigurationModal({
     }
   }, [step, onClose])
 
+  // Relaxed completion: users can skip any question
   const isStepComplete = useCallback(() => {
     switch (step) {
       case 1: return !!config.style
-      case 2: return !!config.gender
-      case 3: return !!config.species
-      case 4: return !!config.personality
-      default: return false
+      case 2: return true // gender optional
+      case 3: return true // species optional (defaults to human)
+      case 4: return true // personality optional
+      case 5: return true // review step always available
+      default: return true
     }
   }, [step, config])
 
@@ -185,6 +202,7 @@ export function PuppetConfigurationModal({
   useEffect(() => {
     if (isOpen) {
       setStep(1)
+      setFinalPrompt("")
     }
   }, [isOpen])
 
@@ -196,12 +214,13 @@ export function PuppetConfigurationModal({
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">
               {step === 1 && "Choose Your Puppet Style"}
-              {step === 2 && "What's Your Gender?"}
-              {step === 3 && "Animal or Monster?"}
-              {step === 4 && "What Kind of Puppet Are You?"}
+              {step === 2 && "What's Your Gender? (Optional)"}
+              {step === 3 && "Animal or Monster? (Optional)"}
+              {step === 4 && "What Kind of Puppet Are You? (Optional)"}
+              {step === 5 && "Review & Edit Prompt"}
             </h2>
             <div className="flex gap-2">
-              {[1, 2, 3, 4].map(i => (
+              {[1, 2, 3, 4, 5].map(i => (
                 <div 
                   key={i}
                   className={`w-3 h-3 rounded-full ${
@@ -395,21 +414,61 @@ export function PuppetConfigurationModal({
               </Card>
             </div>
           )}
+
+          {step === 5 && (
+            <div className="space-y-4">
+              <p className="text-muted-foreground">
+                Final checkpoint: Review and edit the complete prompt before generating.
+              </p>
+              <Label htmlFor="finalPrompt">Prompt</Label>
+              <Textarea
+                id="finalPrompt"
+                value={finalPrompt}
+                onChange={(e) => setFinalPrompt(e.target.value)}
+                className="min-h-[160px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                You can change anything here. This is exactly what will be sent to the image model.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t bg-muted/20 flex justify-between">
-          <Button variant="outline" onClick={handleBack}>
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            {step === 1 ? "Cancel" : "Back"}
-          </Button>
-          
+        <div className="p-6 border-t bg-muted/20 flex flex-col sm:flex-row sm:justify-between gap-3">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleBack}>
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              {step === 1 ? "Cancel" : "Back"}
+            </Button>
+            {/* Skip button for steps 2-4 */}
+            {step >= 2 && step <= 4 && (
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  // If skipping from step 4 to 5, compose a default prompt for review
+                  if (step === 4) {
+                    const composed = generatePuppetPrompt({
+                      style: config.style,
+                      gender: config.gender,
+                      species: config.species || "human",
+                      personality: config.personality,
+                    }, false)
+                    setFinalPrompt(composed)
+                  }
+                  setStep(step + 1)
+                }}
+              >
+                Skip
+              </Button>
+            )}
+          </div>
           <Button 
             onClick={handleNext}
             disabled={!isStepComplete()}
           >
-            {step === 4 ? "Generate My Puppet!" : "Next"}
-            {step < 4 && <ChevronRight className="w-4 h-4 ml-2" />}
+            {step === 5 ? "Generate My Puppet!" : "Next"}
+            {step < 5 && <ChevronRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
       </DialogContent>

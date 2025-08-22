@@ -29,6 +29,8 @@ export default function PuppetrayPage() {
   
   // Configuration state
   const [puppetConfig, setPuppetConfig] = useState<PuppetConfiguration | null>(null)
+  // Store the final editable prompt when provided from the modal
+  const [editedPrompt, setEditedPrompt] = useState<string | null>(null)
   
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false)
@@ -59,13 +61,14 @@ export default function PuppetrayPage() {
     setFlowStep("configure")
   }
 
-  const handleConfigurationComplete = (config: PuppetConfiguration) => {
+  const handleConfigurationComplete = (config: PuppetConfiguration, finalPrompt?: string) => {
     setPuppetConfig(config)
+    setEditedPrompt(finalPrompt ?? null)
     setFlowStep("generating")
-    startGeneration(config)
+    startGeneration(config, finalPrompt)
   }
 
-  const startGeneration = async (config: PuppetConfiguration) => {
+  const startGeneration = async (config: PuppetConfiguration, finalPrompt?: string | null) => {
     if (!baseImageId) return
 
     setIsGenerating(true)
@@ -85,13 +88,15 @@ export default function PuppetrayPage() {
     }, 1000)
 
     try {
-      const puppetPrompt = generatePuppetPrompt(config, false)
+      // Use the user-edited prompt if provided, otherwise compose one
+      const puppetPrompt = (finalPrompt && finalPrompt.trim()) ? finalPrompt : generatePuppetPrompt(config, false)
 
       const res = await fetch("/api/images/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: puppetPrompt,
+          // We deliberately omit expandedPrompt so the service uses the exact text the user approved
           size: "1024x1024",
           n: 1,
           baseImageId,
@@ -136,6 +141,7 @@ export default function PuppetrayPage() {
     setBaseImage(null)
     setBaseImageId(null)
     setPuppetConfig(null)
+    setEditedPrompt(null)
     setResults([])
     setGenerationProgress(0)
     setGenerationStatus("generating")
