@@ -1,12 +1,23 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { ImageGenerationService } from "../../../../lib/image-generation-service"
+// Defer runtime import of the service to avoid top-level side effects in dev
 import type { GenerateRequest } from "../../../../lib/image-generation-types"
+
+// Ensure this route runs on Node.js runtime and never caches
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
+// Explicit GET to avoid 405 in certain dev-server evaluation states
+export async function GET() {
+  return NextResponse.json({ ok: true, message: "Use POST to generate images" })
+}
 
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] Starting image generation request")
 
     const body: GenerateRequest = await request.json()
+    const { ImageGenerationService } = await import("../../../../lib/image-generation-service")
     const imageService = new ImageGenerationService()
     
     const result = await imageService.generateImages(body, request)

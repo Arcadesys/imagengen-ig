@@ -32,7 +32,11 @@ export function generatePuppetPrompt(
   config: PuppetConfiguration,
   hasMask: boolean = false
 ): string {
-  const { style, gender, species, personality } = config
+  const { style } = config
+  // Allow users to skip fields; provide sensible defaults
+  const gender = (config.gender || "").trim()
+  const species = (config.species || "human").trim() || "human"
+  const personality = (config.personality || "").trim()
 
   const puppetDescriptor = getPuppetDescriptor(style)
 
@@ -155,11 +159,12 @@ function generateSpeciesFeatures(species: string): string {
     dragon: { ears: "dragon horns", nose: "dragon snout", tail: "long dragon tail", skin: "scales", eyes: "dragon eyes", extras: "small wings" },
     monster: { ears: "monster ears", nose: "monster features", tail: "monster tail", skin: "textured monster skin", eyes: "monster eyes" },
     alien: { ears: "alien features", nose: "alien nose", skin: "alien skin texture", eyes: "large alien eyes", extras: "alien markings" },
-    robot: { ears: "mechanical parts", nose: "robotic features", skin: "metallic panels", eyes: "LED eyes", extras: "visible circuits" }
+    robot: { ears: "mechanical parts", nose: "robotic features", skin: "metallic panels", eyes: "LED eyes", extras: "visible circuits" },
+    human: { ears: "human ear placement", nose: "human nose", tail: "no tail", skin: "human skin tones", eyes: "human eyes" }
   }
 
-  // Find matching species or use generic monster features
-  const features = speciesFeatureMap[speciesLower] || speciesFeatureMap.monster
+  // Find matching species or fallback to human when unspecified
+  const features = speciesFeatureMap[speciesLower] || speciesFeatureMap.human
 
   const allFeatures = [
     features.ears || `${speciesLower} ears`,
@@ -192,5 +197,6 @@ function generatePersonalityFeatures(personality: string): string {
     quirky: "unique expression, eccentric features, whimsical details, wonderfully weird charm"
   }
 
+  if (!personality) return "expressive features"
   return personalityMap[personality] || "expressive features"
 }

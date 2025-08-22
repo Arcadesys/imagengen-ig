@@ -63,11 +63,16 @@ export class ImageGenerationService {
         baseImageId,
       })
 
-      // Enforce size rules (admins may request custom sizes)
-      const allowRequestedSize = nextRequest ? isAdminRequest(nextRequest) : true
-      const requestedSize = size ?? "1024x1024"
+      // Enforce size rules: allow 512x512 and 1024x1024 for everyone; restrict non-square sizes to admins
+      const isAdmin = nextRequest ? isAdminRequest(nextRequest) : true
+      const requestedSize = (size ?? "1024x1024") as "512x512" | "768x768" | "1024x1024" | "1024x1536" | "1536x1024"
       type EffectiveSize = "512x512" | "768x768" | "1024x1024" | "1024x1536" | "1536x1024"
-      const effectiveSize: EffectiveSize = (allowRequestedSize ? requestedSize : "1024x1024") as EffectiveSize
+      let effectiveSize: EffectiveSize
+      if (requestedSize === "512x512" || requestedSize === "1024x1024") {
+        effectiveSize = requestedSize
+      } else {
+        effectiveSize = isAdmin ? requestedSize : "1024x1024"
+      }
 
       // Content safety check
       const safety = checkPromptSafety(expandedPrompt?.trim() ? expandedPrompt! : prompt)
@@ -88,7 +93,21 @@ export class ImageGenerationService {
 
       // Build final prompt
       const sourcePrompt = safety.cleaned ?? (expandedPrompt?.trim() ? expandedPrompt! : prompt)
-      const finalPrompt = sanitizePromptForImage(sourcePrompt)
+      let finalPrompt = sanitizePromptForImage(sourcePrompt)
+
+      // Helper: detect puppet intent to encourage paint-over transformation
+      const hasPuppetIntent = /\b(puppet|muppet|sock|felt|plush|marionette|rod puppet|hand puppet|yarn|felted)\b/i.test(finalPrompt)
+
+      // If we have a reference image, strongly encourage a paint-over workflow that preserves the background
+      if (baseImageId) {
+        if (hasPuppetIntent) {
+          finalPrompt +=
+            " Paint-over transformation: Keep the original background and environment from the reference photo unchanged. Replace only the primary subject with a puppet interpretation of the same person. Preserve pose, framing, and lighting. Preserve clothing items, colors, patterns, accessories; simply re-materialize them as fabric/yarn/felt textures. Maintain human anatomy and identity unless a nonhuman species is explicitly requested. No additional characters, no background changes."
+        } else {
+          finalPrompt +=
+            " Keep the original background and environment from the reference photo unchanged. Match camera framing and lighting. Replace only the subject as described; do not add extra people or objects."
+        }
+      }
 
       // Map requested/effective size to provider-supported size for OpenAI (square only)
       type ProviderSize = "512x512" | "1024x1024"

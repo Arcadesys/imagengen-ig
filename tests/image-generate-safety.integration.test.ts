@@ -3,6 +3,9 @@ import supertest from "supertest"
 import { createServer } from "http"
 import next from "next"
 
+// Force Webpack dev server for stability in tests
+process.env.NEXT_DISABLE_TURBOPACK = process.env.NEXT_DISABLE_TURBOPACK || "1"
+
 const app = next({ dev: true, dir: process.cwd() })
 let server: any
 let request: any

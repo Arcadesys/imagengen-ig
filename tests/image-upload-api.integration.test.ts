@@ -5,6 +5,9 @@ import next from "next"
 import path from "path"
 import fs from "fs"
 
+// Force Webpack dev server for tests
+process.env.NEXT_DISABLE_TURBOPACK = process.env.NEXT_DISABLE_TURBOPACK || "1"
+
 const app = next({ dev: true, dir: process.cwd() })
 let server: any
 let request: supertest.SuperTest<supertest.Test>
@@ -100,7 +103,7 @@ describe("[API] /api/images/upload", () => {
 
       const res = await request
         .post("/api/images/upload")
-  .attach("file", largeBuffer, { filename: "large.png", contentType: "image/png" })
+        .attach("file", largeBuffer, { filename: "large.png", contentType: "image/png" })
 
       expect(res.status).toBe(200)
       const { url, baseImageId } = res.body as { url: string; baseImageId: string }
@@ -115,11 +118,8 @@ describe("[API] /api/images/upload", () => {
         Number(process.env.UPLOAD_MAX_SIZE_BYTES),
       )
 
-      // cleanup file and registry entry
+      // cleanup registry entry only (bytes are stored internally)
       const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
-      try {
-        await fs.promises.unlink(filePath)
-      } catch {}
       try {
         const json = JSON.parse(await fs.promises.readFile(uploadsPath, "utf8")) as any[]
         const filtered = json.filter((x) => x.id !== baseImageId)
@@ -151,9 +151,9 @@ describe("[API] /api/images/upload", () => {
       expect(res.body).toHaveProperty("url")
       expect(res.body.url).toMatch(/^\/uploads\/base\/.+\.png$/)
 
-      const { baseImageId, url } = res.body as { baseImageId: string; url: string }
+      const { baseImageId } = res.body as { baseImageId: string; url: string }
 
-  // File content is stored in DB; URL is a virtual route. We only assert URL shape and registry record.
+      // File content is stored in DB; URL is a virtual route. We only assert URL shape and registry record.
 
       // Verify registry contains the upload record
       const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
@@ -163,7 +163,7 @@ describe("[API] /api/images/upload", () => {
       expect(rec).toBeTruthy()
       expect(rec.filename).toBe("sample.png")
 
-  // Cleanup registry entry (file bytes are stored in DB)
+      // Cleanup registry entry (file bytes are stored in DB)
       try {
         if (await fileExists(uploadsPath)) {
           const updated = (json as any[]).filter((x) => x.id !== baseImageId)
@@ -203,7 +203,7 @@ describe("[API] /api/images/upload", () => {
       const list = resGet.body as any[]
       expect(list.some((x) => x.id === baseImageId)).toBe(true)
 
-  // Cleanup artifacts: uploads.json entry, gallery.json entry (DB holds the bytes)
+      // Cleanup artifacts: uploads.json entry, gallery.json entry (DB holds the bytes)
 
       const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
       try {

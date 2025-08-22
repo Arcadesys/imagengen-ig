@@ -8,84 +8,37 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Search, ChevronLeft, ChevronRight } from "lucide-react"
-import { PuppetStyle } from "@/lib/puppet-prompts"
 import { Textarea } from "@/components/ui/textarea"
-import { generatePuppetPrompt } from "@/lib/puppet-prompts"
+import type { AnimationStyle, AnimationConfiguration } from "@/lib/animation-prompts"
+import { generateAnimationPrompt } from "@/lib/animation-prompts"
 
-interface PuppetConfigurationModalProps {
+interface AnimationConfigurationModalProps {
   isOpen: boolean
   onClose: () => void
-  onComplete: (config: PuppetConfiguration, finalPrompt?: string) => void
-  initialConfig?: Partial<PuppetConfiguration>
+  onComplete: (config: AnimationConfiguration, finalPrompt?: string) => void
+  initialConfig?: Partial<AnimationConfiguration>
 }
 
-export interface PuppetConfiguration {
-  style: PuppetStyle
-  gender: string
-  species: string
-  personality: string
-}
-
-const PUPPET_STYLES = [
-  // Classic Styles
-  { id: "muppet" as const, name: "Muppet", description: "Classic Sesame Street style with foam and felt" },
-  { id: "sock" as const, name: "Sock Puppet", description: "Simple knitted sock with button eyes" },
-  { id: "felt" as const, name: "Felt Puppet", description: "Hand-stitched wool felt with embroidered features" },
-  { id: "plush" as const, name: "Plush Toy", description: "Soft stuffed animal style" },
-  { id: "paper" as const, name: "Paper Craft", description: "Flat paper construction with drawn features" },
-  
-  // Performance Styles
-  { id: "marionette" as const, name: "Marionette", description: "String puppet with wooden joints and controls" },
-  { id: "hand-puppet" as const, name: "Hand Puppet", description: "Traditional glove puppet for hand manipulation" },
-  { id: "rod-puppet" as const, name: "Rod Puppet", description: "Controlled by rods and sticks from below" },
-  { id: "ventriloquist" as const, name: "Ventriloquist Dummy", description: "Wooden dummy with moving mouth and eyes" },
-  { id: "bunraku" as const, name: "Bunraku", description: "Japanese traditional puppet with visible operators" },
-  
-  // Character Styles
-  { id: "mascot" as const, name: "Sports Mascot", description: "Oversized foam head with team colors" },
-  { id: "costume" as const, name: "Full Body Costume", description: "Complete character suit with mask" },
-  { id: "fursuit" as const, name: "Fursuit", description: "Anthropomorphic animal costume" },
-  { id: "anime-mascot" as const, name: "Anime Mascot", description: "Japanese kawaii character style" },
-  
-  // Material-Based
-  { id: "wooden" as const, name: "Wooden Puppet", description: "Carved wood with articulated joints" },
-  { id: "plastic" as const, name: "Plastic Figure", description: "Molded plastic action figure style" },
-  { id: "clay" as const, name: "Clay/Plasticine", description: "Stop-motion clay animation style" },
-  { id: "foam" as const, name: "Foam Puppet", description: "Dense foam construction with fabric skin" },
-  { id: "latex" as const, name: "Latex Mask", description: "Realistic latex prosthetic style" },
-  
-  // Craft Styles
-  { id: "finger-puppet" as const, name: "Finger Puppet", description: "Tiny puppet for finger manipulation" },
-  { id: "shadow-puppet" as const, name: "Shadow Puppet", description: "Flat silhouette for shadow play" },
-  { id: "origami" as const, name: "Origami", description: "Folded paper puppet style" },
-  { id: "balloon" as const, name: "Balloon Animal", description: "Twisted balloon sculpture style" },
-  { id: "cardboard" as const, name: "Cardboard", description: "Corrugated cardboard construction" },
-  
-  // Modern/Digital
-  { id: "vtuber" as const, name: "VTuber Avatar", description: "Digital anime-style virtual avatar" },
-  { id: "cgi" as const, name: "CGI Character", description: "3D computer animated character" },
-  { id: "pixel-art" as const, name: "Pixel Art", description: "Retro 8-bit video game style" },
-  
-  // Cultural/Traditional
-  { id: "punch-judy" as const, name: "Punch & Judy", description: "Traditional English puppet show style" },
-  { id: "wayang" as const, name: "Wayang", description: "Indonesian shadow puppet with intricate details" },
-  { id: "kasperle" as const, name: "Kasperle", description: "German hand puppet with pointed cap" },
-  { id: "guignol" as const, name: "Guignol", description: "French puppet theater character" },
-  
-  // Specialty/Artistic
-  { id: "steampunk" as const, name: "Steampunk", description: "Victorian mechanical with gears and brass" },
-  { id: "gothic" as const, name: "Gothic", description: "Dark romantic with lace and velvet" },
-  { id: "cyberpunk" as const, name: "Cyberpunk", description: "Futuristic with neon and chrome" },
-  { id: "tribal" as const, name: "Tribal Mask", description: "Traditional ceremonial mask style" },
-  { id: "dia-de-muertos" as const, name: "Día de Muertos", description: "Mexican Day of the Dead skull decoration" },
-  
-  // Fun/Quirky
-  { id: "food" as const, name: "Food Puppet", description: "Made to look like food items" },
-  { id: "object" as const, name: "Object Puppet", description: "Everyday objects given puppet life" },
-  { id: "abstract" as const, name: "Abstract Art", description: "Non-representational artistic form" },
-  { id: "glitch" as const, name: "Glitch Art", description: "Digital corruption aesthetic" },
-  { id: "neon" as const, name: "Neon", description: "Bright fluorescent colors that glow" }
-]
+const ANIMATION_STYLES = [
+  { id: "anime", name: "Anime", description: "2D anime with clean line art and cel shading" },
+  { id: "manga", name: "Manga (B/W)", description: "Black-and-white screentones and dynamic ink" },
+  { id: "rubber-hose", name: "Rubber Hose (1920s)", description: "Noodle limbs, pie-cut eyes, vintage ink" },
+  { id: "western-cel", name: "Western TV Cel", description: "Saturday-morning flat colors and bold outlines" },
+  { id: "vector-flat", name: "Vector/Flash", description: "Flat fills, bezier curves, minimal shading" },
+  { id: "paper-cutout", name: "Paper Cutout", description: "Layered paper texture and hard edges" },
+  { id: "stop-motion", name: "Stop-motion Look", description: "Handmade textures, slight frame stutter" },
+  { id: "cg-toon", name: "CG Toon", description: "3D with stylized non-photoreal shaders" },
+  { id: "toon-shaded-3d", name: "3D Toon Shaded", description: "Quantized lighting bands with ink outlines" },
+  { id: "watercolor", name: "Watercolor", description: "Soft washes, pigment blooms, paper grain" },
+  { id: "comic-book", name: "Comic Book", description: "Inked outlines with halftone shading" },
+  { id: "pixel-art", name: "Pixel Art", description: "Low-res mosaic with limited palette" },
+  { id: "noir-ink", name: "Noir Ink", description: "High-contrast black ink and chiaroscuro" },
+  { id: "chalk-crayon", name: "Chalk/Crayon", description: "Waxy strokes and visible grain" },
+  { id: "graffiti", name: "Graffiti", description: "Bold spray textures and vibrant colors" },
+  { id: "sketch", name: "Pencil Sketch", description: "Graphite lines and crosshatching" },
+  { id: "retro-80s", name: "Retro 80s", description: "Saturated primaries and airbrush highlights" },
+  { id: "saturday-morning", name: "Saturday Morning", description: "Bright colors and playful shapes" },
+] as const
 
 const GENDER_OPTIONS = [
   "Male", "Female", "Non-binary", "Agender", "Genderfluid", "Demiboy", "Demigirl", 
@@ -109,67 +62,53 @@ const PERSONALITY_OPTIONS = [
 ]
 
 const SPECIES_OPTIONS = [
-  // Animals
-  "Cat", "Dog", "Wolf", "Fox", "Bear", "Lion", "Tiger", "Elephant", "Giraffe", 
-  "Monkey", "Rabbit", "Mouse", "Hamster", "Pig", "Cow", "Horse", "Sheep", 
-  "Goat", "Chicken", "Duck", "Owl", "Eagle", "Penguin", "Dolphin", "Whale",
-  "Shark", "Octopus", "Butterfly", "Bee", "Spider", "Frog", "Turtle", "Snake",
-  
-  // Monsters & Fantasy
-  "Monster", "Dragon", "Dinosaur", "Alien", "Robot", "Ghost", "Zombie", "Vampire",
-  "Werewolf", "Demon", "Angel", "Fairy", "Elf", "Goblin", "Troll", "Orc",
-  "Unicorn", "Pegasus", "Phoenix", "Griffin", "Chimera", "Kraken", "Yeti",
-  
-  // Mythical/Cultural
-  "Kappa", "Tengu", "Yokai", "Wendigo", "Chupacabra", "Bigfoot", "Mothman",
-  "Jersey Devil", "Banshee", "Kelpie", "Selkie", "Djinn", "Sphinx"
+  "human", "cat", "dog", "fox", "wolf", "bear", "dragon", "rabbit", "mouse", "bird",
+  "monster", "alien", "robot"
 ]
 
-export function PuppetConfigurationModal({ 
-  isOpen, 
-  onClose, 
+export function AnimationConfigurationModal({
+  isOpen,
+  onClose,
   onComplete,
-  initialConfig 
-}: PuppetConfigurationModalProps) {
+  initialConfig
+}: AnimationConfigurationModalProps) {
   const [step, setStep] = useState(1)
-  const [config, setConfig] = useState<PuppetConfiguration>({
-    style: "muppet",
-    gender: "",
-    species: "",
-    personality: "",
-    ...initialConfig
+  const [config, setConfig] = useState<AnimationConfiguration>({
+    style: (initialConfig?.style as AnimationStyle) || "anime",
+    gender: initialConfig?.gender || "",
+    species: initialConfig?.species || "",
+    personality: initialConfig?.personality || "",
   })
 
   const [genderSearch, setGenderSearch] = useState("")
   const [speciesSearch, setSpeciesSearch] = useState("")
   const [styleSearch, setStyleSearch] = useState("")
 
-  // New: editable final prompt preview
   const [finalPrompt, setFinalPrompt] = useState<string>("")
 
-  const filteredGenders = GENDER_OPTIONS.filter(g => 
+  const filteredGenders = GENDER_OPTIONS.filter(g =>
     g.toLowerCase().includes(genderSearch.toLowerCase())
   )
 
-  const filteredSpecies = SPECIES_OPTIONS.filter(s => 
+  const filteredSpecies = SPECIES_OPTIONS.filter(s =>
     s.toLowerCase().includes(speciesSearch.toLowerCase())
   )
 
-  const filteredStyles = PUPPET_STYLES.filter(s => 
+  const filteredStyles = ANIMATION_STYLES.filter(s =>
     s.name.toLowerCase().includes(styleSearch.toLowerCase()) ||
     s.description.toLowerCase().includes(styleSearch.toLowerCase())
   )
 
   const handleNext = useCallback(() => {
     if (step < 5) {
-      setStep(step + 1)
-      // When moving into the review step, compose a prompt
-      if (step === 4) {
-        const composed = generatePuppetPrompt({
+      const next = step + 1
+      setStep(next)
+      if (next === 5) {
+        const composed = generateAnimationPrompt({
           style: config.style,
           gender: config.gender,
           species: config.species || "human",
-          personality: config.personality
+          personality: config.personality,
         }, false)
         setFinalPrompt(composed)
       }
@@ -179,26 +118,21 @@ export function PuppetConfigurationModal({
   }, [step, config, finalPrompt, onComplete])
 
   const handleBack = useCallback(() => {
-    if (step > 1) {
-      setStep(step - 1)
-    } else {
-      onClose()
-    }
+    if (step > 1) setStep(step - 1)
+    else onClose()
   }, [step, onClose])
 
-  // Relaxed completion: users can skip any question
   const isStepComplete = useCallback(() => {
     switch (step) {
       case 1: return !!config.style
-      case 2: return true // gender optional
-      case 3: return true // species optional (defaults to human)
-      case 4: return true // personality optional
-      case 5: return true // review step always available
+      case 2: return true
+      case 3: return true
+      case 4: return true
+      case 5: return true
       default: return true
     }
   }, [step, config])
 
-  // Reset to step 1 when modal opens
   useEffect(() => {
     if (isOpen) {
       setStep(1)
@@ -210,13 +144,13 @@ export function PuppetConfigurationModal({
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
         {/* Header */}
-        <div className="p-6 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50">
+        <div className="p-6 border-b bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/50 dark:to-orange-950/50">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">
-              {step === 1 && "Choose Your Puppet Style"}
+              {step === 1 && "Choose Your Animation Style"}
               {step === 2 && "What's Your Gender? (Optional)"}
-              {step === 3 && "Animal or Monster? (Optional)"}
-              {step === 4 && "What Kind of Puppet Are You? (Optional)"}
+              {step === 3 && "Animal or Robot? (Optional)"}
+              {step === 4 && "What's Your Vibe? (Optional)"}
               {step === 5 && "Review & Edit Prompt"}
             </h2>
             <div className="flex gap-2">
@@ -236,13 +170,11 @@ export function PuppetConfigurationModal({
         <div className="flex-1 overflow-y-auto p-6">
           {step === 1 && (
             <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Pick the style of puppet you want to become!
-              </p>
+              <p className="text-muted-foreground">Pick an animation style.</p>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search puppet styles..."
+                  placeholder="Search animation styles..."
                   value={styleSearch}
                   onChange={(e) => setStyleSearch(e.target.value)}
                   className="pl-10"
@@ -257,7 +189,7 @@ export function PuppetConfigurationModal({
                         ? 'ring-2 ring-primary bg-primary/5' 
                         : 'hover:bg-muted/50'
                     }`}
-                    onClick={() => setConfig(prev => ({ ...prev, style: style.id }))}
+                    onClick={() => setConfig(prev => ({ ...prev, style: style.id as AnimationStyle }))}
                   >
                     <h3 className="font-semibold text-lg">{style.name}</h3>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -268,7 +200,7 @@ export function PuppetConfigurationModal({
               </div>
               {styleSearch && filteredStyles.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p>No puppet styles found. Try a different search term.</p>
+                  <p>No animation styles found. Try a different search term.</p>
                 </div>
               )}
             </div>
@@ -276,9 +208,7 @@ export function PuppetConfigurationModal({
 
           {step === 2 && (
             <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Select your gender identity (optional but helps with personalization):
-              </p>
+              <p className="text-muted-foreground">Select your gender identity (optional).</p>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -320,42 +250,37 @@ export function PuppetConfigurationModal({
 
           {step === 3 && (
             <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Do you wanna be an animal or monster puppet?
-              </p>
+              <p className="text-muted-foreground">Pick an animal, creature, or robot (optional).</p>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search for animals, monsters, mythical creatures..."
+                  placeholder="Search species..."
                   value={speciesSearch}
                   onChange={(e) => setSpeciesSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
 
-              {/* Human opt-out */}
               <div className="flex items-center gap-3">
                 <Button
                   variant={config.species === "human" ? "default" : "outline"}
                   className="justify-start"
                   onClick={() => setConfig(prev => ({ ...prev, species: "human" }))}
-                  aria-label="No thanks, just a human"
-                  title="No thanks, just a human"
                 >
-                  No thanks, just a human
+                  No thanks, just human
                 </Button>
-                <span className="text-sm text-muted-foreground">Or pick an animal or creature below</span>
+                <span className="text-sm text-muted-foreground">Or choose one below</span>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
-                {filteredSpecies.map(species => (
+                {filteredSpecies.map(sp => (
                   <Button
-                    key={species}
-                    variant={config.species === species ? "default" : "outline"}
+                    key={sp}
+                    variant={config.species === sp ? "default" : "outline"}
                     className="justify-start"
-                    onClick={() => setConfig(prev => ({ ...prev, species }))}
+                    onClick={() => setConfig(prev => ({ ...prev, species: sp }))}
                   >
-                    {species}
+                    {sp}
                   </Button>
                 ))}
               </div>
@@ -379,36 +304,29 @@ export function PuppetConfigurationModal({
 
           {step === 4 && (
             <div className="space-y-6">
-              <p className="text-muted-foreground">
-                What's your puppet personality? This will influence how your puppet looks and feels!
-              </p>
-              
+              <p className="text-muted-foreground">Choose a personality vibe (optional).</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
-                {PERSONALITY_OPTIONS.map(personality => (
+                {PERSONALITY_OPTIONS.map(p => (
                   <Card 
-                    key={personality.id}
+                    key={p.id}
                     className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                      config.personality === personality.id 
+                      config.personality === p.id 
                         ? 'ring-2 ring-primary bg-primary/5' 
                         : 'hover:bg-muted/50'
                     }`}
-                    onClick={() => setConfig(prev => ({ ...prev, personality: personality.id }))}
+                    onClick={() => setConfig(prev => ({ ...prev, personality: p.id }))}
                   >
-                    <h3 className="font-semibold text-lg">{personality.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {personality.description}
-                    </p>
+                    <h3 className="font-semibold text-lg">{p.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{p.description}</p>
                   </Card>
                 ))}
               </div>
-
-              {/* Preview */}
               <Card className="p-4 bg-muted/50">
-                <h3 className="font-semibold mb-2">Your Puppet Preview</h3>
+                <h3 className="font-semibold mb-2">Your Toon Preview</h3>
                 <div className="space-y-2 text-sm">
-                  <p><strong>Style:</strong> {PUPPET_STYLES.find(s => s.id === config.style)?.name}</p>
+                  <p><strong>Style:</strong> {ANIMATION_STYLES.find(s => s.id === config.style)?.name}</p>
                   <p><strong>Gender:</strong> {config.gender || "Not specified"}</p>
-                  <p><strong>Species:</strong> {config.species}</p>
+                  <p><strong>Species:</strong> {config.species || "human"}</p>
                   <p><strong>Personality:</strong> {PERSONALITY_OPTIONS.find(p => p.id === config.personality)?.name || "Not selected"}</p>
                 </div>
               </Card>
@@ -417,9 +335,7 @@ export function PuppetConfigurationModal({
 
           {step === 5 && (
             <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Final checkpoint: Review and edit the complete prompt before generating.
-              </p>
+              <p className="text-muted-foreground">Final checkpoint: Edit the prompt before generating.</p>
               <Label htmlFor="finalPrompt">Prompt</Label>
               <Textarea
                 id="finalPrompt"
@@ -427,9 +343,7 @@ export function PuppetConfigurationModal({
                 onChange={(e) => setFinalPrompt(e.target.value)}
                 className="min-h-[160px]"
               />
-              <p className="text-xs text-muted-foreground">
-                You can change anything here. This is exactly what will be sent to the image model.
-              </p>
+              <p className="text-xs text-muted-foreground">This exact text will be sent to the model.</p>
             </div>
           )}
         </div>
@@ -441,14 +355,12 @@ export function PuppetConfigurationModal({
               <ChevronLeft className="w-4 h-4 mr-2" />
               {step === 1 ? "Cancel" : "Back"}
             </Button>
-            {/* Skip button for steps 2-4 */}
             {step >= 2 && step <= 4 && (
               <Button 
                 variant="ghost" 
                 onClick={() => {
-                  // If skipping from step 4 to 5, compose a default prompt for review
                   if (step === 4) {
-                    const composed = generatePuppetPrompt({
+                    const composed = generateAnimationPrompt({
                       style: config.style,
                       gender: config.gender,
                       species: config.species || "human",
@@ -463,11 +375,8 @@ export function PuppetConfigurationModal({
               </Button>
             )}
           </div>
-          <Button 
-            onClick={handleNext}
-            disabled={!isStepComplete()}
-          >
-            {step === 5 ? "Generate My Puppet!" : "Next"}
+          <Button onClick={handleNext} disabled={!isStepComplete()}>
+            {step === 5 ? "Generate My Toon!" : "Next"}
             {step < 5 && <ChevronRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
