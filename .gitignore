@@ -37,5 +37,9 @@ public/generated/
 public/uploads/
 temp/
 
+# Local runtime registries (generated)
+data/uploads.json
+data/gallery.json
+
 # Ignore backup files
 data/gallery.json.bak

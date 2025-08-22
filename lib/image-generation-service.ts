@@ -30,11 +30,13 @@ export class ImageGenerationService {
   async generateImages(
     request: GenerateRequest,
     nextRequest?: NextRequest,
-    progressCallback?: (event: ProgressEvent) => void
+    progressCallback?: ((event: ProgressEvent) => void) | { enableProgress?: boolean; onProgress?: (event: ProgressEvent) => void }
   ): Promise<ImageGenerationResult> {
     const sendProgress = (event: ProgressEvent) => {
-      if (progressCallback) {
+      if (typeof progressCallback === "function") {
         progressCallback(event)
+      } else if (progressCallback && typeof progressCallback === "object" && typeof progressCallback.onProgress === "function") {
+        progressCallback.onProgress(event)
       }
     }
 
@@ -61,11 +63,11 @@ export class ImageGenerationService {
         baseImageId,
       })
 
-      // Enforce 1024x1024 for non-admins
+      // Enforce size rules (admins may request custom sizes)
       const allowRequestedSize = nextRequest ? isAdminRequest(nextRequest) : true
-      // Default to 1024x1024 when size is omitted (Auto). Non-admins are pinned to 1024x1024.
       const requestedSize = size ?? "1024x1024"
-      const effectiveSize: "1024x1024" | "1024x1536" | "1536x1024" = allowRequestedSize ? requestedSize : "1024x1024"
+      type EffectiveSize = "512x512" | "768x768" | "1024x1024" | "1024x1536" | "1536x1024"
+      const effectiveSize: EffectiveSize = (allowRequestedSize ? requestedSize : "1024x1024") as EffectiveSize
 
       // Content safety check
       const safety = checkPromptSafety(expandedPrompt?.trim() ? expandedPrompt! : prompt)
@@ -88,8 +90,9 @@ export class ImageGenerationService {
       const sourcePrompt = safety.cleaned ?? (expandedPrompt?.trim() ? expandedPrompt! : prompt)
       const finalPrompt = sanitizePromptForImage(sourcePrompt)
 
-      // For OpenAI API, we'll use the effective size directly since the tests expect this
-      const providerSize = effectiveSize
+      // Map requested/effective size to provider-supported size for OpenAI (square only)
+      type ProviderSize = "512x512" | "1024x1024"
+      const providerSize: ProviderSize = effectiveSize === "512x512" ? "512x512" : "1024x1024"
 
       const images: GeneratedImage[] = []
 
@@ -102,6 +105,7 @@ export class ImageGenerationService {
         expandedPrompt, 
         seed, 
         baseImageId,
+        sessionId,
         sendProgress
       )
       images.push(...results)
@@ -139,12 +143,13 @@ export class ImageGenerationService {
 
   private async generateStandard(
     finalPrompt: string,
-    providerSize: "512x512" | "768x768" | "1024x1024",
+    providerSize: "512x512" | "1024x1024",
     n: number,
-    effectiveSize: "512x512" | "768x768" | "1024x1024",
+    effectiveSize: "512x512" | "768x768" | "1024x1024" | "1024x1536" | "1536x1024",
     expandedPrompt?: string | null,
     seed?: string | number | null,
     baseImageId?: string | null,
+    sessionId?: string | null,
     sendProgress?: (event: ProgressEvent) => void
   ): Promise<GeneratedImage[]> {
     sendProgress?.({
@@ -205,7 +210,7 @@ export class ImageGenerationService {
           baseImageId,
           hasMask: false,
           provider: "openai",
-          sessionId: sessionId ?? undefined, // Pass sessionId for grouping
+          sessionId: sessionId ?? undefined,
         })
 
         images.push({

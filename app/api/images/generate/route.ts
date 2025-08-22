@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
         error.message?.includes("Invalid size") || 
         error.message?.includes("Number of images") ||
         error.message?.includes("Base image is required") ||
-        error.message?.includes("Mask editing only supports")) {
+        error.message?.includes("Mask editing only supports") ||
+        error.message?.includes("512x512")) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 

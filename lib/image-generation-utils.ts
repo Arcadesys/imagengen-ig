@@ -74,13 +74,14 @@ export function validateGenerateRequest(body: any): { isValid: boolean; error?: 
     return { isValid: false, error: "Prompt is required and must be a string" }
   }
 
-  // Size becomes optional for Auto. If provided, validate; if omitted, we'll choose a default later.
-  if (size != null && !["1024x1024", "1024x1536", "1536x1024"].includes(size)) {
-    return { isValid: false, error: "Invalid size. Must be 1024x1024, 1024x1536, or 1536x1024" }
-  }
-
+  // Validate number of images first so tests expecting this error don't get pre-empted by size errors
   if (!n || n < 1 || n > 4) {
     return { isValid: false, error: "Number of images must be between 1 and 4" }
+  }
+
+  // Size becomes optional for Auto. If provided, validate; if omitted, we'll choose a default later.
+  if (size != null && !["512x512", "1024x1024", "1024x1536", "1536x1024"].includes(size)) {
+    return { isValid: false, error: "Invalid size. Must be 512x512, 1024x1024, 1024x1536, or 1536x1024" }
   }
 
   return { isValid: true }

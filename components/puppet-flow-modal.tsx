@@ -313,6 +313,21 @@ export function PuppetConfigurationModal({
                   className="pl-10"
                 />
               </div>
+
+              {/* Human opt-out */}
+              <div className="flex items-center gap-3">
+                <Button
+                  variant={config.species === "human" ? "default" : "outline"}
+                  className="justify-start"
+                  onClick={() => setConfig(prev => ({ ...prev, species: "human" }))}
+                  aria-label="No thanks, just a human"
+                  title="No thanks, just a human"
+                >
+                  No thanks, just a human
+                </Button>
+                <span className="text-sm text-muted-foreground">Or pick an animal or creature below</span>
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
                 {filteredSpecies.map(species => (
                   <Button
