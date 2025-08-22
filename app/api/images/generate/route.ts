@@ -7,6 +7,11 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
+// Explicit GET to avoid 405 in certain dev-server evaluation states
+export async function GET() {
+  return NextResponse.json({ ok: true, message: "Use POST to generate images" })
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] Starting image generation request")

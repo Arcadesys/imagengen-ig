@@ -5,9 +5,15 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    environmentMatchGlobs: [
-      ["**/*.tsx", "happy-dom"],
-    ],
+    environmentMatchGlobs: [["**/*.tsx", "happy-dom"]],
+    // Avoid running multiple Next dev servers concurrently across files
+    fileParallelism: false,
+    pool: "threads",
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
   },
   esbuild: {
     jsx: "automatic",

@@ -3,6 +3,11 @@ import { readFile, writeFile, mkdir } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
 
+// Ensure this route runs on Node.js runtime and never caches
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 interface GalleryImage {
   id: string
   url: string
