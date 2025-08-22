@@ -8,7 +8,9 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   try {
     const generator = await (prisma as any).imageGenerator.findUnique({ where: { slug: params.slug } })
     if (!generator) return NextResponse.json({ error: "Not found" }, { status: 404 })
-    return NextResponse.json({ generator })
+    const cfg = (generator as any).config || null
+    const schema = cfg?.schema || (cfg?.questions && cfg?.promptTemplate ? { title: generator.name, intro: generator.description, questions: cfg.questions, promptTemplate: cfg.promptTemplate, references: cfg.references } : null)
+    return NextResponse.json({ generator, schema })
   } catch (error) {
     console.error("[generator GET]", error)
     return NextResponse.json({ error: "Failed to fetch generator" }, { status: 500 })

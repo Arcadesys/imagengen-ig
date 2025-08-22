@@ -204,3 +204,17 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+// New model for per-generator question schemas and entries
+model GeneratorQuestionnaire {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  schema      Json     // JSON schema for the questionnaire
+
+  // Optional: relations to ImageGenerator if needed
+  generatorId String?
+  generator   ImageGenerator? @relation(fields: [generatorId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

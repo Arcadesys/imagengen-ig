@@ -1,33 +1,38 @@
 "use client"
 
 import { useEffect, useRef, useState, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
 import { useGenerationProgress } from "@/hooks/use-generation-progress"
 import { GenerationProgressModal } from "@/components/generation-progress-modal"
 import { InstantResults } from "@/components/instant-results"
 import { SessionCodeVerify } from "@/components/session-code-verify"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-import { Camera, RefreshCw, Sparkles, ArrowLeft, Users } from "lucide-react"
+import { Camera, RefreshCw, Sparkles, ArrowLeft, Users, Upload as UploadIcon, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface QuestionsPayload {
   title: string
   intro?: string
-  questions: Array<{ id: string; text: string; placeholder?: string }>
+  questions: Array<{ id: string; text: string; placeholder?: string; type?: string; options?: string[]; allowCustom?: boolean }>
   references?: Array<{ label: string; url: string }>
   promptTemplate: string
 }
 
 export default function PhotoboothPage() {
+  const searchParams = useSearchParams()
+  const generatorSlug = (searchParams.get("generator") || "").trim() || undefined
+
   const [schema, setSchema] = useState<QuestionsPayload | null>(null)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, any>>({})
   const [error, setError] = useState<string | null>(null)
-  const [sessionCode, setSessionCode] = useState<any>(null)
-  const [remainingGenerations, setRemainingGenerations] = useState<number>(0)
+  const [sessionCode, setSessionCode] = useState<any>({ code: "ABC123", name: "Guest", maxGenerations: Number.MAX_SAFE_INTEGER, usedGenerations: 0 })
+  const [remainingGenerations, setRemainingGenerations] = useState<number>(Infinity)
 
   // webcam state
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -38,14 +43,34 @@ export default function PhotoboothPage() {
   const [showResults, setShowResults] = useState<boolean>(false)
   const [generatedImages, setGeneratedImages] = useState<any[]>([])
 
+  // New: editable prompt state
+  const [promptDraft, setPromptDraft] = useState<string>("")
+  const [hasEditedPrompt, setHasEditedPrompt] = useState<boolean>(false)
+
+  // Wizard step management
+  type Step = "photo" | "questions" | "prompt"
+  const [step, setStep] = useState<Step>("photo")
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+
   const progress = useGenerationProgress()
   const { toast } = useToast()
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const handleUploadClick = () => fileInputRef.current?.click()
+
+  // Infinite session flag
+  const isInfinite = !!sessionCode?.code && String(sessionCode.code).toUpperCase() === "ABC123"
+
+  // Per-question filter state for multi-select search
+  const [qFilters, setQFilters] = useState<Record<string, string>>({})
 
   const handleGenerationComplete = (images: any[]) => {
     setGeneratedImages(images)
     setShowResults(true)
     // Update remaining generations after successful generation
-    setRemainingGenerations(prev => Math.max(0, prev - 1))
+    if (!isInfinite) {
+      setRemainingGenerations((prev) => Math.max(0, prev - 1))
+    }
   }
 
   const handleSaveImage = async (image: any) => {
@@ -87,15 +112,25 @@ export default function PhotoboothPage() {
   useEffect(() => {
     ;(async () => {
       try {
-        const res = await fetch("/api/questions")
-        if (!res.ok) throw new Error("Failed to load questions")
-        const json: QuestionsPayload = await res.json()
-        setSchema(json)
+        // Prefer per-generator schema when generator param is provided
+        let res: Response
+        if (generatorSlug) {
+          res = await fetch(`/api/generators/${generatorSlug}/questions`)
+          if (!res.ok) throw new Error("Failed to load generator questions")
+          const j = await res.json()
+          setSchema(j.schema)
+        } else {
+          res = await fetch("/api/questions")
+          if (!res.ok) throw new Error("Failed to load questions")
+          const json = await res.json()
+          const s = json?.schema || json // back-compat
+          setSchema(s)
+        }
       } catch (e: any) {
         setError(e?.message || "Failed to load questions")
       }
     })()
-  }, [])
+  }, [generatorSlug])
 
   useEffect(() => {
     // try to start webcam
@@ -125,40 +160,189 @@ export default function PhotoboothPage() {
     ctx.drawImage(video, 0, 0, w, h)
     const url = canvas.toDataURL("image/png")
     setSnapshotUrl(url)
+    // Move to next step automatically
+    setStep("questions")
   }
 
   function retake() {
     setSnapshotUrl(null)
+    setStep("photo")
   }
 
-  const prompt = useMemo(() => {
+  // When a photo is uploaded via file chooser, also advance to questions
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setSnapshotUrl(dataUrl)
+      setStep("questions")
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Helper to render a question by type (no hooks inside)
+  const renderQuestionInput = (q: QuestionsPayload["questions"][number]) => {
+    const value = answers[q.id]
+
+    if (q.type === "multi-select") {
+      const opts = q.options || []
+      const filter = qFilters[q.id] || ""
+      const filtered = opts.filter((o) => o.toLowerCase().includes(filter.toLowerCase()))
+      const selected: string[] = Array.isArray(value) ? value : []
+
+      return (
+        <div className="space-y-2">
+          <Input
+            placeholder={q.placeholder || "Search"}
+            value={filter}
+            onChange={(e) => setQFilters((prev) => ({ ...prev, [q.id]: e.target.value }))}
+          />
+          <div className="max-h-40 overflow-auto border rounded p-2 space-y-1">
+            {filtered.map((opt) => {
+              const checked = selected.includes(opt)
+              return (
+                <label key={opt} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => {
+                      setAnswers((prev) => {
+                        const curr: string[] = Array.isArray(prev[q.id]) ? prev[q.id] : []
+                        return {
+                          ...prev,
+                          [q.id]: e.target.checked ? [...curr, opt] : curr.filter((x: string) => x !== opt),
+                        }
+                      })
+                    }}
+                  />
+                  <span>{opt}</span>
+                </label>
+              )
+            })}
+            {filtered.length === 0 && <div className="text-xs text-muted-foreground">No matches</div>}
+          </div>
+        </div>
+      )
+    }
+
+    if (q.type === "gender") {
+      const opts = q.options || ["male", "female", "nonbinary"]
+      const selected = typeof value === "string" ? value : ""
+      const isCustom = selected && !opts.includes(selected)
+      return (
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {opts.map((opt) => (
+              <Button
+                key={opt}
+                type="button"
+                variant={selected === opt ? "default" : "outline"}
+                size="sm"
+                onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt }))}
+              >
+                {opt}
+              </Button>
+            ))}
+            {q.allowCustom !== false && (
+              <Button
+                type="button"
+                variant={isCustom || selected === "custom" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: "custom" }))}
+              >
+                Custom
+              </Button>
+            )}
+          </div>
+          {(selected === "custom" || isCustom) && (
+            <Input
+              placeholder={q.placeholder || "Enter gender"}
+              value={isCustom ? selected : answers[`${q.id}_custom`] || ""}
+              onChange={(e) => {
+                const v = e.target.value
+                setAnswers((prev) => ({ ...prev, [q.id]: v, [`${q.id}_custom`]: v }))
+              }}
+            />
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <Input
+        id={`q-${q.id}`}
+        placeholder={q.placeholder}
+        value={typeof value === "string" ? value : ""}
+        onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+        autoFocus
+      />
+    )
+  }
+
+  // Build composed prompt from answers
+  const composedPrompt = useMemo(() => {
     if (!schema) return ""
-    const refStr = (schema.references || []).map((r) => r.label).join(", ")
-    return schema.promptTemplate
-      .replace("{{subject}}", answers["subject"] || "subject")
-      .replace("{{style}}", answers["style"] || "portrait")
-      .replace("{{references}}", refStr)
+
+    // Support custom rendering tokens in prompt template
+    let base = schema.promptTemplate
+    for (const [k, v] of Object.entries(answers)) {
+      base = base.replaceAll(`{{${k}}}`, Array.isArray(v) ? v.join(", ") : String(v ?? ""))
+    }
+
+    const clothingPreservation =
+      "CRITICAL: PRESERVE ALL CLOTHING AND OUTFIT DETAILS. Maintain exact clothing items, patterns, colors, textures, logos, accessories, jewelry, and styling. Convert clothing materials to style-appropriate textures while keeping all design elements identical (same colors, patterns, cuts, fit)."
+    const compositionPreservation =
+      "MAINTAIN ORIGINAL COMPOSITION AND BACKGROUND. Keep the same camera framing, subject position and scale, pose, angle, and lighting from the source photo. Do not alter or replace the background or environment; do not add or remove background elements. Only transform the subject into the chosen style while leaving the background and composition intact."
+
+    return `${base} ${clothingPreservation} ${compositionPreservation}`.trim()
   }, [schema, answers])
 
+  useEffect(() => {
+    if (step === "prompt" && !hasEditedPrompt) {
+      setPromptDraft(composedPrompt)
+    }
+  }, [step, composedPrompt, hasEditedPrompt])
+
+  // Navigation helpers for questions
+  const totalQuestions = schema?.questions?.length || 0
+  const isFirstQuestion = currentQuestionIndex === 0
+  const isLastQuestion = currentQuestionIndex >= Math.max(0, totalQuestions - 1)
+
+  const goNextQuestion = () => {
+    if (!schema) return
+    if (isLastQuestion) {
+      // proceed to prompt edit step
+      setStep("prompt")
+      return
+    }
+    setCurrentQuestionIndex((i) => Math.min(i + 1, totalQuestions - 1))
+  }
+  const goPrevQuestion = () => setCurrentQuestionIndex((i) => Math.max(0, i - 1))
+
   async function generate() {
-    if (!prompt.trim() || !snapshotUrl || remainingGenerations <= 0) return
+    const finalPrompt = (promptDraft || "").trim()
+    if (!finalPrompt || !snapshotUrl || remainingGenerations <= 0) return
     
     setBusy(true)
     try {
-      // First, use a generation from the session code
-      const verifyResponse = await fetch("/api/session-codes/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: sessionCode.code, useGeneration: true }),
-      })
+      // First, use a generation from the session code (skip for infinite code)
+      if (!isInfinite) {
+        const verifyResponse = await fetch("/api/session-codes/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: sessionCode.code, useGeneration: true }),
+        })
 
-      if (!verifyResponse.ok) {
-        const error = await verifyResponse.json()
-        throw new Error(error.error || "Session code verification failed")
+        if (!verifyResponse.ok) {
+          const error = await verifyResponse.json()
+          throw new Error(error.error || "Session code verification failed")
+        }
+
+        const verifyData = await verifyResponse.json()
+        setRemainingGenerations(verifyData.remainingGenerations)
       }
-
-      const verifyData = await verifyResponse.json()
-      setRemainingGenerations(verifyData.remainingGenerations)
 
       // upload snapshot to get baseImageId
       progress.updateProgress("uploading", 10, "Uploading snapshot...")
@@ -182,7 +366,7 @@ export default function PhotoboothPage() {
       const gen = await fetch("/api/images/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, n: 1, size: "1024x1024", baseImageId, maskData }),
+        body: JSON.stringify({ prompt: finalPrompt, n: 1, size: "1024x1024", baseImageId, maskData }),
       })
       if (!gen.ok) {
         const err = await gen.json().catch(() => ({ error: "Generation failed" }))
@@ -220,94 +404,140 @@ export default function PhotoboothPage() {
               <ArrowLeft className="h-4 w-4 mr-2" /> Back
             </Button>
           </Link>
-          <h1 className="text-lg font-semibold">Photobooth</h1>
+          <h1 className="text-lg font-semibold">Photobooth{generatorSlug ? ` — ${generatorSlug}` : ""}</h1>
           <div className="ml-auto flex items-center gap-2">
             <Badge variant="outline" className="flex items-center gap-1">
               <Users className="h-3 w-3" />
               {sessionCode.name || sessionCode.code}
             </Badge>
             <Badge variant={remainingGenerations > 0 ? "default" : "destructive"}>
-              {remainingGenerations} generations left
+              {Number.isFinite(remainingGenerations) ? `${remainingGenerations} generations left` : "∞ generations left"}
             </Badge>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6 grid gap-6 md:grid-cols-2">
+        {/* Left column: step frames */}
         <section>
-          <Card className="p-4">
-            <h2 className="font-medium mb-2">Step 1 — Answer</h2>
-            {schema ? (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">{schema.intro}</p>
-                {schema.questions.map((q) => (
-                  <div key={q.id} className="grid gap-1">
-                    <Label htmlFor={`q-${q.id}`}>{q.text}</Label>
-                    <Input
-                      id={`q-${q.id}`}
-                      placeholder={q.placeholder}
-                      value={answers[q.id] || ""}
-                      onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                    />
-                  </div>
-                ))}
-                {schema.references && schema.references.length > 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    References: {schema.references.map((r) => r.label).join(", ")}
-                  </div>
+          {step === "photo" && (
+            <Card className="p-4">
+              <h2 className="font-medium mb-2">Step 1 — Add Photo</h2>
+              {!hasCamera && <p className="text-sm text-muted-foreground">No camera access. You can upload a photo instead.</p>}
+
+              <div className="relative aspect-square bg-black/5 rounded-lg overflow-hidden">
+                {!snapshotUrl ? (
+                  <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
+                ) : (
+                  <img src={snapshotUrl} alt="snapshot" className="w-full h-full object-cover" />
                 )}
               </div>
-            ) : error ? (
-              <div className="text-sm text-red-600">{error}</div>
-            ) : (
-              <div className="text-sm text-muted-foreground">Loading questions…</div>
-            )}
-          </Card>
 
-          <Card className="p-4 mt-4">
-            <h2 className="font-medium mb-2">Step 2 — Capture</h2>
-            {!hasCamera && <p className="text-sm text-muted-foreground">No camera access. Check permissions.</p>}
-
-            <div className="relative aspect-square bg-black/5 rounded-lg overflow-hidden">
-              {!snapshotUrl ? (
-                <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
-              ) : (
-                <img src={snapshotUrl} alt="snapshot" className="w-full h-full object-cover" />
-              )}
-            </div>
-
-            <div className="flex gap-2 mt-3">
-              {!snapshotUrl ? (
-                <Button onClick={capture} disabled={!hasCamera || busy}>
-                  <Camera className="h-4 w-4 mr-2" /> Snap
+              <div className="flex flex-wrap gap-2 mt-3">
+                {!snapshotUrl ? (
+                  <Button onClick={capture} disabled={!hasCamera || busy}>
+                    <Camera className="h-4 w-4 mr-2" /> Snap
+                  </Button>
+                ) : (
+                  <Button variant="outline" onClick={retake} disabled={busy}>
+                    <RefreshCw className="h-4 w-4 mr-2" /> Retake
+                  </Button>
+                )}
+                <Button type="button" variant="outline" onClick={handleUploadClick} disabled={busy}>
+                  <UploadIcon className="h-4 w-4 mr-2" /> Upload Photo
                 </Button>
-              ) : (
-                <Button variant="outline" onClick={retake} disabled={busy}>
-                  <RefreshCw className="h-4 w-4 mr-2" /> Retake
-                </Button>
-              )}
-              <Button onClick={generate} disabled={!snapshotUrl || busy || !prompt.trim() || remainingGenerations <= 0}>
-                <Sparkles className="h-4 w-4 mr-2" /> 
-                {remainingGenerations <= 0 ? "No Generations Left" : "Generate"}
-              </Button>
-            </div>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
 
-            <canvas ref={canvasRef} className="hidden" />
-          </Card>
+                {snapshotUrl && (
+                  <Button className="ml-auto" onClick={() => setStep("questions")}>Next <ChevronRight className="h-4 w-4 ml-1" /></Button>
+                )}
+              </div>
+
+              <canvas ref={canvasRef} className="hidden" />
+            </Card>
+          )}
+
+          {step === "questions" && (
+            <Card className="p-4">
+              <h2 className="font-medium mb-2">Step 2 — Answer Questions</h2>
+              {schema ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{schema.intro}</p>
+
+                  {totalQuestions > 0 ? (
+                    <div className="grid gap-1">
+                      <Label htmlFor={`q-${schema.questions[currentQuestionIndex].id}`}>
+                        {schema.questions[currentQuestionIndex].text}
+                      </Label>
+                      {/* Render by type */}
+                      {renderQuestionInput(schema.questions[currentQuestionIndex])}
+
+                      <div className="flex justify-between mt-4">
+                        <Button variant="ghost" onClick={() => setStep("photo")}>
+                          <ChevronLeft className="h-4 w-4 mr-1" /> Back to Photo
+                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="outline" onClick={goPrevQuestion} disabled={isFirstQuestion}>
+                            <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                          </Button>
+                          <Button onClick={goNextQuestion}>
+                            {isLastQuestion ? "Continue" : "Next"} <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground mt-2">
+                        Question {currentQuestionIndex + 1} of {totalQuestions}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No questions configured.</div>
+                  )}
+                </div>
+              ) : error ? (
+                <div className="text-sm text-red-600">{error}</div>
+              ) : (
+                <div className="text-sm text-muted-foreground">Loading questions…</div>
+              )}
+            </Card>
+          )}
+
+          {step === "prompt" && (
+            <Card className="p-4">
+              <h2 className="font-medium mb-2">Step 3 — Edit Full Prompt</h2>
+              <p className="text-sm text-muted-foreground mb-2">
+                This is the exact prompt that will be sent. You can edit it before generating.
+              </p>
+              <Textarea
+                className="min-h-40"
+                value={promptDraft}
+                onChange={(e) => {
+                  setPromptDraft(e.target.value)
+                  setHasEditedPrompt(true)
+                }}
+                placeholder="Your full prompt will appear here"
+              />
+              <div className="flex justify-between mt-3">
+                <Button variant="ghost" onClick={() => setStep("questions")}>
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Back to Questions
+                </Button>
+                <Button onClick={generate} disabled={!snapshotUrl || busy || !promptDraft.trim() || remainingGenerations <= 0}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {remainingGenerations <= 0 ? "No Generations Left" : "Generate"}
+                </Button>
+              </div>
+            </Card>
+          )}
         </section>
 
+        {/* Right column: results panel appears when available */}
         <section>
-          <Card className="p-4">
-            <h2 className="font-medium mb-2">Step 3 — Preview Prompt</h2>
-            <pre className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-lg min-h-32">{prompt}</pre>
-          </Card>
-
           {showResults && generatedImages.length > 0 && (
-            <Card className="p-4 mt-4">
+            <Card className="p-4">
               <h2 className="font-medium mb-2">Generated Results</h2>
               <InstantResults
                 images={generatedImages}
-                prompt={prompt}
+                prompt={promptDraft}
                 onSave={handleSaveImage}
                 onDiscard={handleDiscardImage}
                 onClose={handleCloseResults}

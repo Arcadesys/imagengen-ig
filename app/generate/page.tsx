@@ -124,7 +124,10 @@ export default function GeneratePage() {
   // Add explicit clothing preservation instructions (enhanced to match puppet-level detail)
   const clothingPreservation = "CRITICAL: PRESERVE ALL CLOTHING AND OUTFIT DETAILS. Maintain exact clothing items, patterns, colors, textures, logos, accessories, jewelry, and styling. Convert clothing materials to style-appropriate textures while keeping all design elements identical (same colors, patterns, cuts, fit). Preserve outfit completely: shirts, pants, dresses, jackets, shoes, hats, glasses, jewelry - everything must remain recognizable in the new style. Keep clothing colors, patterns, textures, logos, text, designs, cuts, and fit identical to the original photo. Do not change the person's outfit - preserve shirts, pants, dresses, jackets, shoes, hats, accessories, jewelry, watches, belts, ties, scarves, bags, etc. exactly as shown in the original image but transformed to match the artistic style."
   
-  const prompt = `${detail} ${base}. ${clothingPreservation}`
+  // New: enforce composition and background preservation for illusion of transformation
+  const compositionPreservation = "MAINTAIN ORIGINAL COMPOSITION AND BACKGROUND. Keep the same camera framing, subject position and scale, pose, angle, and lighting from the source photo. Do not alter or replace the background or environment; do not add or remove background elements. Only transform the subject into the chosen style while leaving the background and composition intact."
+  
+  const prompt = `${detail} ${base}. ${clothingPreservation} ${compositionPreservation}`
 
       // 3) Create a fully-transparent mask so the whole image can be edited
       const imgEl = new Image()
