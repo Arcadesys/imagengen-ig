@@ -62,6 +62,8 @@ export function generatePuppetPrompt(
     "CRITICAL: PRESERVE ALL CLOTHING AND OUTFIT DETAILS. Maintain exact clothing items, patterns, colors, textures, logos, accessories, jewelry, and styling.",
     "Convert clothing materials to puppet-appropriate fabrics while keeping all design elements identical (same colors, patterns, cuts, fit).",
     "Preserve outfit completely: shirts, pants, dresses, jackets, shoes, hats, glasses, jewelry - everything must remain recognizable but in puppet materials.",
+    "CRITICAL: MAINTAIN EXACT ORIGINAL POSE, BODY POSITION, AND CAMERA ANGLE. Do not change the subject's posture, stance, arm positions, leg positions, or head orientation.",
+    "CRITICAL: PRESERVE ORIGINAL FACIAL EXPRESSION AND EYE DIRECTION. Do not alter facial expressions, mouth position, eye gaze direction, or head tilt from the original.",
     "CARICATURE STYLE: Exaggerate and emphasize the subject's most distinctive facial features while maintaining their recognizable identity.",
     "Amplify unique characteristics: prominent nose, distinctive eyebrows, facial structure, expression, hair style.",
     "Keep their essential likeness but with playful, exaggerated proportions typical of caricature art.",
@@ -190,22 +192,22 @@ function generateSpeciesFeatures(species: string): string {
  */
 function generatePersonalityFeatures(personality: string): string {
   const personalityMap: Record<string, string> = {
-    cute: "sweet expression, big innocent eyes, soft features, endearing smile",
-    goofy: "silly expression, crossed eyes, lopsided grin, playful pose",
-    funny: "comedic expression, raised eyebrows, witty smirk, entertaining demeanor",
-    creepy: "mysterious expression, intense stare, shadowy features, unsettling grin",
-    mischievous: "sly expression, winking eye, devilish grin, playful troublemaker look",
-    wise: "thoughtful expression, knowing eyes, gentle smile, intelligent demeanor",
-    grumpy: "frowning expression, furrowed brow, crossed arms, serious scowl",
-    cheerful: "bright expression, big smile, sparkling eyes, happy demeanor",
-    dramatic: "theatrical expression, exaggerated features, dramatic pose, expressive gestures",
-    shy: "bashful expression, blushing cheeks, timid smile, modest pose",
-    confident: "bold expression, confident smile, strong posture, charismatic presence",
-    quirky: "unique expression, eccentric features, whimsical details, wonderfully weird charm"
+    cute: "sweet facial features, gentle expression, endearing qualities",
+    goofy: "slightly silly facial character, whimsical charm, playful personality",
+    funny: "comedic facial character, entertaining charm, witty personality",
+    creepy: "mysterious facial character, intense gaze, unsettling charm",
+    mischievous: "sly facial character, devilish charm, playful troublemaker personality",
+    wise: "thoughtful facial character, knowing gaze, intelligent personality",
+    grumpy: "stern facial character, serious expression, gruff personality",
+    cheerful: "bright facial character, happy personality, joyful charm",
+    dramatic: "theatrical facial character, expressive personality, dramatic flair",
+    shy: "bashful facial character, timid personality, modest charm",
+    confident: "bold facial character, confident personality, charismatic charm",
+    quirky: "unique facial character, eccentric personality, wonderfully weird charm"
   }
 
-  if (!personality) return "expressive features"
-  return personalityMap[personality] || "expressive features"
+  if (!personality) return "natural personality expression"
+  return personalityMap[personality] || "natural personality expression"
 }
 
 /**

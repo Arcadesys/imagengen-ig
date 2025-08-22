@@ -49,6 +49,8 @@ export function generateAnimationPrompt(
     `Personality cues: ${personalityFeatures}.`,
     // Identity preservation and caricature emphasis
     "CRITICAL: Preserve the subject's identity. Keep all distinctive facial features recognizable.",
+    "CRITICAL: MAINTAIN EXACT ORIGINAL POSE, BODY POSITION, AND CAMERA ANGLE. Do not change the subject's posture, stance, arm positions, leg positions, or head orientation.",
+    "CRITICAL: PRESERVE ORIGINAL FACIAL EXPRESSION AND EYE DIRECTION. Do not alter facial expressions, mouth position, eye gaze direction, or head tilt from the original.",
     "Use caricature principles: exaggerate distinctive features (nose, eyebrows, facial structure) while maintaining likeness.",
     // Rendering guidance typical for cartoon integration
     "Bold outlines where appropriate, clean shapes, and consistent shading per the chosen animation style.",
@@ -112,19 +114,19 @@ function generateSpeciesFeatures(species: string): string {
 
 function generatePersonalityFeatures(personality: string): string {
   const map: Record<string, string> = {
-    cute: "sweet expression, big innocent eyes, soft features, endearing smile",
-    goofy: "silly expression, crossed eyes, lopsided grin, playful pose",
-    funny: "comedic expression, raised eyebrows, witty smirk, entertaining demeanor",
-    creepy: "mysterious expression, intense stare, shadowy features, unsettling grin",
-    mischievous: "sly expression, winking eye, devilish grin, playful troublemaker look",
-    wise: "thoughtful expression, knowing eyes, gentle smile, intelligent demeanor",
-    grumpy: "frowning expression, furrowed brow, crossed arms, serious scowl",
-    cheerful: "bright expression, big smile, sparkling eyes, happy demeanor",
-    dramatic: "theatrical expression, exaggerated features, dramatic pose, expressive gestures",
-    shy: "bashful expression, blushing cheeks, timid smile, modest pose",
-    confident: "bold expression, confident smile, strong posture, charismatic presence",
-    quirky: "unique expression, eccentric features, whimsical details, wonderfully weird charm",
+    cute: "sweet facial character, gentle qualities, endearing charm",
+    goofy: "slightly silly facial character, whimsical charm, playful personality",
+    funny: "comedic facial character, entertaining charm, witty personality",
+    creepy: "mysterious facial character, intense character, unsettling charm",
+    mischievous: "sly facial character, devilish charm, playful troublemaker personality",
+    wise: "thoughtful facial character, knowing character, intelligent personality",
+    grumpy: "stern facial character, serious character, gruff personality",
+    cheerful: "bright facial character, happy personality, joyful charm",
+    dramatic: "theatrical facial character, expressive personality, dramatic flair",
+    shy: "bashful facial character, timid personality, modest charm",
+    confident: "bold facial character, confident personality, charismatic charm",
+    quirky: "unique facial character, eccentric personality, wonderfully weird charm",
   }
-  if (!personality) return "expressive features"
-  return map[personality] || "expressive features"
+  if (!personality) return "natural personality expression"
+  return map[personality] || "natural personality expression"
 }
