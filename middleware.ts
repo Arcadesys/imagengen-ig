@@ -1,14 +1,22 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
- 
-function middleware(request: NextRequest) {
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+
+export default function middleware(request: NextRequest) {
   // For now, allow all requests to pass through
-  // Authentication will be handled at the component level
+  // The puppetray app should work without authentication
   return NextResponse.next()
 }
 
-export default middleware
- 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$).+)",
+  ],
 }

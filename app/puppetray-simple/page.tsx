@@ -1,103 +1,16 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sparkles, Upload, Camera, X } from "lucide-react"
+import { Sparkles, Upload } from "lucide-react"
 
-export default function PuppetrayPage() {
+export default function SimplePuppetrayPage() {
   const [step, setStep] = useState<"upload" | "configure" | "generate" | "results">("upload")
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [puppetStyle, setPuppetStyle] = useState<string>("muppet")
   const [isGenerating, setIsGenerating] = useState(false)
-
-  // Webcam state
-  const [hasWebcam, setHasWebcam] = useState<boolean | null>(null)
-  const [isWebcamActive, setIsWebcamActive] = useState(false)
-  const [preferredInputMode, setPreferredInputMode] = useState<"webcam" | "upload">("upload")
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-
-  // Check for webcam availability on mount
-  useEffect(() => {
-    async function checkWebcam() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-        stream.getTracks().forEach(track => track.stop())
-        setHasWebcam(true)
-        setPreferredInputMode("webcam")
-      } catch {
-        setHasWebcam(false)
-        setPreferredInputMode("upload")
-      }
-    }
-    checkWebcam()
-  }, [])
-
-  // Start webcam
-  const startWebcam = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1024 },
-          height: { ideal: 1024 },
-          facingMode: "user" 
-        } 
-      })
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        streamRef.current = stream
-        setIsWebcamActive(true)
-      }
-    } catch (error) {
-      console.error("Failed to start webcam:", error)
-      setPreferredInputMode("upload")
-    }
-  }
-
-  // Stop webcam
-  const stopWebcam = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
-      streamRef.current = null
-    }
-    setIsWebcamActive(false)
-  }
-
-  // Capture photo from webcam
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return
-
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    
-    if (!ctx) return
-
-    // Set canvas size to match video
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-
-    // Draw the video frame to canvas
-    ctx.drawImage(video, 0, 0)
-
-    // Convert canvas to blob and create file
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const file = new File([blob], 'webcam-capture.jpg', { type: 'image/jpeg' })
-        const url = URL.createObjectURL(blob)
-        
-        setImageFile(file)
-        setImagePreview(url)
-        stopWebcam()
-        setStep("configure")
-      }
-    }, 'image/jpeg', 0.9)
-  }
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -139,24 +52,7 @@ export default function PuppetrayPage() {
     setImageFile(null)
     setImagePreview(null)
     setPuppetStyle("muppet")
-    stopWebcam()
   }
-
-  // Start webcam when webcam tab is selected
-  useEffect(() => {
-    if (preferredInputMode === "webcam" && hasWebcam && step === "upload") {
-      startWebcam()
-    } else {
-      stopWebcam()
-    }
-  }, [preferredInputMode, hasWebcam, step])
-
-  // Cleanup webcam on unmount
-  useEffect(() => {
-    return () => {
-      stopWebcam()
-    }
-  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-pink-50 to-orange-50 dark:from-purple-950 dark:via-pink-950 dark:to-orange-950">
