@@ -74,6 +74,9 @@ model ImageGenerator {
   // Related sessions
   sessions    GenerationSession[]
 
+  // New: back relation for questionnaires
+  questionnaires GeneratorQuestionnaire[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

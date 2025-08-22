@@ -14,7 +14,7 @@ import { InstantResults } from "@/components/instant-results"
 import { SessionCodeVerify } from "@/components/session-code-verify"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-import { Camera, RefreshCw, Sparkles, ArrowLeft, Users, Upload as UploadIcon, ChevronLeft, ChevronRight } from "lucide-react"
+import { Camera, RefreshCw, Sparkles, ArrowLeft, Users, Upload as UploadIcon, ChevronLeft, ChevronRight, Images, ExternalLink } from "lucide-react"
 
 interface QuestionsPayload {
   title: string
@@ -22,6 +22,15 @@ interface QuestionsPayload {
   questions: Array<{ id: string; text: string; placeholder?: string; type?: string; options?: string[]; allowCustom?: boolean }>
   references?: Array<{ label: string; url: string }>
   promptTemplate: string
+}
+
+// New: minimal session type for listing
+interface MiniSession {
+  id: string
+  name: string
+  generator: string
+  createdAt: string
+  _count: { images: number }
 }
 
 export default function PhotoboothPage() {
@@ -63,6 +72,11 @@ export default function PhotoboothPage() {
 
   // Per-question filter state for multi-select search
   const [qFilters, setQFilters] = useState<Record<string, string>>({})
+
+  // New: list of sessions user can access
+  const [sessions, setSessions] = useState<MiniSession[] | null>(null)
+  const [sessionsLoading, setSessionsLoading] = useState<boolean>(true)
+  const [sessionsError, setSessionsError] = useState<string | null>(null)
 
   const handleGenerationComplete = (images: any[]) => {
     setGeneratedImages(images)
@@ -130,6 +144,42 @@ export default function PhotoboothPage() {
         setError(e?.message || "Failed to load questions")
       }
     })()
+  }, [generatorSlug])
+
+  // Load sessions the user has access to
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setSessionsLoading(true)
+      setSessionsError(null)
+      try {
+        // Build query string to optionally filter by generatorSlug
+        const qsParts: string[] = []
+        if (generatorSlug) qsParts.push(`generatorSlug=${encodeURIComponent(generatorSlug)}`)
+        qsParts.push(`limit=12`)
+        const qs = qsParts.length ? `?${qsParts.join("&")}` : ""
+        const res = await fetch(`/api/sessions${qs}`, { cache: "no-store" })
+        if (!res.ok) {
+          if (res.status === 401) {
+            if (!cancelled) {
+              setSessions([])
+            }
+            return
+          }
+          const err = await res.json().catch(() => ({} as any))
+          throw new Error(err.error || "Failed to load sessions")
+        }
+        const data = await res.json()
+        if (!cancelled) {
+          setSessions(Array.isArray(data.sessions) ? data.sessions : [])
+        }
+      } catch (e: any) {
+        if (!cancelled) setSessionsError(e?.message || "Failed to load sessions")
+      } finally {
+        if (!cancelled) setSessionsLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
   }, [generatorSlug])
 
   useEffect(() => {
@@ -530,8 +580,8 @@ export default function PhotoboothPage() {
           )}
         </section>
 
-        {/* Right column: results panel appears when available */}
-        <section>
+        {/* Right column: results + sessions panel */}
+        <section className="space-y-4">
           {showResults && generatedImages.length > 0 && (
             <Card className="p-4">
               <h2 className="font-medium mb-2">Generated Results</h2>
@@ -547,6 +597,44 @@ export default function PhotoboothPage() {
               />
             </Card>
           )}
+
+          {/* Sessions list */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-medium">Your Sessions</h2>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/sessions">Manage</Link>
+              </Button>
+            </div>
+            {sessionsLoading ? (
+              <div className="text-sm text-muted-foreground">Loading sessions…</div>
+            ) : sessionsError ? (
+              <div className="text-sm text-muted-foreground">Sign in to view your sessions.</div>
+            ) : !sessions || sessions.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No sessions yet.</div>
+            ) : (
+              <ul className="space-y-2">
+                {sessions.map((s) => (
+                  <li key={s.id} className="flex items-center gap-2 justify-between">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{s.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{s.generator}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        <Images className="w-3 h-3 mr-1" /> {s._count.images}
+                      </Badge>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/wall?session=${s.id}`}>
+                          <ExternalLink className="w-3 h-3 mr-1" /> Wall
+                        </Link>
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
         </section>
       </main>
 
