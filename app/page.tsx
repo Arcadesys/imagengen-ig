@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sparkles, Upload, Camera, X } from "lucide-react"
+import { Sparkles, Upload, Camera, X, RotateCcw } from "lucide-react"
 
 export default function PuppetrayPage() {
   const [step, setStep] = useState<"upload" | "configure" | "generate" | "results">("upload")
@@ -17,6 +17,8 @@ export default function PuppetrayPage() {
   const [hasWebcam, setHasWebcam] = useState<boolean | null>(null)
   const [isWebcamActive, setIsWebcamActive] = useState(false)
   const [preferredInputMode, setPreferredInputMode] = useState<"webcam" | "upload">("upload")
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user")
+  const [canSwitchCamera, setCanSwitchCamera] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -25,10 +27,16 @@ export default function PuppetrayPage() {
   useEffect(() => {
     async function checkWebcam() {
       try {
+        // Check for basic camera access
         const stream = await navigator.mediaDevices.getUserMedia({ video: true })
         stream.getTracks().forEach(track => track.stop())
         setHasWebcam(true)
         setPreferredInputMode("webcam")
+
+        // Check if multiple cameras are available
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const videoDevices = devices.filter(device => device.kind === 'videoinput')
+        setCanSwitchCamera(videoDevices.length > 1)
       } catch {
         setHasWebcam(false)
         setPreferredInputMode("upload")
@@ -40,11 +48,14 @@ export default function PuppetrayPage() {
   // Start webcam
   const startWebcam = async () => {
     try {
+      // Stop any existing stream first
+      stopWebcam()
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           width: { ideal: 1024 },
           height: { ideal: 1024 },
-          facingMode: "user" 
+          facingMode: facingMode
         } 
       })
       
@@ -66,6 +77,11 @@ export default function PuppetrayPage() {
       streamRef.current = null
     }
     setIsWebcamActive(false)
+  }
+
+  // Switch camera
+  const switchCamera = () => {
+    setFacingMode(prev => prev === "user" ? "environment" : "user")
   }
 
   // Capture photo from webcam
@@ -139,6 +155,7 @@ export default function PuppetrayPage() {
     setImageFile(null)
     setImagePreview(null)
     setPuppetStyle("muppet")
+    setFacingMode("user")
     stopWebcam()
   }
 
@@ -150,6 +167,13 @@ export default function PuppetrayPage() {
       stopWebcam()
     }
   }, [preferredInputMode, hasWebcam, step])
+
+  // Restart webcam when facing mode changes
+  useEffect(() => {
+    if (isWebcamActive) {
+      startWebcam()
+    }
+  }, [facingMode])
 
   // Cleanup webcam on unmount
   useEffect(() => {
@@ -188,33 +212,133 @@ export default function PuppetrayPage() {
                 Let's Make You a Puppet!
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Start by uploading a photo of yourself. Then we'll guide you through creating the perfect puppet transformation.
+                Start by capturing or uploading a photo of yourself. Then we'll guide you through creating the perfect puppet transformation.
               </p>
             </div>
 
             <Card className="max-w-2xl mx-auto p-8">
-              <div className="text-center space-y-6">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-12">
-                  <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <div className="space-y-4">
-                    <p className="text-lg font-medium">Upload Your Photo</p>
-                    <p className="text-sm text-muted-foreground">
-                      Choose a clear photo of yourself for the best results
-                    </p>
-                    <label className="inline-block">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                      <Button className="cursor-pointer">
-                        Choose File
-                      </Button>
-                    </label>
-                  </div>
+              {hasWebcam === null ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Checking for camera...</p>
                 </div>
-              </div>
+              ) : (
+                <Tabs 
+                  value={preferredInputMode} 
+                  onValueChange={(value) => setPreferredInputMode(value as "webcam" | "upload")}
+                  className="w-full"
+                >
+                  <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto">
+                    <TabsTrigger value="webcam" disabled={!hasWebcam}>
+                      <Camera className="w-4 h-4 mr-2" />
+                      Camera
+                    </TabsTrigger>
+                    <TabsTrigger value="upload">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="webcam" className="mt-6">
+                    {hasWebcam ? (
+                      <div className="space-y-4">
+                        {isWebcamActive ? (
+                          <div className="space-y-4">
+                            <div className="relative">
+                              <video
+                                ref={videoRef}
+                                autoPlay
+                                playsInline
+                                muted
+                                className="w-full max-w-md mx-auto aspect-square object-cover rounded-lg"
+                              />
+                              <canvas
+                                ref={canvasRef}
+                                className="hidden"
+                              />
+                              {canSwitchCamera && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="absolute top-2 right-2"
+                                  onClick={switchCamera}
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <div className="flex gap-4 justify-center">
+                              <Button
+                                variant="outline"
+                                onClick={stopWebcam}
+                                size="sm"
+                              >
+                                <X className="w-4 h-4 mr-2" />
+                                Cancel
+                              </Button>
+                              <Button onClick={capturePhoto}>
+                                <Camera className="w-4 h-4 mr-2" />
+                                Take Photo
+                              </Button>
+                            </div>
+                            {canSwitchCamera && (
+                              <p className="text-xs text-center text-muted-foreground">
+                                Using {facingMode === "user" ? "front" : "back"} camera
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center space-y-4">
+                            <div className="w-64 h-64 mx-auto border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                              <Camera className="w-12 h-12 text-gray-400" />
+                            </div>
+                            <div>
+                              <p className="font-medium mb-2">Use Your Camera</p>
+                              <p className="text-sm text-muted-foreground mb-4">
+                                Take a photo directly with your camera for instant results
+                              </p>
+                              <Button onClick={startWebcam}>
+                                <Camera className="w-4 h-4 mr-2" />
+                                Start Camera
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Camera className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                        <p className="text-muted-foreground">Camera not available</p>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="upload" className="mt-6">
+                    <div className="text-center space-y-6">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-12">
+                        <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                        <div className="space-y-4">
+                          <p className="text-lg font-medium">Upload Your Photo</p>
+                          <p className="text-sm text-muted-foreground">
+                            Choose a clear photo of yourself for the best results
+                          </p>
+                          <label className="inline-block">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileSelect}
+                              className="hidden"
+                            />
+                            <Button className="cursor-pointer">
+                              Choose File
+                            </Button>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              )}
             </Card>
           </div>
         )}
