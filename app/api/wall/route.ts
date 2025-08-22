@@ -1,64 +1,151 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/db"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log("[v0] Wall API called")
+    console.log("[Wall API] Fetching before/after transformations")
 
-    // In a real implementation, this would:
-    // 1. Get current active event
-    // 2. Fetch all photos for that event from database
-    // 3. Return photos sorted by timestamp (newest first)
+    const url = new URL(request.url)
+    const sessionId = url.searchParams.get("session")
 
-    // Mock data for demonstration
-    const mockPhotos = [
-      {
-        id: "photo_1",
-        imageUrl: "/ai-cartoon-photo.png",
-        style: "cartoon",
-        timestamp: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
-      },
-      {
-        id: "photo_2",
-        imageUrl: "/ai-anime-style-photo.png",
-        style: "anime",
-        timestamp: new Date(Date.now() - 600000).toISOString(), // 10 minutes ago
-      },
-      {
-        id: "photo_3",
-        imageUrl: "/ai-pixar-style.png",
-        style: "pixar",
-        timestamp: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-      },
-      {
-        id: "photo_4",
-        imageUrl: "/ai-watercolor-photo.png",
-        style: "watercolor",
-        timestamp: new Date(Date.now() - 1200000).toISOString(), // 20 minutes ago
-      },
-      {
-        id: "photo_5",
-        imageUrl: "/ai-comic-style-photo.png",
-        style: "comic",
-        timestamp: new Date(Date.now() - 1500000).toISOString(), // 25 minutes ago
-      },
-      {
-        id: "photo_6",
-        imageUrl: "/ai-vintage-photo.png",
-        style: "vintage",
-        timestamp: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
-      },
-    ]
+    let whereClause: any = {
+      kind: "GENERATED",
+      baseImageId: {
+        not: null
+      }
+    }
 
-    console.log("[v0] Returning", mockPhotos.length, "photos for wall")
+    // Filter by session if provided
+    if (sessionId) {
+      whereClause.sessionId = sessionId
+    }
+
+    // Get all generated images that have base images (before/after pairs)
+    const generatedImages = await prisma.image.findMany({
+      where: whereClause,
+      include: {
+        session: {
+          select: {
+            id: true,
+            name: true,
+            generator: true,
+            createdAt: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      },
+      take: 50 // Limit to most recent 50 transformations
+    })
+
+    // Get all the base image IDs we need to fetch
+    const baseImageIds = generatedImages
+      .map(img => img.baseImageId)
+      .filter(Boolean) as string[]
+
+    // Fetch the corresponding base images
+    const baseImages = await prisma.image.findMany({
+      where: {
+        id: { in: baseImageIds },
+        kind: "UPLOAD_BASE"
+      }
+    })
+
+    // Create a map for quick lookup
+    const baseImageMap = new Map(baseImages.map(img => [img.id, img]))
+
+    // Format transformations for the wall
+    const transformations = generatedImages
+      .filter(generated => generated.baseImageId && baseImageMap.has(generated.baseImageId))
+      .map(generated => {
+        const baseImage = baseImageMap.get(generated.baseImageId!)!
+        
+        // Extract style from prompt or use provider as fallback
+        const style = generated.prompt 
+          ? extractStyleFromPrompt(generated.prompt) 
+          : generated.provider || "unknown"
+
+        return {
+          id: generated.id,
+          beforeImageUrl: baseImage.url,
+          afterImageUrl: generated.url,
+          style: style,
+          prompt: generated.prompt,
+          timestamp: generated.createdAt.toISOString(),
+          session: generated.session ? {
+            id: generated.session.id,
+            name: generated.session.name,
+            generator: generated.session.generator,
+            createdAt: generated.session.createdAt.toISOString()
+          } : null
+        }
+      })
+
+    console.log("[Wall API] Found", transformations.length, "transformations")
 
     return NextResponse.json({
       success: true,
-      photos: mockPhotos,
-      totalCount: mockPhotos.length,
+      transformations: transformations,
+      totalCount: transformations.length,
       lastUpdated: new Date().toISOString(),
     })
   } catch (error) {
-    console.error("[v0] Wall API error:", error)
-    return NextResponse.json({ error: "Failed to load wall photos" }, { status: 500 })
+    console.error("[Wall API] Error fetching transformations:", error)
+    return NextResponse.json({ error: "Failed to load wall transformations" }, { status: 500 })
   }
+}
+
+// Helper function to extract style from prompt
+function extractStyleFromPrompt(prompt: string): string {
+  const lowerPrompt = prompt.toLowerCase()
+  
+  // Common style keywords to look for, prioritizing more specific ones first
+  const styleMap: { [key: string]: string } = {
+    'puppet': 'puppet',
+    'muppet': 'muppet',
+    'sock puppet': 'sock puppet',
+    'felt puppet': 'felt puppet',
+    'mascot puppet': 'mascot',
+    'cartoon': 'cartoon',
+    'anime': 'anime', 
+    'pixar': 'pixar',
+    'comic': 'comic',
+    'watercolor': 'watercolor',
+    'vintage': 'vintage',
+    'oil painting': 'oil painting',
+    'sketch': 'sketch',
+    'portrait': 'portrait',
+    'fantasy': 'fantasy',
+    'cyberpunk': 'cyberpunk',
+    'steampunk': 'steampunk'
+  }
+  
+  // Check for puppet-specific patterns first
+  if (lowerPrompt.includes('puppet')) {
+    if (lowerPrompt.includes('sock puppet')) return 'sock puppet'
+    if (lowerPrompt.includes('felt puppet')) return 'felt puppet'
+    if (lowerPrompt.includes('muppet')) return 'muppet'
+    if (lowerPrompt.includes('mascot')) return 'mascot'
+    return 'puppet'
+  }
+  
+  // Then check other styles
+  for (const [keyword, style] of Object.entries(styleMap)) {
+    if (lowerPrompt.includes(keyword)) {
+      return style
+    }
+  }
+  
+  return 'artistic' // default fallback
+}
+
+// Helper function to get file extension from mime type
+function getExtFromMimeType(mimeType: string): string {
+  if (!mimeType) return '.png'
+  if (mimeType.includes('png')) return '.png'
+  if (mimeType.includes('jpeg') || mimeType.includes('jpg')) return '.jpg'
+  if (mimeType.includes('webp')) return '.webp'
+  if (mimeType.includes('avif')) return '.avif'
+  return '.png'
 }

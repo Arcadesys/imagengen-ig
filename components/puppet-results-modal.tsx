@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Download, Mail, Share2, Sparkles, X } from "lucide-react"
+import { Download, Mail, Share2, Sparkles, X, Camera, RefreshCw, Palette, Upload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import type { GeneratedImage } from "@/lib/types"
 
@@ -15,6 +15,9 @@ interface PuppetResultsModalProps {
   isOpen: boolean
   onClose: () => void
   onStartOver: () => void
+  onRetakePhoto?: () => void
+  onRemixPrompt?: () => void
+  onSubmitToWall?: (image: GeneratedImage) => void
   results: GeneratedImage[]
   puppetConfig?: {
     style: string
@@ -28,6 +31,9 @@ export function PuppetResultsModal({
   isOpen,
   onClose,
   onStartOver,
+  onRetakePhoto,
+  onRemixPrompt,
+  onSubmitToWall,
   results,
   puppetConfig
 }: PuppetResultsModalProps) {
@@ -92,6 +98,25 @@ export function PuppetResultsModal({
       toast({
         title: "Link copied!",
         description: "Share this link to show off your puppet transformation!",
+      })
+    }
+  }
+
+  const handleSubmitToWall = async (image: GeneratedImage) => {
+    try {
+      // The image is already saved, just need to mark it for the wall
+      // In this app, the wall automatically shows all generated images with base images
+      onSubmitToWall?.(image)
+      
+      toast({
+        title: "Submitted to Wall!",
+        description: "Your puppet transformation will appear on the live wall.",
+      })
+    } catch (error) {
+      toast({
+        title: "Failed to submit",
+        description: "Please try again or contact support.",
+        variant: "destructive"
       })
     }
   }
@@ -205,6 +230,16 @@ export function PuppetResultsModal({
                       Share
                     </Button>
                   </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleSubmitToWall(image)}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Submit to Wall
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}
@@ -277,10 +312,28 @@ export function PuppetResultsModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t bg-muted/20 flex justify-center">
-          <Button onClick={onStartOver} variant="outline" size="lg">
-            Create Another Puppet
-          </Button>
+        <div className="p-6 border-t bg-muted/20">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {/* Primary actions */}
+            <div className="flex gap-3">
+              {onRetakePhoto && (
+                <Button onClick={onRetakePhoto} variant="outline" size="lg">
+                  <Camera className="w-4 h-4 mr-2" />
+                  Retake Photo
+                </Button>
+              )}
+              {onRemixPrompt && (
+                <Button onClick={onRemixPrompt} variant="outline" size="lg">
+                  <Palette className="w-4 h-4 mr-2" />
+                  Remix Prompt
+                </Button>
+              )}
+              <Button onClick={onStartOver} variant="outline" size="lg">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Start Over
+              </Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

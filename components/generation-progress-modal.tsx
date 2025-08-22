@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, XCircle, Loader2, Sparkles, Palette, Wand2, X } from "lucide-react"
+import { EmailSignupModal } from "@/components/email-signup-modal"
+import { useEmailSignup } from "@/hooks/use-email-signup"
 
 interface GenerationProgressModalProps {
   isOpen: boolean
   onClose: () => void
   onCancel?: () => void
+  onComplete?: (images: any[]) => void
   status: "idle" | "uploading" | "processing" | "generating" | "downloading" | "complete" | "error"
   progress: number
   message: string
@@ -18,6 +21,7 @@ interface GenerationProgressModalProps {
   generatedCount?: number
   totalCount?: number
   canCancel?: boolean
+  generatedImages?: any[]
 }
 
 const statusConfig = {
@@ -69,6 +73,7 @@ export function GenerationProgressModal({
   isOpen,
   onClose,
   onCancel,
+  onComplete,
   status,
   progress,
   message,
@@ -76,6 +81,7 @@ export function GenerationProgressModal({
   generatedCount = 0,
   totalCount = 1,
   canCancel = true,
+  generatedImages = [],
 }: GenerationProgressModalProps) {
   const [dots, setDots] = useState("")
   const config = statusConfig[status]
@@ -83,6 +89,9 @@ export function GenerationProgressModal({
   const isComplete = status === "complete"
   const isError = status === "error"
   const isGenerating = status === "generating"
+
+  // Email signup hook
+  const emailSignup = useEmailSignup()
 
   // Animated dots for loading states
   useEffect(() => {
@@ -96,15 +105,37 @@ export function GenerationProgressModal({
     }
   }, [status])
 
+  // Show email signup during generation if they haven't seen it this session
+  useEffect(() => {
+    if (isGenerating && !emailSignup.hasShownForSession) {
+      // Check if they've already signed up in a previous session
+      const hasSignedUp = sessionStorage.getItem('email_signup_completed')
+      if (!hasSignedUp) {
+        // Wait a moment before showing the email signup to let generation start
+        const timer = setTimeout(() => {
+          if (status === "generating") { // Double check we're still generating
+            emailSignup.open()
+          }
+        }, 2000) // Show after 2 seconds of generation
+        
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [isGenerating, emailSignup, status])
+
   // Auto-close on complete after delay
   useEffect(() => {
     if (isComplete) {
       const timer = setTimeout(() => {
         onClose()
+        // Call the completion callback with generated images when modal closes after completion
+        if (onComplete && generatedImages.length > 0) {
+          onComplete(generatedImages)
+        }
       }, 2000)
       return () => clearTimeout(timer)
     }
-  }, [isComplete, onClose])
+  }, [isComplete, onClose, onComplete, generatedImages])
 
   const handleCancel = () => {
     if (onCancel && canCancel && !isComplete && !isError) {
@@ -216,6 +247,16 @@ export function GenerationProgressModal({
           </div>
         </div>
       </DialogContent>
+
+      {/* Email Signup Modal */}
+      <EmailSignupModal
+        isOpen={emailSignup.isOpen}
+        onClose={emailSignup.close}
+        onSubmit={emailSignup.submit}
+        source="generation_modal"
+        title="Stay updated while we generate your image!"
+        description="Get notified about new features, tips, and when your images are ready. Your email will never be shared."
+      />
     </Dialog>
   )
 }

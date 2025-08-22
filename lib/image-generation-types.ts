@@ -7,6 +7,7 @@ export interface GenerateRequest {
   seed?: string | number | null
   baseImageId?: string | null
   maskData?: string | null
+  sessionId?: string | null // For grouping images into sessions
 }
 
 export interface GeneratedImage {

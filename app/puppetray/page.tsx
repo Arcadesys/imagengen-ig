@@ -142,6 +142,24 @@ export default function PuppetrayPage() {
     setGenerationError(null)
   }
 
+  const handleRetakePhoto = () => {
+    setFlowStep("upload")
+    setBaseImage(null)
+    setBaseImageId(null)
+    // Keep the puppet config so they don't have to reconfigure
+  }
+
+  const handleRemixPrompt = () => {
+    setFlowStep("configure")
+    // Keep the image but allow them to change the puppet configuration
+  }
+
+  const handleSubmitToWall = (image: GeneratedImage) => {
+    // In this app, images automatically appear on the wall if they have a base image
+    // This is just for user feedback - the image is already eligible for the wall
+    console.log("Image submitted to wall:", image.id)
+  }
+
   const handleGenerationModalClose = () => {
     if (generationStatus === "complete") {
       setFlowStep("results")
@@ -287,6 +305,9 @@ export default function PuppetrayPage() {
         isOpen={flowStep === "results"}
         onClose={() => setFlowStep("upload")}
         onStartOver={handleStartOver}
+        onRetakePhoto={handleRetakePhoto}
+        onRemixPrompt={handleRemixPrompt}
+        onSubmitToWall={handleSubmitToWall}
         results={results}
         puppetConfig={puppetConfig || undefined}
       />
