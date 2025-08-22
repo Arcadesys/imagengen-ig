@@ -5,6 +5,9 @@ import next from "next"
 import path from "path"
 import fs from "fs"
 
+// Force Webpack dev server for tests
+process.env.NEXT_DISABLE_TURBOPACK = process.env.NEXT_DISABLE_TURBOPACK || "1"
+
 const app = next({ dev: true, dir: process.cwd() })
 let server: any
 let request: supertest.SuperTest<supertest.Test>
