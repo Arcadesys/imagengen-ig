@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { createErrorResponse } from "../../../../lib/error-handling"
 // Defer runtime import of the service to avoid top-level side effects in dev
 import type { GenerateRequest } from "../../../../lib/image-generation-types"
 
@@ -17,6 +18,11 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Starting image generation request")
 
     const body: GenerateRequest = await request.json()
+    
+    // Ensure temp directories exist before image generation
+    const { ensureDirectories } = await import("../../../../lib/image-generation-utils")
+    await ensureDirectories()
+    
     const { ImageGenerationService } = await import("../../../../lib/image-generation-service")
     const imageService = new ImageGenerationService()
     
@@ -27,7 +33,10 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("[v0] Error generating images:", error)
 
-    // Handle specific error types
+    // Use centralized error handling
+    const { response, statusCode } = createErrorResponse(error, 'image-generate')
+    
+    // Handle specific error types with custom messages
     if (error.message?.includes("API key is not configured")) {
       return NextResponse.json({ error: "OpenAI API key is not configured" }, { status: 500 })
     }

@@ -5,6 +5,18 @@ import { prisma } from "./db"
 import { supabaseAdmin } from "./supabase"
 
 /**
+ * Get appropriate temp directory based on environment
+ */
+function getTempDir(): string {
+  // In serverless environments (Vercel, AWS Lambda), use /tmp
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT) {
+    return '/tmp'
+  }
+  // In local development, use project temp directory
+  return path.join(process.cwd(), "temp")
+}
+
+/**
  * Convert data URL to Buffer
  */
 export function dataURLToBuffer(dataURL: string): Buffer {
@@ -89,7 +101,7 @@ export async function getBaseImagePath(baseImageId: string): Promise<string | nu
           ? ".avif"
           : ".png"
   
-  const tempDir = path.join(process.cwd(), "temp")
+  const tempDir = getTempDir()
   if (!existsSync(tempDir)) await mkdir(tempDir, { recursive: true })
   
   const p = path.join(tempDir, `base-${baseImageId}${ext}`)
@@ -101,7 +113,7 @@ export async function getBaseImagePath(baseImageId: string): Promise<string | nu
  * Ensure required directories exist
  */
 export async function ensureDirectories(): Promise<void> {
-  const tempDir = path.join(process.cwd(), "temp")
+  const tempDir = getTempDir()
 
   if (!existsSync(tempDir)) {
     await mkdir(tempDir, { recursive: true })
