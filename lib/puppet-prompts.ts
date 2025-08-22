@@ -23,6 +23,7 @@ export interface PuppetConfiguration {
   gender?: string
   species: string
   personality: string
+  skinColor?: string // New: skin/felt/fur color option
 }
 
 /**
@@ -37,6 +38,7 @@ export function generatePuppetPrompt(
   const gender = (config.gender || "").trim()
   const species = (config.species || "human").trim() || "human"
   const personality = (config.personality || "").trim()
+  const skinColor = (config.skinColor || "").trim()
 
   const puppetDescriptor = getPuppetDescriptor(style)
 
@@ -48,10 +50,14 @@ export function generatePuppetPrompt(
   
   // Build gender characteristics if specified
   const genderFeatures = gender ? `${gender} characteristics, ` : ""
+  
+  // Build skin/fur/felt color characteristics if specified
+  const colorFeatures = generateColorFeatures(skinColor, style, species)
 
   const transformationInstructions = [
     `Transform subject into ${style} puppet (${puppetDescriptor}) as a CARICATURE.`,
     `Species: ${species} with ${genderFeatures}${speciesFeatures}`,
+    colorFeatures ? `Color: ${colorFeatures}` : "",
     `Personality: ${personalityFeatures}`,
     "CRITICAL: PRESERVE ALL CLOTHING AND OUTFIT DETAILS. Maintain exact clothing items, patterns, colors, textures, logos, accessories, jewelry, and styling.",
     "Convert clothing materials to puppet-appropriate fabrics while keeping all design elements identical (same colors, patterns, cuts, fit).",
@@ -60,6 +66,7 @@ export function generatePuppetPrompt(
     "Amplify unique characteristics: prominent nose, distinctive eyebrows, facial structure, expression, hair style.",
     "Keep their essential likeness but with playful, exaggerated proportions typical of caricature art.",
     "Replace all skin with fabric textures. Convert eyes to buttons/felt, hair to yarn/fabric.",
+    colorFeatures ? `Use ${colorFeatures} for all exposed skin/fur areas.` : "",
     "Maintain caricature proportions: larger head, expressive features, characteristic details.",
     "Keep exact pose, camera angle, background unchanged. Preserve identity through caricature puppet materials.",
     "Show realistic puppet construction: seams, stitching, fabric textures with caricature proportions.",
@@ -199,4 +206,93 @@ function generatePersonalityFeatures(personality: string): string {
 
   if (!personality) return "expressive features"
   return personalityMap[personality] || "expressive features"
+}
+
+/**
+ * Generate color features for skin/fur/felt based on user selection
+ */
+function generateColorFeatures(skinColor: string, style: PuppetStyle, species: string): string {
+  if (!skinColor) return ""
+  
+  const colorLower = skinColor.toLowerCase()
+  const speciesLower = species.toLowerCase()
+  
+  // Determine the appropriate material term based on style and species
+  let materialTerm = "felt"
+  
+  // Style-based material terms
+  if (style === "fursuit" || ["cat", "dog", "wolf", "fox", "bear", "lion", "tiger"].includes(speciesLower)) {
+    materialTerm = "fur"
+  } else if (style === "muppet" || style === "felt") {
+    materialTerm = "felt"
+  } else if (style === "plush") {
+    materialTerm = "fabric"
+  } else if (style === "latex" || style === "foam") {
+    materialTerm = "skin"
+  } else if (style === "wooden") {
+    materialTerm = "wood paint"
+  } else if (style === "plastic") {
+    materialTerm = "plastic coloring"
+  } else {
+    materialTerm = "material"
+  }
+  
+  // Color descriptions that work well for puppet materials
+  const colorDescriptions: Record<string, string> = {
+    // Natural skin tones
+    "light": `light ${materialTerm}`,
+    "medium": `medium ${materialTerm}`,
+    "dark": `dark ${materialTerm}`,
+    "tan": `tan ${materialTerm}`,
+    "olive": `olive-toned ${materialTerm}`,
+    "pale": `pale ${materialTerm}`,
+    "peachy": `peachy ${materialTerm}`,
+    
+    // Classic colors
+    "white": `white ${materialTerm}`,
+    "black": `black ${materialTerm}`,
+    "gray": `gray ${materialTerm}`,
+    "grey": `gray ${materialTerm}`,
+    "brown": `brown ${materialTerm}`,
+    
+    // Vibrant colors
+    "red": `red ${materialTerm}`,
+    "blue": `blue ${materialTerm}`,
+    "green": `green ${materialTerm}`,
+    "yellow": `yellow ${materialTerm}`,
+    "orange": `orange ${materialTerm}`,
+    "purple": `purple ${materialTerm}`,
+    "pink": `pink ${materialTerm}`,
+    
+    // Pastel colors
+    "pastel pink": `soft pastel pink ${materialTerm}`,
+    "pastel blue": `soft pastel blue ${materialTerm}`,
+    "pastel green": `soft pastel green ${materialTerm}`,
+    "pastel yellow": `soft pastel yellow ${materialTerm}`,
+    "lavender": `lavender ${materialTerm}`,
+    "mint": `mint green ${materialTerm}`,
+    "cream": `cream-colored ${materialTerm}`,
+    
+    // Animal-inspired colors
+    "golden": `golden ${materialTerm}`,
+    "silver": `silver ${materialTerm}`,
+    "copper": `copper-colored ${materialTerm}`,
+    "bronze": `bronze ${materialTerm}`,
+    
+    // Fantasy colors
+    "rainbow": `multicolored rainbow ${materialTerm}`,
+    "iridescent": `iridescent shimmering ${materialTerm}`,
+    "metallic": `metallic ${materialTerm}`,
+    "neon": `bright neon ${materialTerm}`,
+  }
+  
+  // Try to match the color description
+  let colorDescription = colorDescriptions[colorLower]
+  
+  // If no exact match, create a basic description
+  if (!colorDescription) {
+    colorDescription = `${colorLower} ${materialTerm}`
+  }
+  
+  return colorDescription
 }
