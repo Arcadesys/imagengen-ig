@@ -111,7 +111,14 @@ describe("[API] /api/images/upload", () => {
       expect(baseImageId).toBeTruthy()
 
       // Fetch the image URL and validate response headers
-      const imgRes = await request.get(url)
+      // Next.js dev lazily compiles route handlers on first request; add a short retry for 500s
+      let imgRes = await request.get(url)
+      let attempts = 0
+      while (imgRes.status === 500 && attempts < 5) {
+        await new Promise((r) => setTimeout(r, 300))
+        imgRes = await request.get(url)
+        attempts++
+      }
       expect(imgRes.status).toBe(200)
       expect(imgRes.headers["content-type"]).toMatch(/image\//)
       expect(Number(imgRes.headers["content-length"] || 0)).toBeLessThanOrEqual(

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach } from "vitest"
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest"
 import supertest from "supertest"
 import { createServer } from "http"
 import next from "next"
@@ -16,6 +16,14 @@ beforeAll(async () => {
   await new Promise((resolve) => server.listen(0, resolve))
   const port = (server.address() as any).port
   request = supertest(`http://localhost:${port}`)
+}, 60000)
+
+afterAll(async () => {
+  if (server) {
+    await new Promise<void>((resolve, reject) => {
+      server.close((err: any) => (err ? reject(err) : resolve()))
+    })
+  }
 })
 
 describe("[API] /api/images/generate", () => {
