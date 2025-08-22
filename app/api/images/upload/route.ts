@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Parsing form data...")
     const formData = await request.formData()
     const file = formData.get("file") as File
+    const sessionId = (formData.get("sessionId") as string) || undefined
 
     if (!file) {
       console.log("[v0] No file provided in request")
@@ -169,6 +170,7 @@ export async function POST(request: NextRequest) {
       mimeType: file.type || "image/png",
       buffer,
       originalName: (file?.name as string) || null,
+      sessionId: sessionId || null,
     })
     // Update uploads registry
     const uploadsFile = path.join(dataDir, "uploads.json")

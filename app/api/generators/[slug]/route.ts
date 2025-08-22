@@ -80,3 +80,28 @@ export async function DELETE(request: NextRequest, { params }: { params: { slug:
     return NextResponse.json({ error: "Failed to delete generator" }, { status: 500 })
   }
 }
+
+// GET generator theme by slug (public)
+export async function GET_THEME(request: NextRequest, { params }: { params: { slug: string } }) {
+  try {
+    const generator = await (prisma as any).imageGenerator.findUnique({
+      where: { slug: params.slug },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        isActive: true,
+        theme: true,
+      },
+    })
+
+    if (!generator || !generator.isActive) {
+      return NextResponse.json({ error: "Generator not found or inactive" }, { status: 404 })
+    }
+
+    return NextResponse.json({ generator })
+  } catch (error) {
+    console.error("[generator GET_THEME]", error)
+    return NextResponse.json({ error: "Failed to fetch generator" }, { status: 500 })
+  }
+}

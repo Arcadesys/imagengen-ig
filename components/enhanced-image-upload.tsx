@@ -12,6 +12,7 @@ interface EnhancedImageUploadProps {
   onMaskChange: (maskDataUrl: string | null) => void
   uploadedImage?: { id: string; url: string } | null
   disabled?: boolean
+  sessionId?: string | null
 }
 
 export function EnhancedImageUpload({
@@ -20,6 +21,7 @@ export function EnhancedImageUpload({
   onMaskChange,
   uploadedImage,
   disabled,
+  sessionId,
 }: EnhancedImageUploadProps) {
   const [activeTab, setActiveTab] = useState("upload")
   const [maskData, setMaskData] = useState<string | null>(null)
@@ -87,7 +89,7 @@ export function EnhancedImageUpload({
   if (!uploadedImage) {
     return (
       <div className="space-y-4">
-        <ImageUpload onUpload={handleUpload} onRemove={handleRemove} uploadedImage={uploadedImage} disabled={disabled} />
+        <ImageUpload onUpload={handleUpload} onRemove={handleRemove} uploadedImage={uploadedImage} disabled={disabled} sessionId={sessionId} />
         <div>
           <div className="text-sm font-medium mb-2">Previous uploads</div>
           {loadingUploads ? (
@@ -159,6 +161,7 @@ export function EnhancedImageUpload({
             onRemove={handleRemove}
             uploadedImage={uploadedImage}
             disabled={disabled}
+            sessionId={sessionId}
           />
         </TabsContent>
 

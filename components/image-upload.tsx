@@ -15,9 +15,10 @@ interface ImageUploadProps {
   onRemove: () => void
   uploadedImage?: { id: string; url: string } | null
   disabled?: boolean
+  sessionId?: string | null
 }
 
-export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: ImageUploadProps) {
+export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled, sessionId }: ImageUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -60,7 +61,7 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
       setIsUploading(true)
 
       try {
-        const result = await uploadImageViaApi(file, file.name || "upload.png")
+        const result = await uploadImageViaApi(file, file.name || "upload.png", sessionId || undefined)
         onUpload(result.baseImageId, result.url)
 
         toast({
@@ -78,7 +79,7 @@ export function ImageUpload({ onUpload, onRemove, uploadedImage, disabled }: Ima
         setIsUploading(false)
       }
     },
-    [disabled, onUpload, toast],
+    [disabled, onUpload, toast, sessionId],
   )
 
   const handleDrop = useCallback(
