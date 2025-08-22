@@ -5,6 +5,11 @@ import type {
   ProgressEvent 
 } from "../../../../../lib/image-generation-types"
 
+// Ensure this route runs on Node.js runtime and never caches
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 function sendProgressEvent(encoder: TextEncoder, controller: ReadableStreamDefaultController, event: ProgressEvent) {
   const data = `data: ${JSON.stringify(event)}\n\n`
   controller.enqueue(encoder.encode(data))
