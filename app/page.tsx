@@ -12,6 +12,9 @@ export default function PuppetrayPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [puppetStyle, setPuppetStyle] = useState<string>("muppet")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generationProgress, setGenerationProgress] = useState(0)
+  const [generationStatus, setGenerationStatus] = useState<"generating" | "complete" | "error">("generating")
+  const [generationError, setGenerationError] = useState<string | null>(null)
 
   // Webcam state
   const [hasWebcam, setHasWebcam] = useState<boolean | null>(null)
@@ -27,13 +30,11 @@ export default function PuppetrayPage() {
   useEffect(() => {
     async function checkWebcam() {
       try {
-        // Check for basic camera access
         const stream = await navigator.mediaDevices.getUserMedia({ video: true })
         stream.getTracks().forEach(track => track.stop())
         setHasWebcam(true)
         setPreferredInputMode("webcam")
 
-        // Check if multiple cameras are available
         const devices = await navigator.mediaDevices.enumerateDevices()
         const videoDevices = devices.filter(device => device.kind === 'videoinput')
         setCanSwitchCamera(videoDevices.length > 1)
@@ -48,9 +49,7 @@ export default function PuppetrayPage() {
   // Start webcam
   const startWebcam = async () => {
     try {
-      // Stop any existing stream first
       stopWebcam()
-
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           width: { ideal: 1024 },
@@ -94,14 +93,10 @@ export default function PuppetrayPage() {
     
     if (!ctx) return
 
-    // Set canvas size to match video
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
-
-    // Draw the video frame to canvas
     ctx.drawImage(video, 0, 0)
 
-    // Convert canvas to blob and create file
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], 'webcam-capture.jpg', { type: 'image/jpeg' })
@@ -128,23 +123,75 @@ export default function PuppetrayPage() {
     }
   }
 
+  const uploadImageToServer = async (file: File): Promise<{ id: string, url: string }> => {
+    const formData = new FormData()
+    formData.append("file", file)
+    
+    // Try the simple upload endpoint (more reliable in production)
+    const response = await fetch("/api/upload-simple", {
+      method: "POST",
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Upload failed" }))
+      throw new Error(error.error || `Upload failed with status ${response.status}`)
+    }
+
+    const data = await response.json()
+    return {
+      id: data.baseImageId || data.id,
+      url: data.url
+    }
+  }
+
   const handleGenerate = async () => {
     if (!imageFile) return
 
     setStep("generate")
     setIsGenerating(true)
+    setGenerationProgress(0)
+    setGenerationStatus("generating")
+    setGenerationError(null)
 
     try {
-      // Simulate upload and generation
-      const formData = new FormData()
-      formData.append("file", imageFile)
+      // Upload the image first
+      setGenerationProgress(20)
+      const uploadResult = await uploadImageToServer(imageFile)
+      
+      setGenerationProgress(60)
+      
+      // Call the puppetray API for generation
+      const generateResponse = await fetch("/api/puppetray", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseImageId: uploadResult.id,
+          puppetStyle: puppetStyle,
+          species: "human",
+          personality: "friendly"
+        }),
+      })
 
-      // Mock API call - replace with real implementation
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      setGenerationProgress(90)
 
-      setStep("results")
+      if (!generateResponse.ok) {
+        const error = await generateResponse.json().catch(() => ({ error: "Generation failed" }))
+        throw new Error(error.error || `Generation failed with status ${generateResponse.status}`)
+      }
+
+      setGenerationProgress(100)
+      setGenerationStatus("complete")
+      
+      setTimeout(() => {
+        setStep("results")
+      }, 1000)
+
     } catch (error) {
       console.error("Generation failed:", error)
+      const errorMessage = error instanceof Error ? error.message : "Generation failed. Please try again."
+      setGenerationError(errorMessage)
+      setGenerationStatus("error")
     } finally {
       setIsGenerating(false)
     }
@@ -156,6 +203,9 @@ export default function PuppetrayPage() {
     setImagePreview(null)
     setPuppetStyle("muppet")
     setFacingMode("user")
+    setGenerationProgress(0)
+    setGenerationStatus("generating")
+    setGenerationError(null)
     stopWebcam()
   }
 
@@ -212,133 +262,33 @@ export default function PuppetrayPage() {
                 Let's Make You a Puppet!
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Start by capturing or uploading a photo of yourself. Then we'll guide you through creating the perfect puppet transformation.
+                Start by uploading a photo of yourself. Then we'll guide you through creating the perfect puppet transformation.
               </p>
             </div>
 
             <Card className="max-w-2xl mx-auto p-8">
-              {hasWebcam === null ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Checking for camera...</p>
+              <div className="text-center space-y-6">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-12">
+                  <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                  <div className="space-y-4">
+                    <p className="text-lg font-medium">Upload Your Photo</p>
+                    <p className="text-sm text-muted-foreground">
+                      Choose a clear photo of yourself for the best results
+                    </p>
+                    <label className="inline-block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <Button className="cursor-pointer">
+                        Choose File
+                      </Button>
+                    </label>
+                  </div>
                 </div>
-              ) : (
-                <Tabs 
-                  value={preferredInputMode} 
-                  onValueChange={(value) => setPreferredInputMode(value as "webcam" | "upload")}
-                  className="w-full"
-                >
-                  <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto">
-                    <TabsTrigger value="webcam" disabled={!hasWebcam}>
-                      <Camera className="w-4 h-4 mr-2" />
-                      Camera
-                    </TabsTrigger>
-                    <TabsTrigger value="upload">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="webcam" className="mt-6">
-                    {hasWebcam ? (
-                      <div className="space-y-4">
-                        {isWebcamActive ? (
-                          <div className="space-y-4">
-                            <div className="relative">
-                              <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                muted
-                                className="w-full max-w-md mx-auto aspect-square object-cover rounded-lg"
-                              />
-                              <canvas
-                                ref={canvasRef}
-                                className="hidden"
-                              />
-                              {canSwitchCamera && (
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  className="absolute top-2 right-2"
-                                  onClick={switchCamera}
-                                >
-                                  <RotateCcw className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </div>
-                            <div className="flex gap-4 justify-center">
-                              <Button
-                                variant="outline"
-                                onClick={stopWebcam}
-                                size="sm"
-                              >
-                                <X className="w-4 h-4 mr-2" />
-                                Cancel
-                              </Button>
-                              <Button onClick={capturePhoto}>
-                                <Camera className="w-4 h-4 mr-2" />
-                                Take Photo
-                              </Button>
-                            </div>
-                            {canSwitchCamera && (
-                              <p className="text-xs text-center text-muted-foreground">
-                                Using {facingMode === "user" ? "front" : "back"} camera
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-center space-y-4">
-                            <div className="w-64 h-64 mx-auto border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-                              <Camera className="w-12 h-12 text-gray-400" />
-                            </div>
-                            <div>
-                              <p className="font-medium mb-2">Use Your Camera</p>
-                              <p className="text-sm text-muted-foreground mb-4">
-                                Take a photo directly with your camera for instant results
-                              </p>
-                              <Button onClick={startWebcam}>
-                                <Camera className="w-4 h-4 mr-2" />
-                                Start Camera
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Camera className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                        <p className="text-muted-foreground">Camera not available</p>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="upload" className="mt-6">
-                    <div className="text-center space-y-6">
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-12">
-                        <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                        <div className="space-y-4">
-                          <p className="text-lg font-medium">Upload Your Photo</p>
-                          <p className="text-sm text-muted-foreground">
-                            Choose a clear photo of yourself for the best results
-                          </p>
-                          <label className="inline-block">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleFileSelect}
-                              className="hidden"
-                            />
-                            <Button className="cursor-pointer">
-                              Choose File
-                            </Button>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              )}
+              </div>
             </Card>
           </div>
         )}
