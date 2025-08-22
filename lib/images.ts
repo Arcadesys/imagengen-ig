@@ -1,4 +1,5 @@
 import { prisma } from "./db"
+import { supabaseAdmin } from "./supabase"
 import type { ImageSize } from "@prisma/client"
 
 function extFromMime(mime: string): string {
@@ -31,6 +32,7 @@ export interface SaveImageOptions {
 }
 
 export async function saveImage(opts: SaveImageOptions) {
+  // Create the database record first to get an ID
   const rec = await prisma.image.create({
     data: {
       kind: opts.kind as any,
@@ -43,8 +45,8 @@ export async function saveImage(opts: SaveImageOptions) {
       originalName: opts.originalName ?? null,
       prompt: opts.prompt ?? null,
       expandedPrompt: opts.expandedPrompt ?? null,
-  // Deprecated: we no longer persist the human-readable generation size to DB (Auto sizing)
-  size: null,
+      // Deprecated: we no longer persist the human-readable generation size to DB (Auto sizing)
+      size: null,
       seed: opts.seed != null ? String(opts.seed) : null,
       baseImageId: opts.baseImageId ?? null,
       hasMask: opts.hasMask ?? false,
@@ -52,10 +54,75 @@ export async function saveImage(opts: SaveImageOptions) {
       sessionId: opts.sessionId ?? null, // Added for session grouping
     },
   })
+
+  // Generate the file path for Supabase Storage
   const ext = extFromMime(opts.mimeType)
-  const url = opts.kind === "UPLOAD_BASE" ? `/uploads/base/${rec.id}${ext}` : `/generated/${rec.id}${ext}`
-  const updated = await prisma.image.update({ where: { id: rec.id }, data: { url } })
-  // Store binary in a separate table to keep metadata light
-  await prisma.imageBlob.create({ data: { id: updated.id, data: opts.buffer } })
+  const bucket = opts.kind === "UPLOAD_BASE" ? "uploads" : "generated"
+  const filePath = `${bucket}/${rec.id}${ext}`
+  
+  // Upload to Supabase Storage
+  let publicUrl: string
+  
+  if ((process.env.NODE_ENV === 'test' || process.env.VITEST) && !process.env.SUPABASE_REAL_UPLOAD) {
+    // In test environment, use a mock URL instead of real upload
+    publicUrl = `https://test.supabase.co/storage/v1/object/public/images/${filePath}`
+  } else {
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('images')
+      .upload(filePath, opts.buffer, {
+        contentType: opts.mimeType,
+        upsert: false,
+      })
+
+    if (uploadError) {
+      // Clean up the database record if upload fails
+      await prisma.image.delete({ where: { id: rec.id } })
+      throw new Error(`Failed to upload image to storage: ${uploadError.message}`)
+    }
+
+    // Get the public URL for the uploaded image
+    const { data: { publicUrl: realPublicUrl } } = supabaseAdmin.storage
+      .from('images')
+      .getPublicUrl(filePath)
+    
+    publicUrl = realPublicUrl
+  }
+
+  // Update the database record with the public URL
+  const updated = await prisma.image.update({ 
+    where: { id: rec.id }, 
+    data: { url: publicUrl } 
+  })
+
   return updated
+}
+
+export async function deleteImage(imageId: string) {
+  const image = await prisma.image.findUnique({ 
+    where: { id: imageId },
+    select: { url: true, kind: true }
+  })
+  
+  if (!image) {
+    throw new Error('Image not found')
+  }
+
+  // Extract the file path from the URL
+  const urlParts = image.url.split('/images/')
+  if (urlParts.length > 1) {
+    const filePath = urlParts[1]
+    
+    // Delete from Supabase Storage
+    const { error } = await supabaseAdmin.storage
+      .from('images')
+      .remove([filePath])
+    
+    if (error) {
+      console.warn(`Failed to delete image from storage: ${error.message}`)
+      // Continue with database deletion even if storage deletion fails
+    }
+  }
+
+  // Delete from database
+  await prisma.image.delete({ where: { id: imageId } })
 }

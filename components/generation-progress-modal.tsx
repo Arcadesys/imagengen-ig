@@ -167,6 +167,12 @@ export function GenerationProgressModal({
                 – {message}
               </>
             ) : null}
+            {isGenerating && (
+              <>
+                {" "}
+                • Want the result link? Leave your email to receive it when ready.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 

@@ -9,9 +9,10 @@ interface WebcamCaptureProps {
   onUpload: (baseImageId: string, url: string) => void
   onCancel?: () => void
   disabled?: boolean
+  sessionId?: string | null
 }
 
-export function WebcamCapture({ onUpload, onCancel, disabled }: WebcamCaptureProps) {
+export function WebcamCapture({ onUpload, onCancel, disabled, sessionId }: WebcamCaptureProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
@@ -65,7 +66,7 @@ export function WebcamCapture({ onUpload, onCancel, disabled }: WebcamCapturePro
       const blob: Blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b as Blob), "image/png", 0.92))
       const file = new File([blob], "webcam.png", { type: "image/png" })
 
-  const data = await uploadImageViaApi(file, file.name)
+  const data = await uploadImageViaApi(file, file.name, sessionId || undefined)
   onUpload(data.baseImageId, data.url)
       toast({ title: "Photo captured", description: "Webcam photo uploaded." })
     } catch (e) {
@@ -74,7 +75,7 @@ export function WebcamCapture({ onUpload, onCancel, disabled }: WebcamCapturePro
     } finally {
       setIsBusy(false)
     }
-  }, [disabled, isBusy, onUpload, toast])
+  }, [disabled, isBusy, onUpload, toast, sessionId])
 
   return (
     <Card className="p-4">

@@ -14,6 +14,8 @@ import { PuppetResultsModal } from "@/components/puppet-results-modal"
 import type { GeneratedImage } from "@/lib/types"
 import { generatePuppetPrompt } from "@/lib/puppet-prompts"
 import { Camera, Upload, Sparkles } from "lucide-react"
+import { useGeneratorSession } from "@/hooks/use-generator-session"
+import { useGeneratorTheme } from "@/components/theme-provider"
 
 type FlowStep = "upload" | "configure" | "generating" | "results"
 
@@ -38,6 +40,15 @@ export default function PuppetrayPage() {
   const [generationStatus, setGenerationStatus] = useState<"generating" | "complete" | "error">("generating")
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [results, setResults] = useState<GeneratedImage[]>([])
+
+  // Theming for this generator
+  const { theme } = useGeneratorTheme()
+  const containerBg = theme.gradientBg || "bg-gradient-to-b from-purple-50 via-pink-50 to-orange-50 dark:from-purple-950 dark:via-pink-950 dark:to-orange-950"
+  const headerBg = `${theme.headerBg || "bg-white/80 dark:bg-black/70"} backdrop-blur supports-[backdrop-filter]:bg-white/60`
+  const accentGradient = theme.accent || "from-purple-600 to-pink-600"
+
+  // Create or get session for this generator
+  const { sessionId } = useGeneratorSession("puppetray")
 
   // Check for webcam availability on mount
   useEffect(() => {
@@ -100,6 +111,7 @@ export default function PuppetrayPage() {
           size: "1024x1024",
           n: 1,
           baseImageId,
+          sessionId: sessionId || null,
         }),
       })
 
@@ -175,9 +187,9 @@ export default function PuppetrayPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-purple-50 via-pink-50 to-orange-50 dark:from-purple-950 dark:via-pink-950 dark:to-orange-950">
+    <div className={`min-h-dvh ${containerBg}`}>
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-white/80 dark:bg-black/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <header className={`sticky top-0 z-10 border-b ${headerBg}`}>
         <div className="mx-auto max-w-4xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
@@ -201,7 +213,7 @@ export default function PuppetrayPage() {
           <div className="space-y-8">
             {/* Welcome Message */}
             <div className="text-center space-y-4">
-              <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h2 className={`text-3xl sm:text-4xl font-bold bg-gradient-to-r ${accentGradient} bg-clip-text text-transparent`}>
                 Let's Make You a Puppet!
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -238,6 +250,7 @@ export default function PuppetrayPage() {
                       <WebcamCapture
                         onUpload={handleImageCapture}
                         onCancel={() => setPreferredInputMode("upload")}
+                        sessionId={sessionId}
                       />
                     ) : (
                       <div className="text-center py-8">
@@ -255,6 +268,7 @@ export default function PuppetrayPage() {
                       }}
                       onMaskChange={() => {}} // No-op since we don't use masks
                       uploadedImage={baseImage ? { id: baseImageId ?? "", url: baseImage } : null}
+                      sessionId={sessionId}
                     />
                   </TabsContent>
                 </Tabs>

@@ -1,20 +1,21 @@
-// SQLite Prisma schema for image storage
-// Run migrations locally: npx prisma migrate dev --name init
-// Generate client only: npx prisma generate
+// PostgreSQL Prisma schema for image storage (using Supabase)
+// Run migrations: npx prisma db push
+// Generate client: npx prisma generate
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Image {
   id             String     @id @default(uuid())
   kind           ImageKind
-  url            String // public URL path we expose (virtual; may be /images/:id)
+  url            String // public URL from Supabase Storage
   mimeType       String
   width          Int?
   height         Int?
@@ -36,8 +37,6 @@ model Image {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  blob ImageBlob?
-
   @@index([createdAt])
   @@index([kind, createdAt])
   @@index([baseImageId])
@@ -56,12 +55,44 @@ enum ImageSize {
   S1024x1024 @map("1024x1024")
 }
 
+// New: Dynamic image generators that can be created and managed via API
+model ImageGenerator {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String?
+  style       String?   // e.g., "turn-toon", "puppetray", or custom style label
+  config      Json?     // arbitrary config for prompts, defaults, etc.
+  theme       Json?     // styling data (tailwind classes, colors) for on-demand theming
+  isActive    Boolean   @default(true)
+
+  // Ownership
+  createdById String?
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  // Related sessions
+  sessions    GenerationSession[]
+
+  // New: back relation for questionnaires
+  questionnaires GeneratorQuestionnaire[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([isActive])
+}
+
 // Image generation sessions for grouping related images
 model GenerationSession {
   id          String   @id @default(uuid())
   name        String   // User-friendly name for the session
   description String?  // Optional description
-  generator   String   // Which generator was used (turn-toon, puppetray, etc.)
+  generator   String   // Which generator was used (legacy string; keep for compatibility)
+  
+  // New optional relation to dynamic ImageGenerator
+  generatorId String?
+  generatorRef ImageGenerator? @relation(fields: [generatorId], references: [id], onDelete: SetNull)
   
   // Auth relationship
   createdById String
@@ -75,15 +106,8 @@ model GenerationSession {
 
   @@index([createdById])
   @@index([generator])
+  @@index([generatorId])
   @@index([createdAt])
-}
-
-// Store binary data separately to keep Image table lean
-model ImageBlob {
-  id   String @id
-  data Bytes
-
-  image Image @relation(fields: [id], references: [id], onDelete: Cascade)
 }
 
 // Email signup for marketing and updates
@@ -159,10 +183,15 @@ model User {
   email            String?   @unique
   emailVerified    DateTime?
   image            String?
+  // New: credentials-based auth support
+  passwordHash     String?
+  
   accounts         Account[]
   sessions         Session[]
   sessionCodes     SessionCode[] // Session codes created by this admin
   generationSessions GenerationSession[] // Generation sessions created by this user
+  // New: generators created by this user
+  generators       ImageGenerator[]
 }
 
 model VerificationToken {
@@ -171,4 +200,18 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// New model for per-generator question schemas and entries
+model GeneratorQuestionnaire {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  schema      Json     // JSON schema for the questionnaire
+
+  // Optional: relations to ImageGenerator if needed
+  generatorId String?
+  generator   ImageGenerator? @relation(fields: [generatorId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

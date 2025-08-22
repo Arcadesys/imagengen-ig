@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, generator } = body
+    const { name, description, generator, generatorSlug } = body
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json(
@@ -24,27 +24,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!generator || typeof generator !== "string") {
+    if (!generator && !generatorSlug) {
       return NextResponse.json(
-        { error: "Generator type is required" },
+        { error: "Generator or generatorSlug is required" },
         { status: 400 }
       )
     }
 
-    // Validate generator type
-    const validGenerators = ["turn-toon", "puppetray", "photobooth", "generate"]
-    if (!validGenerators.includes(generator)) {
-      return NextResponse.json(
-        { error: "Invalid generator type" },
-        { status: 400 }
-      )
+    // If a dynamic generator slug is provided, resolve it
+    let generatorString = generator as string | undefined
+    let generatorId: string | undefined
+
+    if (generatorSlug) {
+      const gen = await (prisma as any).imageGenerator.findUnique({ where: { slug: String(generatorSlug) } })
+      if (!gen) {
+        return NextResponse.json(
+          { error: "Invalid generator slug" },
+          { status: 400 }
+        )
+      }
+      generatorString = gen.style || gen.slug
+      generatorId = gen.id
     }
 
-    const generationSession = await prisma.generationSession.create({
+    // Accept legacy known strings as-is
+    if (!generatorString) {
+      generatorString = "custom"
+    }
+
+    const generationSession = await (prisma as any).generationSession.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        generator,
+        generator: generatorString,
+        generatorId: generatorId ?? null,
         createdById: session.user.id,
       },
       include: {
@@ -82,14 +95,18 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url)
     const generator = url.searchParams.get("generator")
+    const generatorSlug = url.searchParams.get("generatorSlug")
     const limit = parseInt(url.searchParams.get("limit") || "20")
 
     const whereClause: any = {
       createdById: session.user.id,
     }
 
-    if (generator) {
-      whereClause.generator = generator
+    if (generator) whereClause.generator = generator
+
+    if (generatorSlug) {
+      const gen = await (prisma as any).imageGenerator.findUnique({ where: { slug: generatorSlug } })
+      if (gen) whereClause.generatorId = gen.id
     }
 
     const generationSessions = await prisma.generationSession.findMany({

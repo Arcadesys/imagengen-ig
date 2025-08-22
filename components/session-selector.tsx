@@ -24,6 +24,8 @@ interface Session {
 
 interface SessionSelectorProps {
   generator: string
+  // New: dynamic generator slug support for proper linkage to ImageGenerator
+  generatorSlug?: string
   selectedSessionId?: string | null
   onSessionChange: (sessionId: string | null) => void
   className?: string
@@ -31,6 +33,7 @@ interface SessionSelectorProps {
 
 export function SessionSelector({ 
   generator, 
+  generatorSlug,
   selectedSessionId, 
   onSessionChange,
   className = ""
@@ -46,11 +49,12 @@ export function SessionSelector({
     if (session?.user) {
       loadSessions()
     }
-  }, [session, generator])
+  }, [session, generator, generatorSlug])
 
   const loadSessions = async () => {
     try {
-      const response = await fetch(`/api/sessions?generator=${generator}`)
+      const qs = generatorSlug ? `generatorSlug=${encodeURIComponent(generatorSlug)}` : `generator=${encodeURIComponent(generator)}`
+      const response = await fetch(`/api/sessions?${qs}`)
       if (response.ok) {
         const data = await response.json()
         setSessions(data.sessions)
@@ -67,13 +71,16 @@ export function SessionSelector({
 
     setCreating(true)
     try {
+      const body: any = {
+        name: newSessionName,
+      }
+      if (generatorSlug) body.generatorSlug = generatorSlug
+      else body.generator = generator
+
       const response = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newSessionName,
-          generator,
-        }),
+        body: JSON.stringify(body),
       })
 
       if (response.ok) {

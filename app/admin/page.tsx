@@ -39,6 +39,39 @@ export default function AdminDashboard() {
   })
   const { toast } = useToast()
 
+  // New: Danger Zone (wipe DB)
+  const [wipeConfirm, setWipeConfirm] = useState("")
+  const [wiping, setWiping] = useState(false)
+
+  // New: Create Generation Session
+  const [genSessionForm, setGenSessionForm] = useState({
+    name: "",
+    description: "",
+    generator: "photobooth", // legacy string fallback
+    generatorSlug: "", // optional dynamic generator
+  })
+  const [creatingGenSession, setCreatingGenSession] = useState(false)
+
+  // New: Create Questions Flow/Prompt for a Generator
+  const [questionsForm, setQuestionsForm] = useState({
+    slug: "",
+    title: "",
+    intro: "",
+    promptTemplate: "",
+    questionsText: "",
+  })
+  const [savingQuestions, setSavingQuestions] = useState(false)
+
+  // New: Create Generator
+  const [newGenerator, setNewGenerator] = useState({
+    slug: "",
+    name: "",
+    style: "",
+    description: "",
+    isActive: true as boolean,
+  })
+  const [creatingGenerator, setCreatingGenerator] = useState(false)
+
   const fetchSessionCodes = async () => {
     try {
       const response = await fetch("/api/admin/session-codes")
@@ -176,6 +209,156 @@ export default function AdminDashboard() {
     }
   }
 
+  // New: wipe database action
+  const wipeDatabase = async () => {
+    if (wipeConfirm !== "WIPE") {
+      toast({ title: "Type WIPE to confirm", variant: "destructive" })
+      return
+    }
+    setWiping(true)
+    try {
+      const res = await fetch("/api/admin/wipe-db?confirm=WIPE", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to wipe database")
+      toast({ title: "Database wiped", description: JSON.stringify(data.deleted) })
+      // Refresh session codes list after wipe (will be empty)
+      setSessionCodes([])
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" })
+    } finally {
+      setWiping(false)
+      setWipeConfirm("")
+    }
+  }
+
+  // New: create generation session
+  const createGenerationSession = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!genSessionForm.name.trim()) {
+      toast({ title: "Name required", variant: "destructive" })
+      return
+    }
+    setCreatingGenSession(true)
+    try {
+      const res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: genSessionForm.name,
+          description: genSessionForm.description || undefined,
+          generator: genSessionForm.generator || undefined,
+          generatorSlug: genSessionForm.generatorSlug || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to create session")
+      toast({ title: "Session created", description: data.session?.id })
+      setGenSessionForm({ name: "", description: "", generator: "photobooth", generatorSlug: "" })
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" })
+    } finally {
+      setCreatingGenSession(false)
+    }
+  }
+
+  // New: save generator questions/prompt
+  const loadSampleQuestions = () => {
+    const sample = {
+      title: "Photobooth Style",
+      intro: "Answer a few quick questions to transform your photo.",
+      questions: [
+        { id: "style", text: "Choose a style", type: "multi-select", options: ["pixar", "anime", "comic", "watercolor"], allowCustom: false },
+        { id: "vibe", text: "What vibe?", placeholder: "cool, energetic, vintage..." },
+      ],
+      promptTemplate:
+        "A high-quality portrait in {{style}} style with a {{vibe}} vibe. Maintain the subject's exact clothing, pose, lighting, and background.",
+      references: [
+        { label: "Style guide", url: "/ai-pixar-style.png" },
+      ],
+    }
+    setQuestionsForm((prev) => ({
+      ...prev,
+      title: sample.title,
+      intro: sample.intro,
+      promptTemplate: sample.promptTemplate,
+      questionsText: JSON.stringify(sample.questions, null, 2),
+    }))
+  }
+
+  const saveQuestions = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!questionsForm.slug.trim()) {
+      toast({ title: "Slug required", variant: "destructive" })
+      return
+    }
+    if (!questionsForm.title.trim() || !questionsForm.promptTemplate.trim()) {
+      toast({ title: "Title and prompt template required", variant: "destructive" })
+      return
+    }
+    let questions: any[]
+    try {
+      questions = JSON.parse(questionsForm.questionsText || "[]")
+      if (!Array.isArray(questions)) throw new Error("Questions must be an array")
+    } catch (err: any) {
+      toast({ title: "Invalid questions JSON", description: err.message, variant: "destructive" })
+      return
+    }
+
+    setSavingQuestions(true)
+    try {
+      const schema = {
+        title: questionsForm.title,
+        intro: questionsForm.intro || undefined,
+        questions,
+        promptTemplate: questionsForm.promptTemplate,
+        references: undefined as any,
+      }
+      const res = await fetch(`/api/generators/${encodeURIComponent(questionsForm.slug)}/questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schema }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to save questions")
+      toast({ title: "Questions saved", description: questionsForm.slug })
+      setQuestionsForm({ slug: "", title: "", intro: "", promptTemplate: "", questionsText: "" })
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" })
+    } finally {
+      setSavingQuestions(false)
+    }
+  }
+
+  const createGenerator = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newGenerator.slug.trim() || !newGenerator.name.trim()) {
+      toast({ title: "Slug and name required", variant: "destructive" })
+      return
+    }
+    setCreatingGenerator(true)
+    try {
+      const res = await fetch("/api/generators", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: newGenerator.slug,
+          name: newGenerator.name,
+          description: newGenerator.description || undefined,
+          style: newGenerator.style || undefined,
+          isActive: newGenerator.isActive,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to create generator")
+      toast({ title: "Generator created", description: data.generator?.slug })
+      setNewGenerator({ slug: "", name: "", style: "", description: "", isActive: true })
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" })
+    } finally {
+      setCreatingGenerator(false)
+    }
+  }
+
   useEffect(() => {
     fetchSessionCodes()
   }, [])
@@ -192,9 +375,9 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Session Codes</h2>
+          <h2 className="text-2xl font-bold">Admin Tools</h2>
           <p className="text-muted-foreground">
-            Create and manage session codes for users to access image generation
+            Quick actions for maintenance and generator setup
           </p>
         </div>
         <div className="flex gap-2">
@@ -264,6 +447,128 @@ export default function AdminDashboard() {
               </div>
             </DialogContent>
           </Dialog>
+        </div>
+      </div>
+
+      {/* New admin quick tools */}
+      <div className="grid md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Danger Zone</CardTitle>
+            <CardDescription>Type WIPE and click to erase non-auth data</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label htmlFor="wipeConfirm">Confirm</Label>
+            <Input id="wipeConfirm" placeholder="Type WIPE" value={wipeConfirm} onChange={(e) => setWipeConfirm(e.target.value)} />
+            <Button variant="destructive" disabled={wiping || wipeConfirm !== "WIPE"} onClick={wipeDatabase}>
+              {wiping ? "Wiping..." : "Wipe Database"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Create Session</CardTitle>
+            <CardDescription>Quickly create a generation session</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={createGenerationSession} className="space-y-3">
+              <div>
+                <Label htmlFor="gs-name">Name</Label>
+                <Input id="gs-name" value={genSessionForm.name} onChange={(e) => setGenSessionForm((p) => ({ ...p, name: e.target.value }))} />
+              </div>
+              <div>
+                <Label htmlFor="gs-desc">Description</Label>
+                <Input id="gs-desc" value={genSessionForm.description} onChange={(e) => setGenSessionForm((p) => ({ ...p, description: e.target.value }))} />
+              </div>
+              <div>
+                <Label htmlFor="gs-generator">Generator (legacy)</Label>
+                <Input id="gs-generator" placeholder="e.g., turn-toon, puppetray, photobooth" value={genSessionForm.generator} onChange={(e) => setGenSessionForm((p) => ({ ...p, generator: e.target.value }))} />
+              </div>
+              <div>
+                <Label htmlFor="gs-slug">Generator Slug (dynamic, optional)</Label>
+                <Input id="gs-slug" placeholder="e.g., photobooth" value={genSessionForm.generatorSlug} onChange={(e) => setGenSessionForm((p) => ({ ...p, generatorSlug: e.target.value }))} />
+              </div>
+              <Button type="submit" disabled={creatingGenSession}>{creatingGenSession ? "Creating..." : "Create"}</Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Create Generator</CardTitle>
+            <CardDescription>Make a generator slug to attach questions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={createGenerator} className="space-y-3">
+              <div>
+                <Label htmlFor="gen-slug">Slug</Label>
+                <Input id="gen-slug" value={newGenerator.slug} onChange={(e) => setNewGenerator((p) => ({ ...p, slug: e.target.value }))} placeholder="e.g., photobooth" />
+              </div>
+              <div>
+                <Label htmlFor="gen-name">Name</Label>
+                <Input id="gen-name" value={newGenerator.name} onChange={(e) => setNewGenerator((p) => ({ ...p, name: e.target.value }))} placeholder="Display name" />
+              </div>
+              <div>
+                <Label htmlFor="gen-style">Style (optional)</Label>
+                <Input id="gen-style" value={newGenerator.style} onChange={(e) => setNewGenerator((p) => ({ ...p, style: e.target.value }))} placeholder="turn-toon, puppetray..." />
+              </div>
+              <div>
+                <Label htmlFor="gen-desc">Description</Label>
+                <Input id="gen-desc" value={newGenerator.description} onChange={(e) => setNewGenerator((p) => ({ ...p, description: e.target.value }))} />
+              </div>
+              <div className="flex items-center gap-2">
+                <input id="gen-active" type="checkbox" checked={newGenerator.isActive} onChange={(e) => setNewGenerator((p) => ({ ...p, isActive: e.target.checked }))} />
+                <Label htmlFor="gen-active">Active</Label>
+              </div>
+              <Button type="submit" disabled={creatingGenerator}>{creatingGenerator ? "Creating..." : "Create"}</Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Questions & Prompt</CardTitle>
+            <CardDescription>Attach a flow to a generator slug</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={saveQuestions} className="space-y-3">
+              <div>
+                <Label htmlFor="q-slug">Generator Slug</Label>
+                <Input id="q-slug" value={questionsForm.slug} onChange={(e) => setQuestionsForm((p) => ({ ...p, slug: e.target.value }))} />
+              </div>
+              <div>
+                <Label htmlFor="q-title">Title</Label>
+                <Input id="q-title" value={questionsForm.title} onChange={(e) => setQuestionsForm((p) => ({ ...p, title: e.target.value }))} />
+              </div>
+              <div>
+                <Label htmlFor="q-intro">Intro (optional)</Label>
+                <Input id="q-intro" value={questionsForm.intro} onChange={(e) => setQuestionsForm((p) => ({ ...p, intro: e.target.value }))} />
+              </div>
+              <div>
+                <Label htmlFor="q-prompt">Prompt Template</Label>
+                <Input id="q-prompt" value={questionsForm.promptTemplate} onChange={(e) => setQuestionsForm((p) => ({ ...p, promptTemplate: e.target.value }))} placeholder="Use tokens like {{style}}" />
+              </div>
+              <div>
+                <Label htmlFor="q-questions">Questions (JSON array)</Label>
+                <textarea id="q-questions" className="w-full border rounded p-2 text-sm min-h-28 bg-background" value={questionsForm.questionsText} onChange={(e) => setQuestionsForm((p) => ({ ...p, questionsText: e.target.value }))} />
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={loadSampleQuestions}>Load sample</Button>
+                <Button type="submit" disabled={savingQuestions}>{savingQuestions ? "Saving..." : "Save"}</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Existing: Session Codes Management */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Session Codes</h2>
+          <p className="text-muted-foreground">
+            Create and manage session codes for users to access image generation
+          </p>
         </div>
       </div>
 

@@ -18,7 +18,10 @@ describe("Image Generation API", () => {
   })
 
   it("returns 400 if prompt is missing", async () => {
-    const req = { json: async () => ({ size: "512x512", n: 1 }) } as any
+    const req = { 
+      json: async () => ({ size: "512x512", n: 1 }),
+      headers: { get: vi.fn().mockReturnValue(null) }
+    } as any
     const res = await POST(req)
     expect(res.status).toBe(400)
     const data = await res.json()
@@ -26,7 +29,10 @@ describe("Image Generation API", () => {
   })
 
   it("returns 400 if size is invalid", async () => {
-    const req = { json: async () => ({ prompt: "cat", size: "invalid", n: 1 }) } as any
+    const req = { 
+      json: async () => ({ prompt: "cat", size: "invalid", n: 1 }),
+      headers: { get: vi.fn().mockReturnValue(null) }
+    } as any
     const res = await POST(req)
     expect(res.status).toBe(400)
     const data = await res.json()
@@ -34,7 +40,10 @@ describe("Image Generation API", () => {
   })
 
   it("returns 400 if n is invalid", async () => {
-    const req = { json: async () => ({ prompt: "cat", size: "512x512", n: 0 }) } as any
+    const req = { 
+      json: async () => ({ prompt: "cat", size: "512x512", n: 0 }),
+      headers: { get: vi.fn().mockReturnValue(null) }
+    } as any
     const res = await POST(req)
     expect(res.status).toBe(400)
     const data = await res.json()
@@ -43,7 +52,10 @@ describe("Image Generation API", () => {
 
   it("returns 500 if OPENAI_API_KEY is missing", async () => {
     process.env.OPENAI_API_KEY = ""
-    const req = { json: async () => ({ prompt: "cat", size: "512x512", n: 1 }) } as any
+    const req = { 
+      json: async () => ({ prompt: "cat", size: "512x512", n: 1 }),
+      headers: { get: vi.fn().mockReturnValue(null) }
+    } as any
     const res = await POST(req)
     expect(res.status).toBe(500)
     const data = await res.json()
@@ -59,7 +71,10 @@ describe("Image Generation API", () => {
     })
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch)
 
-  const req = { json: async () => ({ prompt: "cat", size: "512x512", n: 1 }) } as any
+  const req = { 
+    json: async () => ({ prompt: "cat", size: "512x512", n: 1 }),
+    headers: { get: vi.fn().mockReturnValue(null) }
+  } as any
   const res = await POST(req)
   expect(mockGenerate).toHaveBeenCalled()
   const call = mockGenerate.mock.calls[0][0]
@@ -67,7 +82,7 @@ describe("Image Generation API", () => {
   expect(call.prompt).toEqual(expect.stringContaining("cat"))
   expect(res.status).toBe(200)
   const data = await res.json()
-  expect(data.images[0].url).toMatch(/^\/generated\//)
+  expect(data.images[0].url).toMatch(/^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/images\//)
     expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/^http:\/\/test\.com\/image\.png/))
     vi.unstubAllGlobals()
   })

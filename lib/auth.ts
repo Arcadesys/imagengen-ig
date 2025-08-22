@@ -1,39 +1,40 @@
 import NextAuth from "next-auth"
-import Google from "next-auth/providers/google"
+import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import { prisma } from "@/lib/db"
+import type { NextAuthConfig } from "next-auth"
+import bcrypt from "bcryptjs"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+    Credentials({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const email = credentials?.email ? String(credentials.email) : ""
+        const password = credentials?.password ? String(credentials.password) : ""
+        if (!email || !password) return null
+        const user = await (prisma as any).user.findUnique({ where: { email } })
+        if (!user?.passwordHash) return null
+        const ok = await bcrypt.compare(password, user.passwordHash)
+        if (!ok) return null
+        return { id: user.id, name: user.name, email: user.email, image: user.image }
+      },
     }),
   ],
+  session: { strategy: "jwt" },
   pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
+    signIn: "/auth/signin",
+    error: "/auth/error",
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Only allow susten.crowder@gmail.com to sign in
-      const allowedEmail = "susten.crowder@gmail.com"
-      
-      if (user.email !== allowedEmail) {
-        console.log(`Unauthorized sign-in attempt from: ${user.email}`)
-        return false
-      }
-      
-      return true
-    },
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id
-      }
+    async session({ session, token }) {
+      if (session.user && token?.sub) session.user.id = token.sub
       return session
     },
   },
-})
+} satisfies NextAuthConfig)

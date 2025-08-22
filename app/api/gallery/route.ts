@@ -1,7 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { readFile, writeFile, mkdir } from "fs/promises"
-import { existsSync } from "fs"
-import path from "path"
+import { prisma } from "../../../lib/db"
 
 // Ensure this route runs on Node.js runtime and never caches
 export const runtime = "nodejs"
@@ -21,25 +19,45 @@ interface GalleryImage {
 
 export async function GET() {
   try {
-    const dataDir = path.join(process.cwd(), "data")
-    const galleryFile = path.join(dataDir, "gallery.json")
+    // Query all images from database, both uploaded and generated
+    const images = await prisma.image.findMany({
+      select: {
+        id: true,
+        url: true,
+        prompt: true,
+        expandedPrompt: true,
+        seed: true,
+        baseImageId: true,
+        createdAt: true,
+        kind: true,
+        width: true,
+        height: true,
+      },
+      orderBy: { createdAt: "desc" },
+    })
 
-    if (!existsSync(galleryFile)) {
-      return NextResponse.json([])
-    }
+    const gallery: GalleryImage[] = images.map(image => {
+      // Determine size based on dimensions or default to 1024x1024
+      let size: "512x512" | "768x768" | "1024x1024" = "1024x1024"
+      if (image.width && image.height) {
+        if (image.width <= 512 && image.height <= 512) {
+          size = "512x512"
+        } else if (image.width <= 768 && image.height <= 768) {
+          size = "768x768"
+        }
+      }
 
-    const galleryData = await readFile(galleryFile, "utf-8")
-    let gallery: GalleryImage[] = []
-    try {
-      gallery = JSON.parse(galleryData)
-      if (!Array.isArray(gallery)) gallery = []
-    } catch (e) {
-      console.warn("[gallery] Invalid JSON in gallery.json, returning empty list:", e)
-      gallery = []
-    }
-
-    // Sort by creation date, newest first
-    gallery.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      return {
+        id: image.id,
+        url: image.url,
+        prompt: image.prompt || (image.kind === "UPLOAD_BASE" ? "Uploaded base image" : "Generated image"),
+        expandedPrompt: image.expandedPrompt || undefined,
+        size,
+        seed: image.seed || undefined,
+        baseImageId: image.baseImageId,
+        createdAt: image.createdAt.toISOString(),
+      }
+    })
 
     return NextResponse.json(gallery)
   } catch (error) {
@@ -52,69 +70,70 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
 
-    const dataDir = path.join(process.cwd(), "data")
-    const galleryFile = path.join(dataDir, "gallery.json")
-
-    // Ensure data directory exists
-    if (!existsSync(dataDir)) {
-      await mkdir(dataDir, { recursive: true })
-    }
-
-    // Read existing gallery
-    let gallery: GalleryImage[] = []
-    if (existsSync(galleryFile)) {
-      const galleryData = await readFile(galleryFile, "utf-8")
-      try {
-        gallery = JSON.parse(galleryData)
-        if (!Array.isArray(gallery)) gallery = []
-      } catch (e) {
-        console.warn("[gallery] Invalid JSON in gallery.json, starting fresh:", e)
-        gallery = []
-      }
-    }
-
     // Support two payload shapes:
     // 1) Single GalleryImage (legacy/test harness)
     // 2) { images: Array<{ id, url, metadata: { prompt, expandedPrompt?, size, seed?, baseImageId? } }> }
+    
+    // Since we're now using database-driven storage, we don't need to manually add to gallery
+    // Images are automatically available via GET endpoint from database
+    // This endpoint can be used for backwards compatibility but doesn't need to do anything
+    
     if (Array.isArray(data?.images)) {
-      const incoming = data.images as Array<
-        {
-          id: string
-          url: string
-          metadata?: {
-            prompt: string
-            expandedPrompt?: string
-            size: "512x512" | "768x768" | "1024x1024"
-            seed?: string | number
-            baseImageId?: string | null
-          }
+      const incoming = data.images as Array<{
+        id: string
+        url: string
+        metadata?: {
+          prompt: string
+          expandedPrompt?: string
+          size: "512x512" | "768x768" | "1024x1024"
+          seed?: string | number
+          baseImageId?: string | null
         }
-      >
+      }>
 
       if (incoming.length === 0) {
         return NextResponse.json({ error: "No images provided" }, { status: 400 })
       }
 
-      const now = new Date()
-      const mapped: GalleryImage[] = incoming
-        .filter((img) => img && img.id && img.url && img.metadata && img.metadata.prompt && img.metadata.size)
-        .map((img, idx) => ({
-          id: img.id,
-          url: img.url,
-          prompt: img.metadata!.expandedPrompt || img.metadata!.prompt,
-          expandedPrompt: img.metadata!.expandedPrompt,
-          size: img.metadata!.size,
-          seed: img.metadata!.seed,
-          baseImageId: img.metadata!.baseImageId ?? null,
-          createdAt: new Date(now.getTime() + idx).toISOString(),
-        }))
+      // Check if these images exist in the database
+      const imageIds = incoming.map(img => img.id)
+      const existingImages = await prisma.image.findMany({
+        where: { id: { in: imageIds } },
+        select: {
+          id: true,
+          url: true,
+          prompt: true,
+          expandedPrompt: true,
+          seed: true,
+          baseImageId: true,
+          createdAt: true,
+          width: true,
+          height: true,
+        }
+      })
 
-      if (mapped.length === 0) {
-        return NextResponse.json({ error: "Invalid images payload" }, { status: 400 })
-      }
+      const mapped: GalleryImage[] = existingImages.map(image => {
+        let size: "512x512" | "768x768" | "1024x1024" = "1024x1024"
+        if (image.width && image.height) {
+          if (image.width <= 512 && image.height <= 512) {
+            size = "512x512"
+          } else if (image.width <= 768 && image.height <= 768) {
+            size = "768x768"
+          }
+        }
 
-      gallery.push(...mapped)
-      await writeFile(galleryFile, JSON.stringify(gallery, null, 2))
+        return {
+          id: image.id,
+          url: image.url,
+          prompt: image.prompt || "Generated image",
+          expandedPrompt: image.expandedPrompt || undefined,
+          size,
+          seed: image.seed || undefined,
+          baseImageId: image.baseImageId,
+          createdAt: image.createdAt.toISOString(),
+        }
+      })
+
       return NextResponse.json(mapped)
     } else {
       const body = data as Partial<GalleryImage>
@@ -124,24 +143,47 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
       }
 
-      // Add new image with timestamp
-      const newImage: GalleryImage = {
-        id: body.id,
-        url: body.url,
-        prompt: body.prompt,
-        expandedPrompt: body.expandedPrompt,
-        size: body.size,
-        seed: body.seed,
-        baseImageId: body.baseImageId ?? null,
-        createdAt: new Date().toISOString(),
+      // Check if image exists in database
+      const image = await prisma.image.findUnique({
+        where: { id: body.id },
+        select: {
+          id: true,
+          url: true,
+          prompt: true,
+          expandedPrompt: true,
+          seed: true,
+          baseImageId: true,
+          createdAt: true,
+          width: true,
+          height: true,
+        }
+      })
+
+      if (!image) {
+        return NextResponse.json({ error: "Image not found" }, { status: 404 })
       }
 
-      gallery.push(newImage)
+      let size: "512x512" | "768x768" | "1024x1024" = "1024x1024"
+      if (image.width && image.height) {
+        if (image.width <= 512 && image.height <= 512) {
+          size = "512x512"
+        } else if (image.width <= 768 && image.height <= 768) {
+          size = "768x768"
+        }
+      }
 
-      // Save updated gallery
-      await writeFile(galleryFile, JSON.stringify(gallery, null, 2))
+      const galleryImage: GalleryImage = {
+        id: image.id,
+        url: image.url,
+        prompt: image.prompt || "Generated image",
+        expandedPrompt: image.expandedPrompt || undefined,
+        size,
+        seed: image.seed || undefined,
+        baseImageId: image.baseImageId,
+        createdAt: image.createdAt.toISOString(),
+      }
 
-      return NextResponse.json(newImage)
+      return NextResponse.json(galleryImage)
     }
   } catch (error) {
     console.error("Error saving to gallery:", error)

@@ -1,9 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { writeFile, mkdir, readFile } from "fs/promises"
-import { existsSync } from "fs"
-import path from "path"
 import crypto from "crypto"
 import { saveImage } from "../../../../lib/images"
+import { prisma } from "../../../../lib/db"
 
 let sharp: any = null
 try {
@@ -30,6 +28,7 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Parsing form data...")
     const formData = await request.formData()
     const file = formData.get("file") as File
+    const sessionId = (formData.get("sessionId") as string) || undefined
 
     if (!file) {
       console.log("[v0] No file provided in request")
@@ -60,25 +59,6 @@ export async function POST(request: NextRequest) {
     const maxSize = Number(process.env.UPLOAD_MAX_SIZE_BYTES) || 10 * 1024 * 1024 // default 10MB
     const originalSize = file.size
 
-    console.log("[v0] Creating directories...")
-  // Ensure temp directory exists (for any intermediate operations)
-  const uploadDir = path.join(process.cwd(), "temp", "uploads", "base")
-    const dataDir = path.join(process.cwd(), "data")
-
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
-    if (!existsSync(dataDir)) {
-      await mkdir(dataDir, { recursive: true })
-    }
-
-  console.log("[v0] Generating filename...")
-  const originalExt = path.extname((file?.name as string) || "").toLowerCase()
-    const baseImageId = crypto.randomUUID()
-    let outputExt = originalExt || ".png"
-    let filename = `${baseImageId}${outputExt}`
-  let filepath = path.join(uploadDir, filename)
-
     console.log("[v0] Preparing image buffer, original size:", originalSize)
     const bytes = await file.arrayBuffer()
     let buffer = Buffer.from(bytes)
@@ -91,9 +71,6 @@ export async function POST(request: NextRequest) {
           console.log("[v0] Converting", file.type, "to webp before size checks")
           const out = await sharp(buffer).rotate().webp({ quality: 90, effort: 4 }).toBuffer()
           buffer = Buffer.from(out)
-          outputExt = ".webp"
-          filename = `${baseImageId}${outputExt}`
-          filepath = path.join(uploadDir, filename)
         }
       } catch (e) {
         console.warn("[v0] Pre-conversion failed; proceeding with original buffer:", e)
@@ -112,11 +89,6 @@ export async function POST(request: NextRequest) {
           let quality = 80
           let attempts = 0
           let success = false
-
-          // Prefer webp for better compression
-          outputExt = ".webp"
-          filename = `${baseImageId}${outputExt}`
-          filepath = path.join(uploadDir, filename)
 
           while (attempts < 10) {
             const resized = sharp(buffer).rotate()
@@ -163,69 +135,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log("[v0] Saving base image to DB")
+    console.log("[v0] Saving base image to DB and Supabase Storage")
     const saved = await saveImage({
       kind: "UPLOAD_BASE",
       mimeType: file.type || "image/png",
       buffer,
       originalName: (file?.name as string) || null,
+      sessionId: sessionId || null,
     })
-    // Update uploads registry
-    const uploadsFile = path.join(dataDir, "uploads.json")
-    let uploads: UploadedImage[] = []
 
-    if (existsSync(uploadsFile)) {
-      const uploadsData = await readFile(uploadsFile, "utf-8")
-      uploads = JSON.parse(uploadsData)
-    }
+    console.log("[v0] Upload successful:", saved.id)
 
-    const uploadRecord: UploadedImage = {
-      id: saved.id,
-      url: saved.url,
-      filename: file.name,
-      createdAt: new Date().toISOString(),
-    }
-
-    uploads.push(uploadRecord)
-    await writeFile(uploadsFile, JSON.stringify(uploads, null, 2))
-
-    console.log("[v0] Upload successful:", baseImageId)
-
-    // Best-effort: add to gallery as a base image so uploads appear there too.
-    try {
-      const dataDir = path.join(process.cwd(), "data")
-      const galleryFile = path.join(dataDir, "gallery.json")
-      let gallery: Array<{
-        id: string
-        url: string
-        prompt: string
-        expandedPrompt?: string
-        size: "512x512" | "768x768" | "1024x1024"
-        seed?: string | number
-        baseImageId?: string | null
-        createdAt: string
-      }> = []
-      if (!existsSync(dataDir)) {
-        await mkdir(dataDir, { recursive: true })
-      }
-      if (existsSync(galleryFile)) {
-        const s = await readFile(galleryFile, "utf-8")
-        gallery = JSON.parse(s)
-      }
-      gallery.push({
-        id: uploadRecord.id,
-        url: uploadRecord.url,
-        prompt: "Uploaded base image",
-        size: "1024x1024",
-        baseImageId: uploadRecord.id,
-        createdAt: new Date().toISOString(),
-      })
-      await writeFile(galleryFile, JSON.stringify(gallery, null, 2))
-    } catch (e) {
-      console.warn("[v0] Failed to add uploaded image to gallery.json:", e);
-    }
-
-    return NextResponse.json({ baseImageId: uploadRecord.id, url: uploadRecord.url })
+    return NextResponse.json({ baseImageId: saved.id, url: saved.url })
   } catch (error) {
     console.error("[v0] Error uploading file:", error)
     return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
@@ -234,33 +155,26 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const dataDir = path.join(process.cwd(), "data")
-    const uploadsFile = path.join(dataDir, "uploads.json")
-    if (!existsSync(uploadsFile)) {
-      return NextResponse.json([])
-    }
-    const uploadsData = await readFile(uploadsFile, "utf-8")
-    let uploads: UploadedImage[] = JSON.parse(uploadsData)
+    // Query uploads from database instead of JSON file
+    const uploads = await prisma.image.findMany({
+      where: { kind: "UPLOAD_BASE" },
+      select: {
+        id: true,
+        url: true,
+        originalName: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    })
 
-    // Filter out entries that don't exist in DB anymore (e.g., after a DB reset)
-    try {
-      const { prisma } = await import("../../../../lib/db")
-      const ids = uploads.map((u) => u.id)
-      const existing = await prisma.image.findMany({ where: { id: { in: ids } }, select: { id: true } })
-      const existingSet = new Set(existing.map((e) => e.id))
-      const filtered = uploads.filter((u) => existingSet.has(u.id))
-      if (filtered.length !== uploads.length) {
-        // Persist filtered list back to disk to avoid future 404s
-        uploads = filtered
-        await writeFile(uploadsFile, JSON.stringify(uploads, null, 2))
-      }
-    } catch (e) {
-      console.warn("[v0] Failed to validate uploads against DB:", e)
-    }
+    const formattedUploads: UploadedImage[] = uploads.map(upload => ({
+      id: upload.id,
+      url: upload.url,
+      filename: upload.originalName || "Unknown",
+      createdAt: upload.createdAt.toISOString(),
+    }))
 
-    // Sort newest first
-    uploads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    return NextResponse.json(uploads)
+    return NextResponse.json(formattedUploads)
   } catch (error) {
     console.error("[v0] Error reading uploads:", error)
     return NextResponse.json({ error: "Failed to load uploads" }, { status: 500 })

@@ -107,24 +107,14 @@ describe("[API] /api/images/upload", () => {
 
       expect(res.status).toBe(200)
       const { url, baseImageId } = res.body as { url: string; baseImageId: string }
-      expect(url).toMatch(/^\/uploads\/base\//)
+      // Updated: Now expects Supabase URL format
+      expect(url).toMatch(/^https:\/\/.+\.supabase\.co\/storage\/v1\/object\/public\/images\/uploads\//)
       expect(baseImageId).toBeTruthy()
 
-      // Fetch the image URL and validate response headers
-      const imgRes = await request.get(url)
-      expect(imgRes.status).toBe(200)
-      expect(imgRes.headers["content-type"]).toMatch(/image\//)
-      expect(Number(imgRes.headers["content-length"] || 0)).toBeLessThanOrEqual(
-        Number(process.env.UPLOAD_MAX_SIZE_BYTES),
-      )
-
-      // cleanup registry entry only (bytes are stored internally)
-      const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
-      try {
-        const json = JSON.parse(await fs.promises.readFile(uploadsPath, "utf8")) as any[]
-        const filtered = json.filter((x) => x.id !== baseImageId)
-        await fs.promises.writeFile(uploadsPath, JSON.stringify(filtered, null, 2), "utf8")
-      } catch {}
+      // Test that the image is accessible via redirect
+      const imgRes = await request.get(`/api/images/${baseImageId}`)
+      expect(imgRes.status).toBe(302) // Redirect to Supabase URL
+      expect(imgRes.headers.location).toBe(url)
 
       // restore env
       process.env.UPLOAD_MAX_SIZE_BYTES = prevLimit
@@ -149,33 +139,23 @@ describe("[API] /api/images/upload", () => {
       expect(res.status).toBe(200)
       expect(res.body).toHaveProperty("baseImageId")
       expect(res.body).toHaveProperty("url")
-      expect(res.body.url).toMatch(/^\/uploads\/base\/.+\.png$/)
+      expect(res.body.url).toMatch(/^https:\/\/.+\.supabase\.co\/storage\/v1\/object\/public\/images\/uploads\//)
 
       const { baseImageId } = res.body as { baseImageId: string; url: string }
 
-      // File content is stored in DB; URL is a virtual route. We only assert URL shape and registry record.
-
-      // Verify registry contains the upload record
-      const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
-      expect(await fileExists(uploadsPath)).toBe(true)
-      const json = JSON.parse(await fs.promises.readFile(uploadsPath, "utf8")) as Array<any>
-      const rec = json.find((x) => x.id === baseImageId)
+      // Verify the upload appears in the API (database-driven now)
+      const uploadsRes = await request.get("/api/images/upload")
+      expect(uploadsRes.status).toBe(200)
+      const uploads = uploadsRes.body as Array<any>
+      const rec = uploads.find((x) => x.id === baseImageId)
       expect(rec).toBeTruthy()
       expect(rec.filename).toBe("sample.png")
-
-      // Cleanup registry entry (file bytes are stored in DB)
-      try {
-        if (await fileExists(uploadsPath)) {
-          const updated = (json as any[]).filter((x) => x.id !== baseImageId)
-          await fs.promises.writeFile(uploadsPath, JSON.stringify(updated, null, 2), "utf8")
-        }
-      } catch {}
     },
     30000,
   )
 
   it(
-    "adds uploaded image to gallery.json so it appears in /api/gallery",
+    "adds uploaded image to gallery so it appears in /api/gallery",
     async () => {
       const pngBuffer = Buffer.from([
         0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
@@ -190,33 +170,13 @@ describe("[API] /api/images/upload", () => {
       const { baseImageId, url } = res.body as { baseImageId: string; url: string }
       expect(baseImageId).toBeTruthy()
 
-      // Verify gallery contains the upload record
-      const galleryPath = path.join(process.cwd(), "data", "gallery.json")
-      const gallery = JSON.parse(await fs.promises.readFile(galleryPath, "utf8")) as Array<any>
-      const inGallery = gallery.find((x) => x.id === baseImageId)
-      expect(inGallery).toBeTruthy()
-      expect(inGallery.url).toBe(url)
-
-      // Verify the GET endpoint also returns it
+      // Verify the GET endpoint returns it (now database-driven)
       const resGet = await request.get("/api/gallery")
       expect(resGet.status).toBe(200)
       const list = resGet.body as any[]
-      expect(list.some((x) => x.id === baseImageId)).toBe(true)
-
-      // Cleanup artifacts: uploads.json entry, gallery.json entry (DB holds the bytes)
-
-      const uploadsPath = path.join(process.cwd(), "data", "uploads.json")
-      try {
-        const json = JSON.parse(await fs.promises.readFile(uploadsPath, "utf8")) as any[]
-        const filtered = json.filter((x) => x.id !== baseImageId)
-        await fs.promises.writeFile(uploadsPath, JSON.stringify(filtered, null, 2), "utf8")
-      } catch {}
-
-      try {
-        const json = JSON.parse(await fs.promises.readFile(galleryPath, "utf8")) as any[]
-        const filtered = json.filter((x) => x.id !== baseImageId)
-        await fs.promises.writeFile(galleryPath, JSON.stringify(filtered, null, 2), "utf8")
-      } catch {}
+      const inGallery = list.find((x) => x.id === baseImageId)
+      expect(inGallery).toBeTruthy()
+      expect(inGallery.url).toBe(url)
     },
     30000,
   )

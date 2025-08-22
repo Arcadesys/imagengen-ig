@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    environmentMatchGlobs: [["**/*.tsx", "happy-dom"]],
+    setupFiles: ["./tests/setup.ts"],
     // Avoid running multiple Next dev servers concurrently across files
     fileParallelism: false,
     pool: "threads",

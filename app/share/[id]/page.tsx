@@ -12,6 +12,7 @@ interface PhotoData {
   style: string
   timestamp: string
   email?: string
+  prompt?: string
 }
 
 export default function SharePhotoPage() {
@@ -151,6 +152,19 @@ export default function SharePhotoPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Display prompt and style if available */}
+          {photo.prompt && (
+            <div className="mt-8 text-center">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Photo Details</h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                <span className="font-medium">Style:</span> {photo.style}
+              </p>
+              <p className="text-gray-600 dark:text-gray-300">
+                <span className="font-medium">Prompt:</span> {photo.prompt}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

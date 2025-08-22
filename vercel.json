@@ -1,5 +1,7 @@
 {
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "crons": []
 }

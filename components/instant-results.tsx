@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, Save, Share2, Eye, X, Camera, RefreshCw, Palette, Upload } from "lucide-react"
+import { Download, Save, Share2, Eye, X, Camera, RefreshCw, Palette, Upload, Trash2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { GeneratedImage } from "@/lib/types"
 
@@ -72,24 +72,34 @@ export function InstantResults({
   }
 
   const handleShare = async (image: GeneratedImage) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Check out my AI-generated image!",
-          text: `Created with prompt: ${prompt}`,
-          url: window.location.href
-        })
-      } catch (error) {
-        // User cancelled sharing
+    try {
+      // Create public share record
+      const res = await fetch("/api/photo/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: image.url, style: image?.metadata?.provider || "custom" }),
+      })
+      if (!res.ok) throw new Error("Failed to create share link")
+      const data = await res.json()
+      const shareUrl = `${window.location.origin}/share/${data.photoId}`
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "Check out my AI-generated image!",
+            text: `Created with prompt: ${prompt}`,
+            url: shareUrl,
+          })
+          return
+        } catch {
+          // fall through to copy
+        }
       }
-    } else {
-      // Fallback: copy URL to clipboard
-      try {
-        await navigator.clipboard.writeText(window.location.href)
-        // Could show a toast here
-      } catch (error) {
-        console.error("Failed to copy to clipboard:", error)
-      }
+
+      await navigator.clipboard.writeText(shareUrl)
+      // Could show a toast to confirm copied
+    } catch (error) {
+      console.error("Failed to share:", error)
     }
   }
 
@@ -168,6 +178,15 @@ export function InstantResults({
                     >
                       <Share2 className="h-4 w-4" />
                     </Button>
+                    {onDiscard && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDiscard(image.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                   
                   {/* Submit to Wall button */}

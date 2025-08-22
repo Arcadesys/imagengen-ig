@@ -14,6 +14,8 @@ import { ToonGenerationModal } from "@/components/toon-generation-modal"
 import { ToonResultsModal } from "@/components/toon-results-modal"
 import type { AnimationConfiguration } from "@/lib/animation-prompts"
 import { generateAnimationPrompt } from "@/lib/animation-prompts"
+import { useGeneratorSession } from "@/hooks/use-generator-session"
+import { useGeneratorTheme } from "@/components/theme-provider"
 
 // type FlowStep = "upload" | "configure" | "generating" | "results"
 type FlowStep = "upload" | "configure" | "generating" | "results"
@@ -35,6 +37,15 @@ export default function TurnToonPage() {
   const [generationStatus, setGenerationStatus] = useState<"generating" | "complete" | "error">("generating")
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [results, setResults] = useState<GeneratedImage[]>([])
+
+  // Theming for this generator
+  const { theme } = useGeneratorTheme()
+  const containerBg = theme.gradientBg || "bg-gradient-to-b from-yellow-50 via-orange-50 to-red-50 dark:from-yellow-950 dark:via-orange-950 dark:to-red-950"
+  const headerBg = `${theme.headerBg || "bg-white/80 dark:bg-black/70"} backdrop-blur supports-[backdrop-filter]:bg-white/60`
+  const accentGradient = theme.accent || "from-yellow-600 to-red-600"
+
+  // Create or fetch a session bound to this generator
+  const { sessionId } = useGeneratorSession("toon")
 
   useEffect(() => {
     async function checkWebcam() {
@@ -93,6 +104,7 @@ export default function TurnToonPage() {
           size: "1024x1024",
           n: 1,
           baseImageId,
+          sessionId: sessionId || null,
         }),
       })
 
@@ -151,8 +163,8 @@ export default function TurnToonPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-yellow-50 via-orange-50 to-red-50 dark:from-yellow-950 dark:via-orange-950 dark:to-red-950">
-      <header className="sticky top-0 z-10 border-b bg-white/80 dark:bg-black/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <div className={`min-h-dvh ${containerBg}`}>
+      <header className={`sticky top-0 z-10 border-b ${headerBg}`}>
         <div className="mx-auto max-w-4xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
@@ -170,7 +182,7 @@ export default function TurnToonPage() {
         {flowStep === "upload" && (
           <div className="space-y-8">
             <div className="text-center space-y-4">
-              <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-yellow-600 to-red-600 bg-clip-text text-transparent">
+              <h2 className={`text-3xl sm:text-4xl font-bold bg-gradient-to-r ${accentGradient} bg-clip-text text-transparent`}>
                 Let's Make You a Toon!
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -198,7 +210,7 @@ export default function TurnToonPage() {
                   </TabsList>
                   <TabsContent value="webcam" className="mt-6">
                     {hasWebcam ? (
-                      <WebcamCapture onUpload={handleImageCapture} onCancel={() => setPreferredInputMode("upload")} />
+                      <WebcamCapture onUpload={handleImageCapture} onCancel={() => setPreferredInputMode("upload")} sessionId={sessionId} />
                     ) : (
                       <div className="text-center py-8">
                         <p className="text-muted-foreground">Camera not available</p>
@@ -214,6 +226,7 @@ export default function TurnToonPage() {
                       }}
                       onMaskChange={() => {}}
                       uploadedImage={baseImage ? { id: baseImageId ?? "", url: baseImage } : null}
+                      sessionId={sessionId}
                     />
                   </TabsContent>
                 </Tabs>
