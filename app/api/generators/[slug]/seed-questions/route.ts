@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { isAdminRequest } from "@/lib/admin"
 
+// Helper to safely get params.slug for dynamic route handlers
+async function getSlugParam(request: NextRequest, fallback?: string): Promise<string | undefined> {
+  try {
+    const url = new URL(request.url)
+    const parts = url.pathname.split("/").filter(Boolean)
+    const slugIndex = parts.findIndex((p, i) => p === "generators" && parts[i + 1] !== undefined)
+    if (slugIndex !== -1) return parts[slugIndex + 1]
+  } catch {}
+  return fallback
+}
+
 // Seed per-generator questions quickly (admin only)
-export async function POST(request: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(request: NextRequest, ctx: { params: { slug: string } }) {
   try {
     if (!isAdminRequest(request)) {
       return NextResponse.json({ error: "Admin secret required" }, { status: 401 })
@@ -12,11 +23,14 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
     const { schema } = await request.json()
     if (!schema) return NextResponse.json({ error: "schema is required" }, { status: 400 })
 
-    const existing = await (prisma as any).imageGenerator.findUnique({ where: { slug: params.slug } })
+    const slug = await getSlugParam(request, ctx?.params?.slug)
+    if (!slug) return NextResponse.json({ error: "Generator not found" }, { status: 404 })
+
+    const existing = await (prisma as any).imageGenerator.findUnique({ where: { slug } })
     if (!existing) return NextResponse.json({ error: "Generator not found" }, { status: 404 })
 
     const updated = await (prisma as any).imageGenerator.update({
-      where: { slug: params.slug },
+      where: { slug },
       data: {
         config: {
           ...(existing as any).config,

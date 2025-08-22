@@ -15,6 +15,8 @@ import { SessionCodeVerify } from "@/components/session-code-verify"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { Camera, RefreshCw, Sparkles, ArrowLeft, Users, Upload as UploadIcon, ChevronLeft, ChevronRight, Images, ExternalLink } from "lucide-react"
+// Add: generator session to associate uploads and generations
+import { useGeneratorSession } from "@/hooks/use-generator-session"
 
 interface QuestionsPayload {
   title: string
@@ -35,7 +37,12 @@ interface MiniSession {
 
 export default function PhotoboothPage() {
   const searchParams = useSearchParams()
-  const generatorSlug = (searchParams.get("generator") || "").trim() || undefined
+  // Default to puppetray when no generator is specified
+  const queryGenerator = (searchParams.get("generator") || "").trim()
+  const generatorSlug = queryGenerator || "puppetray"
+
+  // Create or get a generator session. If a specific generator is chosen (e.g. "puppetray"), attach to that; otherwise use default
+  const { sessionId } = useGeneratorSession(generatorSlug)
 
   const [schema, setSchema] = useState<QuestionsPayload | null>(null)
   const [answers, setAnswers] = useState<Record<string, any>>({})
@@ -398,7 +405,7 @@ export default function PhotoboothPage() {
       progress.updateProgress("uploading", 10, "Uploading snapshot...")
       const blob = await (await fetch(snapshotUrl)).blob()
       const { uploadImageViaApi } = await import("@/lib/client-upload")
-      const { baseImageId } = await uploadImageViaApi(blob, "snapshot.png")
+      const { baseImageId } = await uploadImageViaApi(blob, "snapshot.png", sessionId || undefined)
 
       // Create a full transparent mask to allow AI to stylize entire portrait (edit whole image)
       const maskCanvas = document.createElement("canvas")
@@ -416,7 +423,7 @@ export default function PhotoboothPage() {
       const gen = await fetch("/api/images/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: finalPrompt, n: 1, size: "1024x1024", baseImageId, maskData }),
+        body: JSON.stringify({ prompt: finalPrompt, n: 1, size: "1024x1024", baseImageId, maskData, sessionId: sessionId || null }),
       })
       if (!gen.ok) {
         const err = await gen.json().catch(() => ({ error: "Generation failed" }))

@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+// Replaced shadcn Select with native select to avoid missing module
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Settings, Trash2, ExternalLink, Images } from "lucide-react"
@@ -204,21 +205,16 @@ export default function SessionsPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="generator">Generator</Label>
-                      <Select 
-                        value={formData.generator} 
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, generator: value }))}
+                      <select
+                        id="generator"
+                        className="w-full border rounded h-10 px-3 bg-background"
+                        value={formData.generator}
+                        onChange={(e) => setFormData(prev => ({ ...prev, generator: e.target.value }))}
                       >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {generators.map(gen => (
-                            <SelectItem key={gen.value} value={gen.value}>
-                              {gen.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {generators.map(gen => (
+                          <option key={gen.value} value={gen.value}>{gen.label}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 

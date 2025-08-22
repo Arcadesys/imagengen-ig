@@ -6,9 +6,23 @@ import { isAdminRequest } from "@/lib/admin"
 // Shape expected by the photobooth
 // { title, intro?, questions: [{ id, text, placeholder?, type?, options?, allowCustom? }], references?, promptTemplate }
 
-export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+// Helper to safely get params.slug for dynamic route handlers
+async function getSlugParam(request: NextRequest, fallback?: string): Promise<string | undefined> {
   try {
-    const generator = await (prisma as any).imageGenerator.findUnique({ where: { slug: params.slug } })
+    const url = new URL(request.url)
+    const parts = url.pathname.split("/").filter(Boolean)
+    const slugIndex = parts.findIndex((p, i) => p === "generators" && parts[i + 1] !== undefined)
+    if (slugIndex !== -1) return parts[slugIndex + 1]
+  } catch {}
+  return fallback
+}
+
+export async function GET(request: NextRequest, ctx: { params: { slug: string } }) {
+  try {
+    const slug = await getSlugParam(request, ctx?.params?.slug)
+    if (!slug) return NextResponse.json({ error: "Generator not found" }, { status: 404 })
+
+    const generator = await (prisma as any).imageGenerator.findUnique({ where: { slug } })
     if (!generator) return NextResponse.json({ error: "Generator not found" }, { status: 404 })
 
     const cfg = (generator as any).config || {}
@@ -27,7 +41,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(request: NextRequest, ctx: { params: { slug: string } }) {
   try {
     const session = await auth()
     const isAdmin = isAdminRequest(request)
@@ -42,11 +56,14 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
       return NextResponse.json({ error: "schema with questions and promptTemplate is required" }, { status: 400 })
     }
 
-    const existing = await (prisma as any).imageGenerator.findUnique({ where: { slug: params.slug } })
+    const slug = await getSlugParam(request, ctx?.params?.slug)
+    if (!slug) return NextResponse.json({ error: "Generator not found" }, { status: 404 })
+
+    const existing = await (prisma as any).imageGenerator.findUnique({ where: { slug } })
     if (!existing) return NextResponse.json({ error: "Generator not found" }, { status: 404 })
 
     const updated = await (prisma as any).imageGenerator.update({
-      where: { slug: params.slug },
+      where: { slug },
       data: {
         // Prefer nested schema field to keep future extensibility
         config: {
