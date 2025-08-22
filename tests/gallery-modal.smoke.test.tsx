@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import React from "react"
 import { describe, it, expect, beforeAll, vi } from "vitest"
 import "@testing-library/jest-dom"

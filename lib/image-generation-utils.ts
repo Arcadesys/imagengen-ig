@@ -2,6 +2,7 @@ import { writeFile, mkdir } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
 import { prisma } from "./db"
+import { supabaseAdmin } from "./supabase"
 
 /**
  * Convert data URL to Buffer
@@ -12,7 +13,53 @@ export function dataURLToBuffer(dataURL: string): Buffer {
 }
 
 /**
- * Get path to base image, checking both disk and database
+ * Get base image buffer from Supabase Storage or legacy paths
+ */
+export async function getBaseImageBuffer(baseImageId: string): Promise<Buffer | null> {
+  // 1) Check legacy disk path first
+  const baseDir = path.join(process.cwd(), "public", "uploads", "base")
+  const exts = [".png", ".jpg", ".jpeg", ".webp", ".avif"]
+  for (const ext of exts) {
+    const p = path.join(baseDir, `${baseImageId}${ext}`)
+    if (existsSync(p)) {
+      const fs = await import("fs/promises")
+      return fs.readFile(p)
+    }
+  }
+  
+  // 2) Try database to get image record
+  const rec = await prisma.image.findUnique({ 
+    where: { id: baseImageId },
+    select: { url: true, mimeType: true }
+  })
+  
+  if (!rec) return null
+  
+  // 3) Download from Supabase Storage
+  try {
+    const urlParts = rec.url.split('/images/')
+    if (urlParts.length > 1) {
+      const filePath = urlParts[1]
+      const { data, error } = await supabaseAdmin.storage
+        .from('images')
+        .download(filePath)
+      
+      if (error || !data) {
+        console.warn(`Failed to download image from storage: ${error?.message}`)
+        return null
+      }
+      
+      return Buffer.from(await data.arrayBuffer())
+    }
+  } catch (error) {
+    console.warn(`Error downloading image from storage:`, error)
+  }
+  
+  return null
+}
+
+/**
+ * Get path to base image, materializing from Supabase Storage if needed
  */
 export async function getBaseImagePath(baseImageId: string): Promise<string | null> {
   // 1) Check legacy disk path
@@ -23,17 +70,22 @@ export async function getBaseImagePath(baseImageId: string): Promise<string | nu
     if (existsSync(p)) return p
   }
   
-  // 2) Try DB and materialize to temp file
-  const rec = await prisma.image.findUnique({ where: { id: baseImageId }, include: { blob: true } })
-  if (!rec || !rec.blob?.data) return null
+  // 2) Get buffer from Supabase and materialize to temp file
+  const buffer = await getBaseImageBuffer(baseImageId)
+  if (!buffer) return null
   
-  const ext = rec.mimeType.includes("png")
+  const rec = await prisma.image.findUnique({ 
+    where: { id: baseImageId },
+    select: { mimeType: true }
+  })
+  
+  const ext = rec?.mimeType.includes("png")
     ? ".png"
-    : rec.mimeType.includes("jpeg") || rec.mimeType.includes("jpg")
+    : rec?.mimeType.includes("jpeg") || rec?.mimeType.includes("jpg")
       ? ".jpg"
-      : rec.mimeType.includes("webp")
+      : rec?.mimeType.includes("webp")
         ? ".webp"
-        : rec.mimeType.includes("avif")
+        : rec?.mimeType.includes("avif")
           ? ".avif"
           : ".png"
   
@@ -41,7 +93,7 @@ export async function getBaseImagePath(baseImageId: string): Promise<string | nu
   if (!existsSync(tempDir)) await mkdir(tempDir, { recursive: true })
   
   const p = path.join(tempDir, `base-${baseImageId}${ext}`)
-  await writeFile(p, Buffer.from(rec.blob.data as any))
+  await writeFile(p, buffer)
   return p
 }
 
@@ -49,16 +101,8 @@ export async function getBaseImagePath(baseImageId: string): Promise<string | nu
  * Ensure required directories exist
  */
 export async function ensureDirectories(): Promise<void> {
-  const generatedDir = path.join(process.cwd(), "public", "generated")
-  const dataDir = path.join(process.cwd(), "data")
   const tempDir = path.join(process.cwd(), "temp")
 
-  if (!existsSync(generatedDir)) {
-    await mkdir(generatedDir, { recursive: true })
-  }
-  if (!existsSync(dataDir)) {
-    await mkdir(dataDir, { recursive: true })
-  }
   if (!existsSync(tempDir)) {
     await mkdir(tempDir, { recursive: true })
   }

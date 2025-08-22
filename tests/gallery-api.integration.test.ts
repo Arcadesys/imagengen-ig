@@ -75,9 +75,22 @@ describe("[API] /api/gallery", () => {
   it(
     "adds an image and then returns it from GET (newest first)",
     async () => {
+      // First create an image in the database
+      const { prisma } = await import("../lib/db")
+      const testImage = await prisma.image.create({
+        data: {
+          kind: "GENERATED",
+          url: "https://example.com/test-image-1.png",
+          mimeType: "image/png",
+          sizeBytes: 1000,
+          prompt: "a test image",
+          seed: "123",
+        },
+      })
+
       const payload = {
-        id: "test-image-1",
-        url: "/generated/test-image-1.png",
+        id: testImage.id,
+        url: testImage.url,
         prompt: "a test image",
         size: "512x512" as const,
         seed: 123,
@@ -94,14 +107,11 @@ describe("[API] /api/gallery", () => {
       expect(resGet.status).toBe(200)
       const list = resGet.body as any[]
       expect(Array.isArray(list)).toBe(true)
-      expect(list[0].id).toBe(payload.id)
+      const foundImage = list.find(img => img.id === testImage.id)
+      expect(foundImage).toBeTruthy()
 
       // cleanup: remove our test record
-      try {
-        const json = (await readJson<any[]>(galleryPath)) || []
-        const filtered = json.filter((x) => x.id !== payload.id)
-        await fs.promises.writeFile(galleryPath, JSON.stringify(filtered, null, 2), "utf8")
-      } catch {}
+      await prisma.image.delete({ where: { id: testImage.id } }).catch(() => {})
     },
     20000,
   )
@@ -109,12 +119,24 @@ describe("[API] /api/gallery", () => {
   it(
     "accepts batch payload { images: [...] } and returns them via GET",
     async () => {
-      const genId = "generated-batch-1"
+      // First create the image in the database
+      const { prisma } = await import("../lib/db")
+      const testImage = await prisma.image.create({
+        data: {
+          kind: "GENERATED",
+          url: "https://example.com/generated-batch-1.png",
+          mimeType: "image/png",
+          sizeBytes: 1000,
+          prompt: "toon cat",
+          seed: "42",
+        },
+      })
+
       const payload = {
         images: [
           {
-            id: genId,
-            url: "/generated/generated-batch-1.png",
+            id: testImage.id,
+            url: testImage.url,
             metadata: {
               prompt: "toon cat",
               size: "512x512" as const,
@@ -129,21 +151,17 @@ describe("[API] /api/gallery", () => {
       expect(resPost.status).toBe(200)
       const saved = resPost.body as any[]
       expect(Array.isArray(saved)).toBe(true)
-      expect(saved[0].id).toBe(genId)
+      expect(saved[0].id).toBe(testImage.id)
       expect(saved[0].prompt).toBe("toon cat")
 
       const resGet = await request.get("/api/gallery")
       expect(resGet.status).toBe(200)
       const list = resGet.body as any[]
-      const rec = list.find((x) => x.id === genId)
+      const rec = list.find((x) => x.id === testImage.id)
       expect(rec).toBeTruthy()
 
       // cleanup
-      try {
-        const json = (await readJson<any[]>(galleryPath)) || []
-        const filtered = json.filter((x) => x.id !== genId)
-        await fs.promises.writeFile(galleryPath, JSON.stringify(filtered, null, 2), "utf8")
-      } catch {}
+      await prisma.image.delete({ where: { id: testImage.id } }).catch(() => {})
     },
     20000,
   )

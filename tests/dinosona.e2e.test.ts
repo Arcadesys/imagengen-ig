@@ -61,7 +61,7 @@ afterAll(async () => {
 
 describe("[E2E] Dinosona generator", () => {
   it(
-    "renders form and generates an image via intercepted API",
+    "shows redirect to photobooth",
     async () => {
       // Navigate with a few retries in case the dev server is still compiling the route
       let attempts = 0
@@ -79,33 +79,23 @@ describe("[E2E] Dinosona generator", () => {
         attempts++
       }
 
-      // Wait for the form to be ready
-      await page.waitForSelector('form[aria-label="dinosona-form"]', { timeout: 30000 })
+      // Wait for the redirect page to load
+      await page.waitForSelector('h1', { timeout: 30000 })
 
-      // Add a sample photo to satisfy base image requirement
-      await page.click('[data-testid="use-sample-photo"]')
+      // Check for the redirect message
+      const heading = await page.$eval('h1', el => el.textContent)
+      expect(heading).toContain('Dinosona Photobooth')
 
-      // Wait until UI shows photo ready and the Generate button becomes enabled
-      await page.waitForFunction(() => {
-        return Array.from(document.querySelectorAll('span')).some(el => /photo ready/i.test((el.textContent || ''))) 
-      }, { timeout: 30000 })
-      await page.waitForFunction(() => {
-        const btn = document.querySelector('button[type="submit"]') as HTMLButtonElement | null
-        return !!btn && !btn.disabled
-      }, { timeout: 30000 })
+      // Check for the photobooth link
+      const link = await page.$('a[href="/photobooth?generator=dinosona"]')
+      expect(link).toBeTruthy()
 
-      // Type a custom species to verify inputs are interactive
-      await page.type('#species', 'stegosaurus')
-
-      // Submit the form
-      await page.click('button[type="submit"]')
-
-      // The page should render the generated image using the data URL we fulfilled
-      await page.waitForSelector('img[alt="Generated dinosona"]', { timeout: 30000 })
-
-      const imgSrc = await page.$eval('img[alt="Generated dinosona"]', (img: any) => (img as HTMLImageElement).src)
-      expect(imgSrc.startsWith('data:image/png;base64,')).toBe(true)
+      // Check button text
+      const button = await page.$('button')
+      expect(button).toBeTruthy()
+      const buttonText = await page.evaluate(el => el!.textContent, button)
+      expect(buttonText).toContain('Open Photobooth')
     },
-    120000,
+    60000,
   )
 })
