@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const sp = useSearchParams();
   const rawError = sp.get("error") ?? undefined;
   const error = Array.isArray(rawError) ? rawError[0] : rawError;
@@ -22,25 +23,42 @@ export default function AuthErrorPage() {
   const message = (error && messages[error]) || messages.Default;
 
   return (
-    <main className="flex min-h-[60vh] items-center justify-center p-6">
-      <div className="max-w-md text-center">
-        <h1 className="text-2xl font-semibold mb-2">Sign-in error</h1>
-        <p className="text-gray-600 mb-6">{message}</p>
-        <div className="flex gap-3 justify-center">
-          <Link
-            href="/auth/signin"
-            className="px-4 py-2 rounded-md bg-black text-white hover:bg-gray-800"
-          >
-            Try again
-          </Link>
-          <Link
-            href="/"
-            className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50"
-          >
-            Go home
-          </Link>
-        </div>
+    <div className="max-w-md text-center">
+      <h1 className="text-2xl font-semibold mb-2">Sign-in error</h1>
+      <p className="text-gray-600 mb-6">{message}</p>
+      <div className="flex gap-3 justify-center">
+        <Link
+          href="/auth/signin"
+          className="px-4 py-2 rounded-md bg-black text-white hover:bg-gray-800"
+        >
+          Try again
+        </Link>
+        <Link
+          href="/"
+          className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50"
+        >
+          Go home
+        </Link>
       </div>
+    </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="max-w-md text-center">
+      <h1 className="text-2xl font-semibold mb-2">Sign-in error</h1>
+      <p className="text-gray-600 mb-6">Loading...</p>
+    </div>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <main className="flex min-h-[60vh] items-center justify-center p-6">
+      <Suspense fallback={<LoadingFallback />}>
+        <AuthErrorContent />
+      </Suspense>
     </main>
   );
 }

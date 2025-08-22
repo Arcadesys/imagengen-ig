@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useMemo } from "react"
+import { useEffect, useRef, useState, useMemo, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -35,7 +35,7 @@ interface MiniSession {
   _count: { images: number }
 }
 
-export default function PhotoboothPage() {
+function PhotoboothContent() {
   const searchParams = useSearchParams()
   // Default to puppetray when no generator is specified
   const queryGenerator = (searchParams.get("generator") || "").trim()
@@ -659,5 +659,26 @@ export default function PhotoboothPage() {
         generatedImages={progress.generatedImages}
       />
     </div>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-8">
+          <h1 className="text-3xl font-bold mb-4">Loading...</h1>
+          <p className="text-gray-600">Preparing your photobooth experience</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function PhotoboothPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <PhotoboothContent />
+    </Suspense>
   )
 }

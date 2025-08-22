@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,7 +22,7 @@ interface WallTransformation {
   } | null
 }
 
-export default function LiveWallPage() {
+function LiveWallContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get("session")
   
@@ -386,5 +386,25 @@ export default function LiveWallPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
+      <div className="text-center">
+        <Sparkles className="h-8 w-8 text-purple-400 animate-spin mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-white mb-2">Loading Wall</h1>
+        <p className="text-gray-400">Preparing transformation display...</p>
+      </div>
+    </div>
+  )
+}
+
+export default function LiveWallPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <LiveWallContent />
+    </Suspense>
   )
 }
