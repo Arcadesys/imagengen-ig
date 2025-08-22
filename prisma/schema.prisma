@@ -1,6 +1,6 @@
-// SQLite Prisma schema for image storage
-// Run migrations locally: npx prisma migrate dev --name init
-// Generate client only: npx prisma generate
+// PostgreSQL Prisma schema for image storage (using Supabase)
+// Run migrations: npx prisma db push
+// Generate client: npx prisma generate
 
 generator client {
   provider = "prisma-client-js"

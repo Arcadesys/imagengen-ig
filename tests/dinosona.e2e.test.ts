@@ -90,8 +90,8 @@ describe("[E2E] Dinosona generator", () => {
       const link = await page.$('a[href="/photobooth?generator=dinosona"]')
       expect(link).toBeTruthy()
 
-      // Check button text
-      const button = await page.$('button')
+      // Check button text - look for the button inside the link
+      const button = await page.$('a[href="/photobooth?generator=dinosona"] button')
       expect(button).toBeTruthy()
       const buttonText = await page.evaluate(el => el!.textContent, button)
       expect(buttonText).toContain('Open Photobooth')

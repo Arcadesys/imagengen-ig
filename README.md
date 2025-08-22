@@ -20,19 +20,23 @@ An accessibility-focused AI image generation application built with Next.js, Typ
 
 ### 1) Environment variables
 
-Copy `.env.example` to `.env.local` and set:
+Copy `.env.example` to `.env.local` and configure for Supabase:
 
-- DATABASE_URL (Postgres connection string)
-- DIRECT_URL (optional, writer connection)
+- NEXT_PUBLIC_SUPABASE_URL (from Supabase dashboard)
+- NEXT_PUBLIC_SUPABASE_ANON_KEY (from Supabase dashboard)  
+- SUPABASE_SERVICE_ROLE_KEY (from Supabase dashboard)
+- DATABASE_URL (Supabase PostgreSQL connection string)
+- DIRECT_URL (Supabase PostgreSQL direct connection)
 - AUTH_SECRET (openssl rand -base64 32)
-- AUTH_URL (http://localhost:3000 in dev)
+- AUTH_URL (http://localhost:3001 in dev)
 - ADMIN_SECRET (for admin APIs)
 
-### 2) Database
+### 2) Supabase Setup
 
-- Create a Postgres database (local, Neon, or Vercel Postgres)
-- Push schema:
-  - npm run prisma:push (or `npx prisma migrate dev`)
+- Create a Supabase project at https://supabase.com
+- Create an "images" storage bucket (public)
+- Configure storage policies (see SUPABASE_SETUP.md)
+- Push database schema: `npm run prisma:push`
 
 ### 3) Seed an admin user
 

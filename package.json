@@ -16,7 +16,7 @@
     "test:e2e": "vitest --config vitest.e2e.config.ts run",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:migrate": "prisma db push",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio"
   },
