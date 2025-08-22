@@ -7,56 +7,43 @@
 
 ## Overview
 
-An accessibility-focused AI image generation application built with Next.js, TypeScript, and React. This app integrates with OpenAI's DALL-E API to generate images while maintaining strong accessibility standards.
+An accessibility-focused AI image generation application built with Next.js, TypeScript, and React. Uses Prisma with PostgreSQL (Vercel Postgres recommended) and NextAuth credentials auth by default.
 
 ### Features
 
-- 🎨 AI-powered image generation using OpenAI DALL-E
-- ♿ Accessibility-first design with screen reader support
+- 🎨 AI-powered image generation using OpenAI
+- 🔐 Credentials (email/password) auth via NextAuth + Prisma
 - 🖼️ Image gallery with alt text management
-- 📱 Responsive design for all devices
-- 🎭 Image editing with mask painting capabilities
-- 📊 OpenAI API configuration testing
+- 📱 Responsive design
 
-## Setup Instructions
+## Setup
 
-### Prerequisites
+### 1) Environment variables
 
-- Node.js 18+ 
-- OpenAI API key (get one at [platform.openai.com](https://platform.openai.com/api-keys))
+Copy `.env.example` to `.env.local` and set:
 
-### Installation
+- DATABASE_URL (Postgres connection string)
+- DIRECT_URL (optional, writer connection)
+- AUTH_SECRET (openssl rand -base64 32)
+- AUTH_URL (http://localhost:3000 in dev)
+- ADMIN_SECRET (for admin APIs)
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Arcadesys/imagengen-ig.git
-cd imagengen-ig
-```
+### 2) Database
 
-2. Install dependencies:
-```bash
-npm install
-```
+- Create a Postgres database (local, Neon, or Vercel Postgres)
+- Push schema:
+  - npm run prisma:push (or `npx prisma migrate dev`)
 
-3. Set up environment variables:
-```bash
-cp .env.example .env.local
-# Edit .env.local and add your OpenAI API key
-```
+### 3) Seed an admin user
 
-4. Start the development server:
-```bash
-npm run dev
-```
+Create a user with a password:
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+- POST /api/admin/seed-user { email, password, name? } (see below)
 
-### Environment Variables
+### Deploy on Vercel
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `OPENAI_API_KEY` | Your OpenAI API key (starts with `sk-`) | Yes |
-| `NEXT_PUBLIC_APP_URL` | Your app URL (for production) | No |
+- Set DATABASE_URL, DIRECT_URL (if used), AUTH_SECRET, AUTH_URL, ADMIN_SECRET in Vercel Project Settings
+- Deploy. No additional build steps beyond Next.js
 
 ## Development
 
