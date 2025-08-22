@@ -23,12 +23,15 @@ interface UploadedImage {
 
 export async function POST(request: NextRequest) {
   console.log("[v0] Upload API called")
+  
+  let file: File | null = null
+  let sessionId: string | undefined = undefined
 
   try {
     console.log("[v0] Parsing form data...")
     const formData = await request.formData()
-    const file = formData.get("file") as File
-    const sessionId = (formData.get("sessionId") as string) || undefined
+    file = formData.get("file") as File
+    sessionId = (formData.get("sessionId") as string) || undefined
 
     if (!file) {
       console.log("[v0] No file provided in request")
@@ -148,8 +151,23 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ baseImageId: saved.id, url: saved.url })
   } catch (error) {
-    console.error("[v0] Error uploading file:", error)
-    return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
+    // Enhanced error logging for production debugging
+    const errorDetails = {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      fileName: file?.name || 'unknown',
+      fileSize: file?.size || 0,
+      fileType: file?.type || 'unknown',
+      timestamp: new Date().toISOString(),
+      sessionId: sessionId || null
+    }
+    
+    console.error("[v0] Upload error details:", JSON.stringify(errorDetails, null, 2))
+    
+    // Return user-friendly error message while logging details
+    return NextResponse.json({ 
+      error: "Failed to upload file. Please try again or contact support if the issue persists." 
+    }, { status: 500 })
   }
 }
 
