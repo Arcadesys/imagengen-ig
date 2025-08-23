@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { isAdminRequest } from "@/lib/admin";
+import { createSkinColorQuestion } from "@/lib/shared-skin-color";
 
 const defaultSchema = {
   title: "Dinosona Photobooth",
@@ -41,14 +42,11 @@ const defaultSchema = {
       allowCustom: true,
       placeholder: "Enter a custom gender",
     },
-    {
-      id: "color",
-      text: "What color is your dinosaur?",
-      placeholder: "e.g., teal and purple",
-    },
+    // Use standardized skin color question
+    createSkinColorQuestion("What color should your dinosaur's skin/scales be?"),
   ],
   promptTemplate:
-    "Transform the person in the photo into a friendly dinosona character. Species: {{dinosaur}}. Gender: {{gender}}. Primary colors: {{color}}. Preserve facial likeness and identity while translating features into dinosaur anatomy. Cute, family-friendly, highly detailed, studio-quality illustration.",
+    "Transform the person in the photo into a friendly dinosona character. Species: {{dinosaur}}. Gender: {{gender}}. {{#if skinColor}}Skin/scale coloring: {{skinColor}}.{{/if}} Preserve facial likeness and identity while translating features into dinosaur anatomy. Cute, family-friendly, highly detailed, studio-quality illustration.",
 };
 
 export async function GET(_req: NextRequest) {
