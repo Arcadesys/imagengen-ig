@@ -2,7 +2,7 @@ import { writeFile, mkdir } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
 import { prisma } from "./db"
-import { supabaseAdmin } from "./supabase"
+import { supabaseAdmin, isSupabaseConfigured } from "./supabase"
 
 /**
  * Get appropriate temp directory based on environment
@@ -49,6 +49,9 @@ export async function getBaseImageBuffer(baseImageId: string): Promise<Buffer | 
   
   // 3) Download from Supabase Storage
   try {
+    if (!isSupabaseConfigured() || !supabaseAdmin) {
+      return null
+    }
     const urlParts = rec.url.split('/images/')
     if (urlParts.length > 1) {
       const filePath = urlParts[1]
@@ -136,7 +139,7 @@ export function validateGenerateRequest(body: any): { isValid: boolean; error?: 
   }
 
   // Size becomes optional for Auto. If provided, validate; if omitted, we'll choose a default later.
-  if (size != null && !["512x512", "1024x1024", "1024x1536", "1536x1024"].includes(size)) {
+  if (size != null && ["512x512", "1024x1024", "1024x1536", "1536x1024"].includes(size) === false) {
     return { isValid: false, error: "Invalid size. Must be 512x512, 1024x1024, 1024x1536, or 1536x1024" }
   }
 

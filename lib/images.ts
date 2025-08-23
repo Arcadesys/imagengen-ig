@@ -1,5 +1,5 @@
 import { prisma } from "./db"
-import { supabaseAdmin } from "./supabase"
+import { supabaseAdmin, isSupabaseConfigured, getSupabaseConfigStatus } from "./supabase"
 import type { ImageSize } from "@prisma/client"
 
 function extFromMime(mime: string): string {
@@ -32,6 +32,14 @@ export interface SaveImageOptions {
 }
 
 export async function saveImage(opts: SaveImageOptions) {
+  // Early validation for storage config
+  if (!isSupabaseConfigured() || !supabaseAdmin) {
+    const status = getSupabaseConfigStatus()
+    throw new Error(
+      `Supabase is not configured: hasUrl=${status.hasUrl} hasAnon=${status.hasAnon} hasServiceRole=${status.hasServiceRole}`
+    )
+  }
+
   // Create the database record first to get an ID
   const rec = await prisma.image.create({
     data: {
@@ -112,6 +120,10 @@ export async function deleteImage(imageId: string) {
   if (urlParts.length > 1) {
     const filePath = urlParts[1]
     
+    if (!isSupabaseConfigured() || !supabaseAdmin) {
+      throw new Error('Supabase not configured for deletion')
+    }
+
     // Delete from Supabase Storage
     const { error } = await supabaseAdmin.storage
       .from('images')

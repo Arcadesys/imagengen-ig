@@ -9,12 +9,42 @@
 import { createClient } from '@supabase/supabase-js'
 import { createHash } from 'crypto'
 import fs from 'fs'
+import { readFileSync, existsSync } from 'fs'
+import { resolve } from 'path'
+
+// Load environment variables from .env.local and .env if running locally
+function loadEnvFile(filename) {
+  const envPath = resolve(filename)
+  if (!existsSync(envPath)) return {}
+  const content = readFileSync(envPath, 'utf8')
+  const vars = {}
+  content.split('\n').forEach(line => {
+    line = line.trim()
+    if (line && !line.startsWith('#')) {
+      const [key, ...valueParts] = line.split('=')
+      if (key && valueParts.length > 0) {
+        let value = valueParts.join('=')
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1)
+        }
+        vars[key.trim()] = value.trim()
+      }
+    }
+  })
+  return vars
+}
+
+const envLocal = loadEnvFile('.env.local')
+const envDefault = loadEnvFile('.env')
+Object.assign(process.env, envDefault, envLocal)
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error('❌ Missing Supabase environment variables')
+  console.error('   NEXT_PUBLIC_SUPABASE_URL present:', !!supabaseUrl)
+  console.error('   SUPABASE_SERVICE_ROLE_KEY present:', !!serviceRoleKey)
   process.exit(1)
 }
 
@@ -27,6 +57,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 
 async function testSupabaseIntegration() {
   console.log('🧪 Testing Supabase integration...')
+  console.log('   URL:', supabaseUrl)
   
   try {
     // Test 1: Check if bucket exists
