@@ -1,3 +1,5 @@
+import { generateColorDescription } from "./shared-skin-color"
+
 export type AnimationStyle =
   | "anime"
   | "manga"
@@ -23,6 +25,7 @@ export interface AnimationConfiguration {
   gender?: string
   species?: string
   personality?: string
+  skinColor?: string // Add skin color support
 }
 
 /**
@@ -37,21 +40,27 @@ export function generateAnimationPrompt(
   const gender = (config.gender || "").trim()
   const species = (config.species || "human").trim() || "human"
   const personality = (config.personality || "").trim()
+  const skinColor = (config.skinColor || "").trim()
 
   const styleDescriptor = getAnimationDescriptor(style)
   const speciesFeatures = generateSpeciesFeatures(species)
   const personalityFeatures = generatePersonalityFeatures(personality)
   const genderFeatures = gender ? `${gender} characteristics, ` : ""
+  
+  // Generate skin color features for animation context
+  const colorFeatures = generateColorDescription(skinColor, 'animation')
 
   const instructions = [
     `Turn the subject into an ANIMATED character in the ${style} style (${styleDescriptor}).`,
     `Species: ${species} with ${genderFeatures}${speciesFeatures}.`,
+    colorFeatures ? `Skin/character coloring: ${colorFeatures}.` : "",
     `Personality cues: ${personalityFeatures}.`,
     // Identity preservation and caricature emphasis
     "CRITICAL: Preserve the subject's identity. Keep all distinctive facial features recognizable.",
     "CRITICAL: MAINTAIN EXACT ORIGINAL POSE, BODY POSITION, AND CAMERA ANGLE. Do not change the subject's posture, stance, arm positions, leg positions, or head orientation.",
     "CRITICAL: PRESERVE ORIGINAL FACIAL EXPRESSION AND EYE DIRECTION. Do not alter facial expressions, mouth position, eye gaze direction, or head tilt from the original.",
     "Use caricature principles: exaggerate distinctive features (nose, eyebrows, facial structure) while maintaining likeness.",
+    colorFeatures ? `Apply ${colorFeatures} to all visible skin areas while maintaining the animation style.` : "",
     // Rendering guidance typical for cartoon integration
     "Bold outlines where appropriate, clean shapes, and consistent shading per the chosen animation style.",
     "Maintain original camera, lens, composition, pose, and background. Do not alter the environment.",

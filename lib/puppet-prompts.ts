@@ -1,3 +1,5 @@
+import { generateColorDescription } from "./shared-skin-color"
+
 export type PuppetStyle = 
   // Classic Styles
   | "sock" | "muppet" | "felt" | "plush" | "paper"
@@ -212,6 +214,7 @@ function generatePersonalityFeatures(personality: string): string {
 
 /**
  * Generate color features for skin/fur/felt based on user selection
+ * Now uses shared color utility with puppet-specific material context
  */
 function generateColorFeatures(skinColor: string, style: PuppetStyle, species: string): string {
   if (!skinColor) return ""
@@ -239,62 +242,9 @@ function generateColorFeatures(skinColor: string, style: PuppetStyle, species: s
     materialTerm = "material"
   }
   
-  // Color descriptions that work well for puppet materials
-  const colorDescriptions: Record<string, string> = {
-    // Natural skin tones
-    "light": `light ${materialTerm}`,
-    "medium": `medium ${materialTerm}`,
-    "dark": `dark ${materialTerm}`,
-    "tan": `tan ${materialTerm}`,
-    "olive": `olive-toned ${materialTerm}`,
-    "pale": `pale ${materialTerm}`,
-    "peachy": `peachy ${materialTerm}`,
-    
-    // Classic colors
-    "white": `white ${materialTerm}`,
-    "black": `black ${materialTerm}`,
-    "gray": `gray ${materialTerm}`,
-    "grey": `gray ${materialTerm}`,
-    "brown": `brown ${materialTerm}`,
-    
-    // Vibrant colors
-    "red": `red ${materialTerm}`,
-    "blue": `blue ${materialTerm}`,
-    "green": `green ${materialTerm}`,
-    "yellow": `yellow ${materialTerm}`,
-    "orange": `orange ${materialTerm}`,
-    "purple": `purple ${materialTerm}`,
-    "pink": `pink ${materialTerm}`,
-    
-    // Pastel colors
-    "pastel pink": `soft pastel pink ${materialTerm}`,
-    "pastel blue": `soft pastel blue ${materialTerm}`,
-    "pastel green": `soft pastel green ${materialTerm}`,
-    "pastel yellow": `soft pastel yellow ${materialTerm}`,
-    "lavender": `lavender ${materialTerm}`,
-    "mint": `mint green ${materialTerm}`,
-    "cream": `cream-colored ${materialTerm}`,
-    
-    // Animal-inspired colors
-    "golden": `golden ${materialTerm}`,
-    "silver": `silver ${materialTerm}`,
-    "copper": `copper-colored ${materialTerm}`,
-    "bronze": `bronze ${materialTerm}`,
-    
-    // Fantasy colors
-    "rainbow": `multicolored rainbow ${materialTerm}`,
-    "iridescent": `iridescent shimmering ${materialTerm}`,
-    "metallic": `metallic ${materialTerm}`,
-    "neon": `bright neon ${materialTerm}`,
-  }
+  // Use shared color utility but with specific material terms for puppets
+  const baseDescription = generateColorDescription(skinColor, 'puppet')
   
-  // Try to match the color description
-  let colorDescription = colorDescriptions[colorLower]
-  
-  // If no exact match, create a basic description
-  if (!colorDescription) {
-    colorDescription = `${colorLower} ${materialTerm}`
-  }
-  
-  return colorDescription
+  // Replace generic "puppet material" with specific material term
+  return baseDescription.replace(/puppet material/g, materialTerm)
 }

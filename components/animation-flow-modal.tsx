@@ -19,6 +19,8 @@ interface AnimationConfigurationModalProps {
   initialConfig?: Partial<AnimationConfiguration>
 }
 
+import { SKIN_COLOR_OPTIONS } from "@/lib/shared-skin-color"
+
 const ANIMATION_STYLES = [
   { id: "anime", name: "Anime", description: "2D anime with clean line art and cel shading" },
   { id: "manga", name: "Manga (B/W)", description: "Black-and-white screentones and dynamic ink" },
@@ -66,6 +68,39 @@ const SPECIES_OPTIONS = [
   "monster", "alien", "robot"
 ]
 
+// Helper function to get Tailwind classes for skin color visualization
+function getSkinColorClass(color: string): string {
+  const colorMap: Record<string, string> = {
+    'light': 'bg-orange-100',
+    'medium': 'bg-orange-200',
+    'dark': 'bg-orange-800',
+    'tan': 'bg-orange-300',
+    'olive': 'bg-green-200',
+    'pale': 'bg-orange-50',
+    'peachy': 'bg-orange-100',
+    'white': 'bg-white',
+    'black': 'bg-gray-900',
+    'gray': 'bg-gray-400',
+    'brown': 'bg-orange-600',
+    'red': 'bg-red-500',
+    'blue': 'bg-blue-500',
+    'green': 'bg-green-500',
+    'yellow': 'bg-yellow-500',
+    'orange': 'bg-orange-500',
+    'purple': 'bg-purple-500',
+    'pink': 'bg-pink-500',
+    'pastel pink': 'bg-pink-200',
+    'pastel blue': 'bg-blue-200',
+    'lavender': 'bg-purple-200',
+    'mint': 'bg-green-200',
+    'cream': 'bg-orange-50',
+    'golden': 'bg-yellow-400',
+    'silver': 'bg-gray-300',
+    'rainbow': 'bg-gradient-to-r from-red-400 via-yellow-400 to-blue-400'
+  }
+  return colorMap[color] || 'bg-gray-200'
+}
+
 export function AnimationConfigurationModal({
   isOpen,
   onClose,
@@ -78,6 +113,7 @@ export function AnimationConfigurationModal({
     gender: initialConfig?.gender || "",
     species: initialConfig?.species || "",
     personality: initialConfig?.personality || "",
+    skinColor: initialConfig?.skinColor || "",
   })
 
   const [genderSearch, setGenderSearch] = useState("")
@@ -100,15 +136,16 @@ export function AnimationConfigurationModal({
   )
 
   const handleNext = useCallback(() => {
-    if (step < 5) {
+    if (step < 6) {
       const next = step + 1
       setStep(next)
-      if (next === 5) {
+      if (next === 6) {
         const composed = generateAnimationPrompt({
           style: config.style,
           gender: config.gender,
           species: config.species || "human",
           personality: config.personality,
+          skinColor: config.skinColor,
         }, false)
         setFinalPrompt(composed)
       }
@@ -150,8 +187,9 @@ export function AnimationConfigurationModal({
               {step === 1 && "Choose Your Animation Style"}
               {step === 2 && "What's Your Gender? (Optional)"}
               {step === 3 && "Animal or Robot? (Optional)"}
-              {step === 4 && "What's Your Vibe? (Optional)"}
-              {step === 5 && "Review & Edit Prompt"}
+              {step === 4 && "Choose Skin Color (Optional)"}
+              {step === 5 && "What's Your Vibe? (Optional)"}
+              {step === 6 && "Review & Edit Prompt"}
             </h2>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map(i => (
@@ -304,6 +342,52 @@ export function AnimationConfigurationModal({
 
           {step === 4 && (
             <div className="space-y-6">
+              <p className="text-muted-foreground">Choose a skin color for your character (optional).</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                <Card 
+                  className={`p-3 cursor-pointer transition-all hover:shadow-md ${
+                    !config.skinColor 
+                      ? 'ring-2 ring-primary bg-primary/5' 
+                      : 'hover:bg-muted/50'
+                  }`}
+                  onClick={() => setConfig(prev => ({ ...prev, skinColor: "" }))}
+                >
+                  <div className="text-center">
+                    <div className="w-8 h-8 mx-auto mb-2 bg-gradient-to-r from-orange-200 to-amber-200 rounded-full border"></div>
+                    <span className="text-sm font-medium">Default</span>
+                  </div>
+                </Card>
+                {SKIN_COLOR_OPTIONS.filter(option => option.value !== '').map(option => (
+                  <Card 
+                    key={option.value}
+                    className={`p-3 cursor-pointer transition-all hover:shadow-md ${
+                      config.skinColor === option.value 
+                        ? 'ring-2 ring-primary bg-primary/5' 
+                        : 'hover:bg-muted/50'
+                    }`}
+                    onClick={() => setConfig(prev => ({ ...prev, skinColor: option.value }))}
+                  >
+                    <div className="text-center">
+                      <div className={`w-8 h-8 mx-auto mb-2 rounded-full border ${getSkinColorClass(option.value)}`}></div>
+                      <span className="text-sm font-medium">{option.label}</span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              <Card className="p-4 bg-muted/50">
+                <h3 className="font-semibold mb-2">Your Toon Preview</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Style:</strong> {ANIMATION_STYLES.find(s => s.id === config.style)?.name}</p>
+                  <p><strong>Gender:</strong> {config.gender || "Not specified"}</p>
+                  <p><strong>Species:</strong> {config.species || "human"}</p>
+                  <p><strong>Skin Color:</strong> {SKIN_COLOR_OPTIONS.find(c => c.value === config.skinColor)?.label || "Default"}</p>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="space-y-6">
               <p className="text-muted-foreground">Choose a personality vibe (optional).</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
                 {PERSONALITY_OPTIONS.map(p => (
@@ -327,13 +411,14 @@ export function AnimationConfigurationModal({
                   <p><strong>Style:</strong> {ANIMATION_STYLES.find(s => s.id === config.style)?.name}</p>
                   <p><strong>Gender:</strong> {config.gender || "Not specified"}</p>
                   <p><strong>Species:</strong> {config.species || "human"}</p>
+                  <p><strong>Skin Color:</strong> {SKIN_COLOR_OPTIONS.find(c => c.value === config.skinColor)?.label || "Default"}</p>
                   <p><strong>Personality:</strong> {PERSONALITY_OPTIONS.find(p => p.id === config.personality)?.name || "Not selected"}</p>
                 </div>
               </Card>
             </div>
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <div className="space-y-4">
               <p className="text-muted-foreground">Final checkpoint: Edit the prompt before generating.</p>
               <Label htmlFor="finalPrompt">Prompt</Label>
@@ -359,7 +444,7 @@ export function AnimationConfigurationModal({
               <Button 
                 variant="ghost" 
                 onClick={() => {
-                  if (step === 4) {
+                  if (step === 5) {
                     const composed = generateAnimationPrompt({
                       style: config.style,
                       gender: config.gender,
@@ -376,8 +461,8 @@ export function AnimationConfigurationModal({
             )}
           </div>
           <Button onClick={handleNext} disabled={!isStepComplete()}>
-            {step === 5 ? "Generate My Toon!" : "Next"}
-            {step < 5 && <ChevronRight className="w-4 h-4 ml-2" />}
+            {step === 6 ? "Generate My Toon!" : "Next"}
+            {step < 6 && <ChevronRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
       </DialogContent>
