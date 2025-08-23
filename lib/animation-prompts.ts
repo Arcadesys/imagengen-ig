@@ -23,6 +23,7 @@ export interface AnimationConfiguration {
   gender?: string
   species?: string
   personality?: string
+  skinColor?: string // Add skin color support to animations
 }
 
 /**
@@ -37,15 +38,18 @@ export function generateAnimationPrompt(
   const gender = (config.gender || "").trim()
   const species = (config.species || "human").trim() || "human"
   const personality = (config.personality || "").trim()
+  const skinColor = (config.skinColor || "").trim()
 
   const styleDescriptor = getAnimationDescriptor(style)
   const speciesFeatures = generateSpeciesFeatures(species)
   const personalityFeatures = generatePersonalityFeatures(personality)
   const genderFeatures = gender ? `${gender} characteristics, ` : ""
+  const colorFeatures = generateColorFeatures(skinColor, species)
 
   const instructions = [
     `Turn the subject into an ANIMATED character in the ${style} style (${styleDescriptor}).`,
     `Species: ${species} with ${genderFeatures}${speciesFeatures}.`,
+    colorFeatures ? `Skin tone: ${colorFeatures}.` : "",
     `Personality cues: ${personalityFeatures}.`,
     // Identity preservation and caricature emphasis
     "CRITICAL: Preserve the subject's identity. Keep all distinctive facial features recognizable.",
@@ -129,4 +133,104 @@ function generatePersonalityFeatures(personality: string): string {
   }
   if (!personality) return "natural personality expression"
   return map[personality] || "natural personality expression"
+}
+
+/**
+ * Generate color features for skin tones in animation styles
+ */
+function generateColorFeatures(skinColor: string, species: string): string {
+  if (!skinColor) return ""
+  
+  const colorLower = skinColor.toLowerCase()
+  const speciesLower = species.toLowerCase()
+  
+  // For animated characters, we use appropriate terminology based on species
+  let materialTerm = "skin"
+  
+  if (["cat", "dog", "wolf", "fox", "bear", "lion", "tiger"].includes(speciesLower)) {
+    materialTerm = "fur"
+  } else if (["dragon", "monster"].includes(speciesLower)) {
+    materialTerm = "scales"
+  } else if (speciesLower === "robot") {
+    materialTerm = "metallic surface"
+  } else if (speciesLower === "alien") {
+    materialTerm = "skin"
+  }
+  
+  // Color descriptions for animation
+  const colorDescriptions: Record<string, string> = {
+    // Natural human skin tones
+    "light": `light ${materialTerm} tones`,
+    "medium": `medium ${materialTerm} tones`,
+    "dark": `dark ${materialTerm} tones`,
+    "tan": `tan ${materialTerm}`,
+    "olive": `olive-toned ${materialTerm}`,
+    "pale": `pale ${materialTerm}`,
+    "peachy": `peachy ${materialTerm}`,
+    "golden": `golden ${materialTerm}`,
+    "bronze": `bronze ${materialTerm}`,
+    "ebony": `ebony ${materialTerm}`,
+    "caramel": `caramel-toned ${materialTerm}`,
+    "honey": `honey-colored ${materialTerm}`,
+    "mahogany": `mahogany ${materialTerm}`,
+    "amber": `amber-toned ${materialTerm}`,
+    "sienna": `sienna ${materialTerm}`,
+    
+    // Classic colors for fantasy characters
+    "white": `white ${materialTerm}`,
+    "black": `black ${materialTerm}`,
+    "gray": `gray ${materialTerm}`,
+    "grey": `gray ${materialTerm}`,
+    "brown": `brown ${materialTerm}`,
+    
+    // Vibrant animation colors
+    "red": `red ${materialTerm}`,
+    "blue": `blue ${materialTerm}`,
+    "green": `green ${materialTerm}`,
+    "yellow": `yellow ${materialTerm}`,
+    "orange": `orange ${materialTerm}`,
+    "purple": `purple ${materialTerm}`,
+    "pink": `pink ${materialTerm}`,
+    
+    // Pastels and special colors
+    "pastel pink": `soft pastel pink ${materialTerm}`,
+    "pastel blue": `soft pastel blue ${materialTerm}`,
+    "pastel green": `soft pastel green ${materialTerm}`,
+    "pastel yellow": `soft pastel yellow ${materialTerm}`,
+    "lavender": `lavender ${materialTerm}`,
+    "mint": `mint green ${materialTerm}`,
+    "cream": `cream-colored ${materialTerm}`,
+    "silver": `silver ${materialTerm}`,
+    "copper": `copper-colored ${materialTerm}`,
+    
+    // Fantasy colors for animation
+    "emerald": `emerald green ${materialTerm}`,
+    "sapphire": `sapphire blue ${materialTerm}`,
+    "ruby": `ruby red ${materialTerm}`,
+    "sunset": `sunset orange ${materialTerm}`,
+    "forest": `forest green ${materialTerm}`,
+    "ocean": `ocean blue ${materialTerm}`,
+    "volcanic": `volcanic red ${materialTerm}`,
+    "jade": `jade green ${materialTerm}`,
+    "topaz": `topaz yellow ${materialTerm}`,
+    "amethyst": `amethyst purple ${materialTerm}`,
+    "turquoise": `turquoise ${materialTerm}`,
+    "coral": `coral pink ${materialTerm}`,
+    
+    // Animated character specials
+    "rainbow": `multicolored rainbow ${materialTerm}`,
+    "iridescent": `iridescent shimmering ${materialTerm}`,
+    "metallic": `metallic ${materialTerm}`,
+    "neon": `bright neon ${materialTerm}`,
+  }
+  
+  // Try to match the color description
+  let colorDescription = colorDescriptions[colorLower]
+  
+  // If no exact match, create a basic description
+  if (!colorDescription) {
+    colorDescription = `${colorLower} ${materialTerm}`
+  }
+  
+  return colorDescription
 }

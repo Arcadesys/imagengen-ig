@@ -24,6 +24,8 @@ export interface PuppetConfiguration {
   gender: string
   species: string
   personality: string
+  // New: skin color selection (natural or vibrant)
+  skinColor?: string
 }
 
 const PUPPET_STYLES = [
@@ -125,6 +127,40 @@ const SPECIES_OPTIONS = [
   "Jersey Devil", "Banshee", "Kelpie", "Selkie", "Djinn", "Sphinx"
 ]
 
+// New: skin color selection options (natural + vibrant)
+const SKIN_COLOR_OPTIONS = [
+  { value: "", label: "Default (original skin tone)" },
+  // Natural human skin tones
+  { value: "light", label: "Light" },
+  { value: "medium", label: "Medium" },
+  { value: "dark", label: "Dark" },
+  { value: "tan", label: "Tan" },
+  { value: "olive", label: "Olive" },
+  { value: "pale", label: "Pale" },
+  { value: "peachy", label: "Peachy" },
+  { value: "golden", label: "Golden" },
+  { value: "bronze", label: "Bronze" },
+  { value: "ebony", label: "Ebony" },
+  { value: "caramel", label: "Caramel" },
+  { value: "honey", label: "Honey" },
+  { value: "mahogany", label: "Mahogany" },
+  { value: "amber", label: "Amber" },
+  { value: "sienna", label: "Sienna" },
+  // Vibrant character colors
+  { value: "emerald", label: "Emerald Green" },
+  { value: "sapphire", label: "Sapphire Blue" },
+  { value: "ruby", label: "Ruby Red" },
+  { value: "sunset", label: "Sunset Orange" },
+  { value: "forest", label: "Forest Green" },
+  { value: "ocean", label: "Ocean Blue" },
+  { value: "volcanic", label: "Volcanic Red" },
+  { value: "jade", label: "Jade Green" },
+  { value: "topaz", label: "Topaz Yellow" },
+  { value: "amethyst", label: "Amethyst Purple" },
+  { value: "turquoise", label: "Turquoise" },
+  { value: "coral", label: "Coral Pink" },
+]
+
 export function PuppetConfigurationModal({ 
   isOpen, 
   onClose, 
@@ -137,12 +173,14 @@ export function PuppetConfigurationModal({
     gender: "",
     species: "",
     personality: "",
+    skinColor: initialConfig?.skinColor || "",
     ...initialConfig
   })
 
   const [genderSearch, setGenderSearch] = useState("")
   const [speciesSearch, setSpeciesSearch] = useState("")
   const [styleSearch, setStyleSearch] = useState("")
+  const [skinSearch, setSkinSearch] = useState("")
 
   // New: editable final prompt preview
   const [finalPrompt, setFinalPrompt] = useState<string>("")
@@ -160,16 +198,22 @@ export function PuppetConfigurationModal({
     s.description.toLowerCase().includes(styleSearch.toLowerCase())
   )
 
+  const filteredSkinColors = SKIN_COLOR_OPTIONS.filter(c =>
+    c.label.toLowerCase().includes(skinSearch.toLowerCase())
+  )
+
   const handleNext = useCallback(() => {
-    if (step < 5) {
-      setStep(step + 1)
+    if (step < 6) {
+      const next = step + 1
+      setStep(next)
       // When moving into the review step, compose a prompt
-      if (step === 4) {
+      if (next === 6) {
         const composed = generatePuppetPrompt({
           style: config.style,
           gender: config.gender,
           species: config.species || "human",
-          personality: config.personality
+          personality: config.personality,
+          skinColor: config.skinColor || "",
         }, false)
         setFinalPrompt(composed)
       }
@@ -192,8 +236,9 @@ export function PuppetConfigurationModal({
       case 1: return !!config.style
       case 2: return true // gender optional
       case 3: return true // species optional (defaults to human)
-      case 4: return true // personality optional
-      case 5: return true // review step always available
+      case 4: return true // skin color optional
+      case 5: return true // personality optional
+      case 6: return true // review step always available
       default: return true
     }
   }, [step, config])
@@ -216,11 +261,12 @@ export function PuppetConfigurationModal({
               {step === 1 && "Choose Your Puppet Style"}
               {step === 2 && "What's Your Gender? (Optional)"}
               {step === 3 && "Animal or Monster? (Optional)"}
-              {step === 4 && "What Kind of Puppet Are You? (Optional)"}
-              {step === 5 && "Review & Edit Prompt"}
+              {step === 4 && "Choose a Skin Color"}
+              {step === 5 && "What Kind of Puppet Are You? (Optional)"}
+              {step === 6 && "Review & Edit Prompt"}
             </h2>
             <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map(i => (
+              {[1, 2, 3, 4, 5, 6].map(i => (
                 <div 
                   key={i}
                   className={`w-3 h-3 rounded-full ${
@@ -380,7 +426,45 @@ export function PuppetConfigurationModal({
           {step === 4 && (
             <div className="space-y-6">
               <p className="text-muted-foreground">
-                What's your puppet personality? This will influence how your puppet looks and feels!
+                Choose a skin color for your puppet. Default keeps the original tone.
+              </p>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search skin colors..."
+                  value={skinSearch}
+                  onChange={(e) => setSkinSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                {filteredSkinColors.map(c => (
+                  <Button
+                    key={c.value}
+                    variant={(config.skinColor || "") === c.value ? "default" : "outline"}
+                    className="justify-start"
+                    onClick={() => setConfig(prev => ({ ...prev, skinColor: c.value }))}
+                  >
+                    {c.label}
+                  </Button>
+                ))}
+              </div>
+              <Card className="p-4 bg-muted/50">
+                <h3 className="font-semibold mb-2">Your Puppet Preview</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Style:</strong> {PUPPET_STYLES.find(s => s.id === config.style)?.name}</p>
+                  <p><strong>Gender:</strong> {config.gender || "Not specified"}</p>
+                  <p><strong>Species:</strong> {config.species || "human"}</p>
+                  <p><strong>Skin color:</strong> {SKIN_COLOR_OPTIONS.find(o => o.value === (config.skinColor || ""))?.label || "Default (original)"}</p>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="space-y-6">
+              <p className="text-muted-foreground">
+                What's your puppet personality? This affects facial expression only; it won’t change composition or pose.
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
@@ -409,13 +493,14 @@ export function PuppetConfigurationModal({
                   <p><strong>Style:</strong> {PUPPET_STYLES.find(s => s.id === config.style)?.name}</p>
                   <p><strong>Gender:</strong> {config.gender || "Not specified"}</p>
                   <p><strong>Species:</strong> {config.species}</p>
+                  <p><strong>Skin color:</strong> {SKIN_COLOR_OPTIONS.find(o => o.value === (config.skinColor || ""))?.label || "Default (original)"}</p>
                   <p><strong>Personality:</strong> {PERSONALITY_OPTIONS.find(p => p.id === config.personality)?.name || "Not selected"}</p>
                 </div>
               </Card>
             </div>
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <div className="space-y-4">
               <p className="text-muted-foreground">
                 Final checkpoint: Review and edit the complete prompt before generating.
@@ -441,18 +526,19 @@ export function PuppetConfigurationModal({
               <ChevronLeft className="w-4 h-4 mr-2" />
               {step === 1 ? "Cancel" : "Back"}
             </Button>
-            {/* Skip button for steps 2-4 */}
-            {step >= 2 && step <= 4 && (
+            {/* Skip button for steps 2-5 */}
+            {step >= 2 && step <= 5 && (
               <Button 
                 variant="ghost" 
                 onClick={() => {
-                  // If skipping from step 4 to 5, compose a default prompt for review
-                  if (step === 4) {
+                  // If skipping into review step, compose a default prompt for review
+                  if (step === 5) {
                     const composed = generatePuppetPrompt({
                       style: config.style,
                       gender: config.gender,
                       species: config.species || "human",
                       personality: config.personality,
+                      skinColor: config.skinColor || "",
                     }, false)
                     setFinalPrompt(composed)
                   }
@@ -467,8 +553,8 @@ export function PuppetConfigurationModal({
             onClick={handleNext}
             disabled={!isStepComplete()}
           >
-            {step === 5 ? "Generate My Puppet!" : "Next"}
-            {step < 5 && <ChevronRight className="w-4 h-4 ml-2" />}
+            {step === 6 ? "Generate My Puppet!" : "Next"}
+            {step < 6 && <ChevronRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
       </DialogContent>

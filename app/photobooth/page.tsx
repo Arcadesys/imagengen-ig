@@ -21,7 +21,15 @@ import { useGeneratorSession } from "@/hooks/use-generator-session"
 interface QuestionsPayload {
   title: string
   intro?: string
-  questions: Array<{ id: string; text: string; placeholder?: string; type?: string; options?: string[]; allowCustom?: boolean }>
+  questions: Array<{
+    id: string
+    text: string
+    placeholder?: string
+    type?: string
+    options?: Array<string | { value: string; label: string }>
+    allowCustom?: boolean
+    defaultValue?: string
+  }>
   references?: Array<{ label: string; url: string }>
   promptTemplate: string
 }
@@ -244,9 +252,10 @@ function PhotoboothContent() {
     const value = answers[q.id]
 
     if (q.type === "multi-select") {
-      const opts = q.options || []
+      const opts = (q.options || []) as Array<string | { value: string; label: string }>
+      const stringOpts = opts.map((o) => (typeof o === "string" ? { value: o, label: o } : o))
       const filter = qFilters[q.id] || ""
-      const filtered = opts.filter((o) => o.toLowerCase().includes(filter.toLowerCase()))
+      const filtered = stringOpts.filter((o) => o.label.toLowerCase().includes(filter.toLowerCase()))
       const selected: string[] = Array.isArray(value) ? value : []
 
       return (
@@ -258,9 +267,9 @@ function PhotoboothContent() {
           />
           <div className="max-h-40 overflow-auto border rounded p-2 space-y-1">
             {filtered.map((opt) => {
-              const checked = selected.includes(opt)
+              const checked = selected.includes(opt.value)
               return (
-                <label key={opt} className="flex items-center gap-2 text-sm">
+                <label key={opt.value} className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
                     checked={checked}
@@ -269,12 +278,12 @@ function PhotoboothContent() {
                         const curr: string[] = Array.isArray(prev[q.id]) ? prev[q.id] : []
                         return {
                           ...prev,
-                          [q.id]: e.target.checked ? [...curr, opt] : curr.filter((x: string) => x !== opt),
+                          [q.id]: e.target.checked ? [...curr, opt.value] : curr.filter((x: string) => x !== opt.value),
                         }
                       })
                     }}
                   />
-                  <span>{opt}</span>
+                  <span>{opt.label}</span>
                 </label>
               )
             })}
@@ -284,22 +293,47 @@ function PhotoboothContent() {
       )
     }
 
+    if (q.type === "select") {
+      const opts = (q.options || []) as Array<string | { value: string; label: string }>
+      const normalized = opts.map((o) => (typeof o === "string" ? { value: o, label: o } : o))
+      const selected = typeof value === "string" ? value : (q.defaultValue ?? "")
+
+      return (
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+            {normalized.map((opt) => (
+              <Button
+                key={opt.value}
+                type="button"
+                variant={selected === opt.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.value }))}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
     if (q.type === "gender") {
-      const opts = q.options || ["male", "female", "nonbinary"]
+      const opts = (q.options || ["male", "female", "nonbinary"]) as Array<string | { value: string; label: string }>
+      const normalized = opts.map((o) => (typeof o === "string" ? { value: o, label: o } : o))
       const selected = typeof value === "string" ? value : ""
-      const isCustom = selected && !opts.includes(selected)
+      const isCustom = selected && !normalized.some((o) => o.value === selected)
       return (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
-            {opts.map((opt) => (
+            {normalized.map((opt) => (
               <Button
-                key={opt}
+                key={opt.value}
                 type="button"
-                variant={selected === opt ? "default" : "outline"}
+                variant={selected === opt.value ? "default" : "outline"}
                 size="sm"
-                onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt }))}
+                onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.value }))}
               >
-                {opt}
+                {opt.label}
               </Button>
             ))}
             {q.allowCustom !== false && (
@@ -342,8 +376,23 @@ function PhotoboothContent() {
   const composedPrompt = useMemo(() => {
     if (!schema) return ""
 
-    // Support custom rendering tokens in prompt template
-    let base = schema.promptTemplate
+    // Support conditional blocks like {{#if key}}...{{/if}}
+    const condRegex = /{{#if\s+(\w+)}}([\s\S]*?){{\/if}}/g
+
+    // First, resolve conditionals
+    let base = schema.promptTemplate.replace(condRegex, (_m, key: string, inner: string) => {
+      const v = answers[key]
+      const truthy = Array.isArray(v) ? v.length > 0 : !!v
+      if (!truthy) return ""
+      // If truthy, allow nested token replacement within inner
+      let replacedInner = inner
+      for (const [ik, iv] of Object.entries(answers)) {
+        replacedInner = replacedInner.replaceAll(`{{${ik}}}`, Array.isArray(iv) ? iv.join(", ") : String(iv ?? ""))
+      }
+      return replacedInner
+    })
+
+    // Replace remaining tokens
     for (const [k, v] of Object.entries(answers)) {
       base = base.replaceAll(`{{${k}}}`, Array.isArray(v) ? v.join(", ") : String(v ?? ""))
     }
