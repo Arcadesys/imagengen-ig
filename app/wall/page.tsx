@@ -35,19 +35,6 @@ export default function WallPage() {
   // Ensure rendering only after client mount to prevent SSR hydration issues in prod
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-cyan-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950">
-        <main className="container mx-auto px-2 sm:px-4 py-6">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="animate-pulse h-48 sm:h-80 bg-muted rounded-lg" />
-            ))}
-          </div>
-        </main>
-      </div>
-    )
-  }
 
   // Lightweight generator session so guests can like
   const { sessionId } = useGeneratorSession("wall")
@@ -283,7 +270,13 @@ export default function WallPage() {
           <div className="text-sm text-red-600 mb-4" role="alert">{error}</div>
         )}
 
-        {loading ? (
+        {!mounted ? (
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="animate-pulse h-48 sm:h-80 bg-muted rounded-lg" />
+            ))}
+          </div>
+        ) : loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
             {Array.from({ length: PAGE_SIZE / 2 }).map((_, i) => (
               <div key={i} className="animate-pulse h-48 sm:h-80 bg-muted rounded-lg" />
