@@ -1,7 +1,13 @@
 // Detailed, provider-friendly prompts for the styles exposed by /api/questions
 // Avoids directly mimicking any single production’s proprietary style.
+import { generateColorDescription } from "./shared-skin-color"
 
 export type StyleId = "cartoon" | "anime" | "pixar" | "watercolor" | "comic" | "vintage"
+
+export interface StyleConfiguration {
+  skinColor?: string
+  [key: string]: any
+}
 
 const STYLE_PROMPTS: Record<StyleId, string> = {
   cartoon:
@@ -65,8 +71,18 @@ const STYLE_PROMPTS: Record<StyleId, string> = {
     ].join(" "),
 }
 
-export function getDetailedStylePrompt(styleId?: string | null): string {
-  if (!styleId) return STYLE_PROMPTS.cartoon
+export function getDetailedStylePrompt(styleId?: string | null, config?: StyleConfiguration): string {
+  if (!styleId) styleId = 'cartoon'
   const key = styleId as StyleId
-  return (STYLE_PROMPTS[key] ?? STYLE_PROMPTS.cartoon) as string
+  let prompt = STYLE_PROMPTS[key] ?? STYLE_PROMPTS.cartoon
+  
+  // Add skin color information if provided
+  if (config?.skinColor) {
+    const colorDescription = generateColorDescription(config.skinColor, 'human')
+    if (colorDescription) {
+      prompt += ` Apply ${colorDescription} to all visible skin areas while maintaining the artistic style.`
+    }
+  }
+  
+  return prompt
 }
