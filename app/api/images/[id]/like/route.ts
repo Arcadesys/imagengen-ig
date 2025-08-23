@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { auth } from "@/lib/auth"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -105,9 +108,36 @@ export async function POST(
         })
       }
     } else {
-      return NextResponse.json({ 
-        error: "Authentication or session required" 
-      }, { status: 401 })
+      // Anonymous fallback by IP address (no session created)
+      if (!clientIP || clientIP === 'unknown') {
+        return NextResponse.json({ 
+          error: "Authentication, session, or a valid IP required" 
+        }, { status: 401 })
+      }
+
+      const existingLike = await (prisma as any).imageLike.findFirst({
+        where: {
+          imageId: imageId,
+          userId: null,
+          sessionId: null,
+          ipAddress: clientIP
+        }
+      })
+
+      if (existingLike) {
+        await (prisma as any).imageLike.delete({ where: { id: existingLike.id } })
+        return NextResponse.json({ success: true, liked: false, message: "Like removed" })
+      } else {
+        await (prisma as any).imageLike.create({
+          data: {
+            imageId: imageId,
+            ipAddress: clientIP,
+            userId: null,
+            sessionId: null
+          }
+        })
+        return NextResponse.json({ success: true, liked: true, message: "Like added" })
+      }
     }
   } catch (error) {
     console.error("[Like API] Error:", error)
@@ -155,6 +185,21 @@ export async function GET(
         }
       })
       userLiked = !!sessionLike
+    } else {
+      const clientIP = request.headers.get('x-forwarded-for') || 
+                       request.headers.get('x-real-ip') || 
+                       'unknown'
+      if (clientIP !== 'unknown') {
+        const ipLike = await (prisma as any).imageLike.findFirst({
+          where: {
+            imageId: imageId,
+            userId: null,
+            sessionId: null,
+            ipAddress: clientIP
+          }
+        })
+        userLiked = !!ipLike
+      }
     }
 
     return NextResponse.json({

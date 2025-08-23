@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { auth } from "@/lib/auth"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
 export async function GET(request: NextRequest) {
   try {
     console.log("[Wall API] Fetching before/after transformations")
@@ -73,8 +76,8 @@ export async function GET(request: NextRequest) {
     const totalCount = await prisma.image.count({ where: whereClause })
 
     // Get all the base image IDs we need to fetch
-    const baseImageIds = generatedImages
-      .map(img => img.baseImageId)
+    const baseImageIds = (generatedImages as Array<{ baseImageId: string | null }>)
+      .map((img) => img.baseImageId)
       .filter(Boolean) as string[]
 
     // Fetch the corresponding base images
@@ -86,12 +89,12 @@ export async function GET(request: NextRequest) {
     })
 
     // Create a map for quick lookup
-    const baseImageMap = new Map(baseImages.map(img => [img.id, img]))
+    const baseImageMap = new Map(baseImages.map((img) => [img.id, img]))
 
     // Format transformations for the wall
-    const transformations = generatedImages
-      .filter(generated => generated.baseImageId && baseImageMap.has(generated.baseImageId))
-      .map(generated => {
+    const transformations = (generatedImages as Array<any>)
+      .filter((generated) => generated.baseImageId && baseImageMap.has(generated.baseImageId))
+      .map((generated) => {
         const baseImage = baseImageMap.get(generated.baseImageId!)!
         
         // Extract style from prompt or use provider as fallback

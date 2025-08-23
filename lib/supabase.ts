@@ -35,3 +35,13 @@ export function getSupabaseConfigStatus() {
     hasServiceRole: !!supabaseServiceRoleKey,
   }
 }
+
+// Optional debug logging for visibility in production troubleshooting
+if (process.env.APP_DEBUG === 'true') {
+  try {
+    const status = getSupabaseConfigStatus()
+    console.log('[app] Supabase config status', status)
+  } catch (e) {
+    // no-op
+  }
+}

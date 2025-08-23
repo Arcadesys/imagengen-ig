@@ -2,6 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../../lib/db"
 import { deleteImage } from "../../../../lib/images"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
