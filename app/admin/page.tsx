@@ -28,6 +28,15 @@ interface SessionCode {
   createdAt: string
 }
 
+// New: Admin image pair interface
+interface AdminPairItem {
+  id: string // generated image id
+  beforeUrl: string | null
+  afterUrl: string
+  createdAt: string
+  prompt: string | null
+}
+
 export default function AdminDashboard() {
   const [sessionCodes, setSessionCodes] = useState<SessionCode[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,6 +80,12 @@ export default function AdminDashboard() {
     isActive: true as boolean,
   })
   const [creatingGenerator, setCreatingGenerator] = useState(false)
+
+  // New: images admin state
+  const [pairs, setPairs] = useState<AdminPairItem[]>([])
+  const [pairsLoading, setPairsLoading] = useState(false)
+  const [pairsQuery, setPairsQuery] = useState("")
+  const [pairsHasMore, setPairsHasMore] = useState(true)
 
   const fetchSessionCodes = async () => {
     try {
@@ -359,8 +374,48 @@ export default function AdminDashboard() {
     }
   }
 
+  const fetchPairs = async (reset = true) => {
+    try {
+      if (reset) {
+        setPairsLoading(true)
+      }
+      const offset = reset ? 0 : pairs.length
+      const params = new URLSearchParams()
+      params.set("limit", "32")
+      params.set("offset", String(offset))
+      if (pairsQuery.trim()) params.set("q", pairsQuery.trim())
+
+      const res = await fetch(`/api/admin/images?${params.toString()}`, { cache: "no-store" })
+      if (!res.ok) throw new Error("Failed to load images")
+      const j = await res.json()
+      setPairs((prev) => (reset ? j.items : [...prev, ...j.items]))
+      setPairsHasMore(!!j.hasMore)
+    } catch (e) {
+      console.error(e)
+      toast({ title: "Error", description: "Failed to load images", variant: "destructive" })
+    } finally {
+      setPairsLoading(false)
+    }
+  }
+
+  const deletePair = async (generatedId: string) => {
+    if (!confirm("Delete this before/after pair? This may remove the base image if unused.")) return
+    try {
+      const res = await fetch(`/api/admin/images/${generatedId}`, { method: "DELETE" })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(j.error || "Failed to delete")
+      setPairs((prev) => prev.filter((p) => p.id !== generatedId))
+      toast({ title: "Deleted", description: "Image pair removed" })
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" })
+    }
+  }
+
   useEffect(() => {
     fetchSessionCodes()
+    // also load pairs
+    fetchPairs(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (loading) {
@@ -561,6 +616,71 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Admin: Manage Image Pairs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Manage Image Pairs</CardTitle>
+          <CardDescription>Search and delete generated images and their corresponding uploads.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between mb-4">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Input
+                placeholder="Search prompts or session names"
+                value={pairsQuery}
+                onChange={(e) => setPairsQuery(e.target.value)}
+              />
+              <Button onClick={() => fetchPairs(true)} disabled={pairsLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${pairsLoading ? 'animate-spin' : ''}`} />
+                Search
+              </Button>
+            </div>
+            <div className="text-sm text-muted-foreground">{pairs.length} loaded</div>
+          </div>
+
+          {pairs.length === 0 && !pairsLoading ? (
+            <div className="text-sm text-muted-foreground">No items found.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {pairs.map((p) => (
+                <div key={p.id} className="border rounded-md overflow-hidden">
+                  <div className="grid grid-cols-2">
+                    <div className="relative">
+                      {p.beforeUrl ? (
+                        <img src={p.beforeUrl} alt="Before" className="w-full aspect-square object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full aspect-square bg-muted flex items-center justify-center text-xs">No base</div>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <img src={p.afterUrl} alt="After" className="w-full aspect-square object-cover" loading="lazy" />
+                    </div>
+                  </div>
+                  <div className="p-2 text-xs h-16 overflow-hidden">
+                    <div className="font-medium">{new Date(p.createdAt).toLocaleString()}</div>
+                    <div className="line-clamp-2 text-muted-foreground">{p.prompt || '—'}</div>
+                  </div>
+                  <div className="p-2 border-t flex items-center justify-between">
+                    <Button variant="outline" size="sm" onClick={() => window.open(`/share/${p.id}`, '_blank')}>View</Button>
+                    <Button variant="destructive" size="sm" onClick={() => deletePair(p.id)}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {pairsHasMore && (
+            <div className="flex justify-center mt-4">
+              <Button variant="outline" onClick={() => fetchPairs(false)} disabled={pairsLoading}>
+                {pairsLoading ? 'Loading...' : 'Load more'}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Existing: Session Codes Management */}
       <div className="flex items-center justify-between">

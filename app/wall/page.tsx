@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Heart, RefreshCw, Sparkles, Repeat2, Search, ExternalLink, X } from "lucide-react"
 import { useGeneratorSession } from "@/hooks/use-generator-session"
+
+// Replace dynamic imports with direct named imports to ensure stable components in production builds
+import { Heart, RefreshCw, Sparkles, Repeat, Search, ExternalLink, X } from "lucide-react"
 
 interface WallItem {
   id: string
@@ -29,6 +31,23 @@ export default function WallPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const sessionFilter = searchParams.get("session") || ""
+
+  // Ensure rendering only after client mount to prevent SSR hydration issues in prod
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-cyan-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950">
+        <main className="container mx-auto px-2 sm:px-4 py-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="animate-pulse h-48 sm:h-80 bg-muted rounded-lg" />
+            ))}
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   // Lightweight generator session so guests can like
   const { sessionId } = useGeneratorSession("wall")
@@ -286,58 +305,64 @@ export default function WallPage() {
                 return (
                   <Card key={it.id} className="overflow-hidden group">
                     <CardContent className="p-0">
-                      <div className="relative">
+                      {/* Image pair: stacked on mobile, side-by-side on desktop */}
+                      <div className="relative grid grid-cols-1 sm:grid-cols-2">
                         {/* Before */}
-                        <img src={it.beforeImageUrl} alt="Before" className="w-full aspect-square object-cover" loading="lazy" onError={onImgError} />
-                        <div className="absolute top-2 left-2">
-                          <Badge variant="secondary">Before</Badge>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-center py-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs">
-                        ↓ AI TRANSFORMATION ↓
-                      </div>
-                      <div className="relative">
-                        {/* After */}
-                        <img src={it.afterImageUrl} alt={`After ${it.style}`} className="w-full aspect-square object-cover" loading="lazy" onError={onImgError} />
-                        <div className="absolute top-2 left-2">
-                          <Badge variant="secondary" className="bg-green-600 text-white border-0">After</Badge>
-                        </div>
-                        <div className="absolute top-2 right-2">
-                          <Badge variant="secondary" className="bg-purple-600 text-white border-0">{it.style.toUpperCase()}</Badge>
+                        <div className="relative">
+                          <img src={it.beforeImageUrl} alt="Before transformation" className="w-full aspect-square object-cover" loading="lazy" onError={onImgError} />
+                          <div className="absolute top-2 left-2">
+                            <Badge variant="secondary">Before</Badge>
+                          </div>
                         </div>
 
-                        {/* Actions overlay (desktop) */}
-                        <div className="absolute bottom-2 left-2 right-2 hidden sm:flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="secondary" onClick={() => toggleLike(it.id)} aria-pressed={isLiked} aria-label={isLiked ? "Unlike" : "Like"}>
-                              <Heart className={`h-4 w-4 mr-1 ${isLiked ? "fill-current" : ""}`} />
-                              {count}
-                            </Button>
-                            <Button size="sm" variant="secondary" onClick={() => remix(it.id, it.style)}>
-                              <Repeat2 className="h-4 w-4 mr-1" /> Remix
+                        {/* After */}
+                        <div className="relative">
+                          <img src={it.afterImageUrl} alt={`After (${it.style})`} className="w-full aspect-square object-cover" loading="lazy" onError={onImgError} />
+                          <div className="absolute top-2 left-2">
+                            <Badge variant="secondary" className="bg-green-600 text-white border-0">After</Badge>
+                          </div>
+                          <div className="absolute top-2 right-2">
+                            <Badge variant="secondary" className="bg-purple-600 text-white border-0">{it.style.toUpperCase()}</Badge>
+                          </div>
+
+                          {/* Actions overlay (desktop) */}
+                          <div className="absolute bottom-2 left-2 right-2 hidden sm:flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="secondary" onClick={() => toggleLike(it.id)} aria-pressed={isLiked} aria-label={isLiked ? "Remove like" : "Like"}>
+                                <Heart className={`h-4 w-4 mr-1 ${isLiked ? "fill-current" : ""}`} />
+                                {count}
+                              </Button>
+                              <Button size="sm" variant="secondary" onClick={() => remix(it.id, it.style)}>
+                                <Repeat className="h-4 w-4 mr-1" /> Remix
+                              </Button>
+                            </div>
+                            <Button size="sm" asChild variant="secondary">
+                              <a href={`/share/${it.id}`} target="_blank" rel="noreferrer">
+                                <ExternalLink className="h-4 w-4 mr-1" /> View
+                              </a>
                             </Button>
                           </div>
-                          <Button size="sm" asChild variant="secondary">
-                            <a href={`/share/${it.id}`} target="_blank" rel="noreferrer">
-                              <ExternalLink className="h-4 w-4 mr-1" /> View
-                            </a>
-                          </Button>
-                        </div>
 
-                        {/* Mobile actions (always visible) */}
-                        <div className="sm:hidden px-2 py-2 flex items-center justify-between gap-2">
-                          <Button size="sm" variant="outline" onClick={() => toggleLike(it.id)} aria-pressed={isLiked} className="flex-1">
-                            <Heart className={`h-4 w-4 mr-1 ${isLiked ? "fill-current" : ""}`} /> {count}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => remix(it.id, it.style)} className="flex-1">
-                            <Repeat2 className="h-4 w-4 mr-1" /> Remix
-                          </Button>
-                          <Button size="sm" asChild variant="outline" className="flex-1">
-                            <a href={`/share/${it.id}`} target="_blank" rel="noreferrer">
-                              <ExternalLink className="h-4 w-4 mr-1" /> View
-                            </a>
-                          </Button>
+                          {/* Mobile actions (always visible) */}
+                          <div className="sm:hidden px-2 py-2 flex items-center justify-between gap-2">
+                            <Button size="sm" variant="outline" onClick={() => toggleLike(it.id)} aria-pressed={isLiked} className="flex-1">
+                              <Heart className={`h-4 w-4 mr-1 ${isLiked ? "fill-current" : ""}`} /> {count}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => remix(it.id, it.style)} className="flex-1">
+                              <Repeat className="h-4 w-4 mr-1" /> Remix
+                            </Button>
+                            <Button size="sm" asChild variant="outline" className="flex-1">
+                              <a href={`/share/${it.id}`} target="_blank" rel="noreferrer">
+                                <ExternalLink className="h-4 w-4 mr-1" /> View
+                              </a>
+                            </Button>
+                          </div>
                         </div>
+                      </div>
+
+                      {/* Mobile only transformation divider */}
+                      <div className="flex items-center justify-center py-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs sm:hidden">
+                        ↓ AI TRANSFORMATION ↓
                       </div>
 
                       {/* Footer meta */}

@@ -1,5 +1,5 @@
 import { prisma } from "./db"
-import { supabaseAdmin, isSupabaseConfigured, getSupabaseConfigStatus } from "./supabase"
+import { supabaseAdmin } from "./supabase"
 import type { ImageSize } from "@prisma/client"
 
 function extFromMime(mime: string): string {
@@ -31,10 +31,23 @@ export interface SaveImageOptions {
   sessionId?: string | null // Added for session grouping
 }
 
+function getSupabaseConfigStatusSafe() {
+  return {
+    hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasAnon: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    hasServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  }
+}
+
+function isSupabaseConfiguredSafe() {
+  const s = getSupabaseConfigStatusSafe()
+  return Boolean(s.hasUrl && s.hasAnon && s.hasServiceRole && supabaseAdmin)
+}
+
 export async function saveImage(opts: SaveImageOptions) {
-  // Early validation for storage config
-  if (!isSupabaseConfigured() || !supabaseAdmin) {
-    const status = getSupabaseConfigStatus()
+  // Early validation for storage config (runtime-safe check that works with mocks)
+  if (!isSupabaseConfiguredSafe()) {
+    const status = getSupabaseConfigStatusSafe()
     throw new Error(
       `Supabase is not configured: hasUrl=${status.hasUrl} hasAnon=${status.hasAnon} hasServiceRole=${status.hasServiceRole}`
     )
@@ -75,7 +88,7 @@ export async function saveImage(opts: SaveImageOptions) {
     // In test environment, use a mock URL instead of real upload
     publicUrl = `https://test.supabase.co/storage/v1/object/public/images/${filePath}`
   } else {
-    const { error: uploadError } = await supabaseAdmin.storage
+    const { error: uploadError } = await supabaseAdmin!.storage
       .from('images')
       .upload(filePath, opts.buffer, {
         contentType: opts.mimeType,
@@ -89,7 +102,7 @@ export async function saveImage(opts: SaveImageOptions) {
     }
 
     // Get the public URL for the uploaded image
-    const { data: { publicUrl: realPublicUrl } } = supabaseAdmin.storage
+    const { data: { publicUrl: realPublicUrl } } = supabaseAdmin!.storage
       .from('images')
       .getPublicUrl(filePath)
     
@@ -120,12 +133,12 @@ export async function deleteImage(imageId: string) {
   if (urlParts.length > 1) {
     const filePath = urlParts[1]
     
-    if (!isSupabaseConfigured() || !supabaseAdmin) {
+    if (!isSupabaseConfiguredSafe()) {
       throw new Error('Supabase not configured for deletion')
     }
 
     // Delete from Supabase Storage
-    const { error } = await supabaseAdmin.storage
+    const { error } = await supabaseAdmin!.storage
       .from('images')
       .remove([filePath])
     

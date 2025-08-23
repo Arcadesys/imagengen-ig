@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { auth } from "@/lib/auth"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,8 +12,10 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url)
     const sessionId = url.searchParams.get("session")
     const search = url.searchParams.get("search")?.toLowerCase()
-    const limit = parseInt(url.searchParams.get("limit") || "50")
-    const offset = parseInt(url.searchParams.get("offset") || "0")
+    const limitRaw = parseInt(url.searchParams.get("limit") || "50")
+    const offsetRaw = parseInt(url.searchParams.get("offset") || "0")
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 50
+    const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0
 
     let whereClause: any = {
       kind: "GENERATED",
@@ -121,7 +123,7 @@ export async function GET(request: NextRequest) {
 
     console.log("[Wall API] Found", transformations.length, "transformations")
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       transformations: transformations,
       totalCount: totalCount,
@@ -129,6 +131,8 @@ export async function GET(request: NextRequest) {
       hasMore: offset + transformations.length < totalCount,
       lastUpdated: new Date().toISOString(),
     })
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
+    return response
   } catch (error) {
     console.error("[Wall API] Error fetching transformations:", error)
     return NextResponse.json({ error: "Failed to load wall transformations" }, { status: 500 })
