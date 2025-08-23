@@ -30,7 +30,7 @@ async function updateGeneratorsWithSkinColor() {
     for (const generator of generators) {
       console.log(`\n🔧 Processing: ${generator.name} (${generator.slug})`)
       
-      let config = generator.config as any
+      let config = generator.config
       if (!config || !config.schema) {
         console.log(`   ⚠️  No schema found, skipping...`)
         continue
@@ -39,7 +39,7 @@ async function updateGeneratorsWithSkinColor() {
       let questions = config.schema.questions || []
       
       // Check if skin color question already exists
-      const existingSkinColorQuestion = questions.find((q: any) => q.id === 'skinColor')
+      const existingSkinColorQuestion = questions.find(q => q.id === 'skinColor')
       
       if (existingSkinColorQuestion) {
         console.log(`   ✅ Skin color question already exists`)
@@ -73,7 +73,7 @@ async function updateGeneratorsWithSkinColor() {
         insertIndex = 1
       } else {
         // Find a good position - after style/species but before personality
-        const personalityIndex = questions.findIndex((q: any) => 
+        const personalityIndex = questions.findIndex(q => 
           q.id === 'personality' || q.text.toLowerCase().includes('personality')
         )
         if (personalityIndex > 0) {
@@ -121,9 +121,9 @@ async function updateGeneratorsWithSkinColor() {
       })
       
       if (updated?.config) {
-        const config = updated.config as any
+        const config = updated.config
         const questions = config.schema?.questions || []
-        const hasSkinColor = questions.some((q: any) => q.id === 'skinColor')
+        const hasSkinColor = questions.some(q => q.id === 'skinColor')
         console.log(`   ${hasSkinColor ? '✅' : '❌'} ${generator.name}: ${hasSkinColor ? 'Has' : 'Missing'} skin color`)
       }
     }
