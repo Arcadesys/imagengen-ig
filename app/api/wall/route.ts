@@ -39,10 +39,13 @@ export async function GET(request: NextRequest) {
           }
         },
         {
+          // Use `is` for to-one optional relation filtering in Prisma
           session: {
-            name: {
-              contains: search,
-              mode: 'insensitive'
+            is: {
+              name: {
+                contains: search,
+                mode: 'insensitive'
+              }
             }
           }
         }
