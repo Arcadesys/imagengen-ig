@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
             createdAt: true
           }
         },
+        // keep _count for backward compatibility; prefer persistent likesCount when available
         _count: {
           select: {
             likes: true
@@ -114,7 +115,8 @@ export async function GET(request: NextRequest) {
           style: style,
           prompt: generated.prompt,
           timestamp: generated.createdAt.toISOString(),
-          likesCount: generated._count?.likes || 0,
+          // Prefer persistent field; fallback to dynamic count until all data migrated
+          likesCount: (typeof generated.likesCount === 'number' ? generated.likesCount : undefined) ?? generated._count?.likes ?? 0,
           session: generated.session ? {
             id: generated.session.id,
             name: generated.session.name,

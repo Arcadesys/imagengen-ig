@@ -28,6 +28,16 @@ export async function POST(
       return NextResponse.json({ error: "Image not found" }, { status: 404 })
     }
 
+    // Helper to increment/decrement likesCount safely
+    const applyDelta = async (delta: number) => {
+      try {
+        await (prisma as any).image.update({
+          where: { id: imageId },
+          data: { likesCount: { increment: delta } }
+        })
+      } catch {}
+    }
+
     // For authenticated users
     if (session?.user?.id) {
       // Check if user already liked this image
@@ -42,9 +52,10 @@ export async function POST(
 
       if (existingLike) {
         // Unlike - remove the like
-        await (prisma as any).imageLike.delete({
-          where: { id: existingLike.id }
-        })
+        await (prisma as any).$transaction([
+          (prisma as any).imageLike.delete({ where: { id: existingLike.id } }),
+          (prisma as any).image.update({ where: { id: imageId }, data: { likesCount: { decrement: 1 } } })
+        ])
         
         return NextResponse.json({ 
           success: true, 
@@ -53,13 +64,16 @@ export async function POST(
         })
       } else {
         // Like - add the like
-        await (prisma as any).imageLike.create({
-          data: {
-            imageId: imageId,
-            userId: session.user.id,
-            ipAddress: clientIP
-          }
-        })
+        await (prisma as any).$transaction([
+          (prisma as any).imageLike.create({
+            data: {
+              imageId: imageId,
+              userId: session.user.id,
+              ipAddress: clientIP
+            }
+          }),
+          (prisma as any).image.update({ where: { id: imageId }, data: { likesCount: { increment: 1 } } })
+        ])
         
         return NextResponse.json({ 
           success: true, 
@@ -82,9 +96,10 @@ export async function POST(
 
       if (existingLike) {
         // Unlike
-        await (prisma as any).imageLike.delete({
-          where: { id: existingLike.id }
-        })
+        await (prisma as any).$transaction([
+          (prisma as any).imageLike.delete({ where: { id: existingLike.id } }),
+          (prisma as any).image.update({ where: { id: imageId }, data: { likesCount: { decrement: 1 } } })
+        ])
         
         return NextResponse.json({ 
           success: true, 
@@ -93,13 +108,16 @@ export async function POST(
         })
       } else {
         // Like
-        await (prisma as any).imageLike.create({
-          data: {
-            imageId: imageId,
-            sessionId: sessionId,
-            ipAddress: clientIP
-          }
-        })
+        await (prisma as any).$transaction([
+          (prisma as any).imageLike.create({
+            data: {
+              imageId: imageId,
+              sessionId: sessionId,
+              ipAddress: clientIP
+            }
+          }),
+          (prisma as any).image.update({ where: { id: imageId }, data: { likesCount: { increment: 1 } } })
+        ])
         
         return NextResponse.json({ 
           success: true, 
@@ -125,17 +143,23 @@ export async function POST(
       })
 
       if (existingLike) {
-        await (prisma as any).imageLike.delete({ where: { id: existingLike.id } })
+        await (prisma as any).$transaction([
+          (prisma as any).imageLike.delete({ where: { id: existingLike.id } }),
+          (prisma as any).image.update({ where: { id: imageId }, data: { likesCount: { decrement: 1 } } })
+        ])
         return NextResponse.json({ success: true, liked: false, message: "Like removed" })
       } else {
-        await (prisma as any).imageLike.create({
-          data: {
-            imageId: imageId,
-            ipAddress: clientIP,
-            userId: null,
-            sessionId: null
-          }
-        })
+        await (prisma as any).$transaction([
+          (prisma as any).imageLike.create({
+            data: {
+              imageId: imageId,
+              ipAddress: clientIP,
+              userId: null,
+              sessionId: null
+            }
+          }),
+          (prisma as any).image.update({ where: { id: imageId }, data: { likesCount: { increment: 1 } } })
+        ])
         return NextResponse.json({ success: true, liked: true, message: "Like added" })
       }
     }
@@ -157,10 +181,14 @@ export async function GET(
     const url = new URL(request.url)
     const sessionId = url.searchParams.get("sessionId")
 
-    // Get total like count
-    const likesCount = await (prisma as any).imageLike.count({
-      where: { imageId: imageId }
+    // Get total like count, prefer persistent field if present
+    const image = await (prisma as any).image.findUnique({
+      where: { id: imageId },
+      select: { likesCount: true }
     })
+    const likesCount = typeof image?.likesCount === 'number'
+      ? image.likesCount
+      : await (prisma as any).imageLike.count({ where: { imageId } })
 
     // Check if current user/session has liked this image
     let userLiked = false
